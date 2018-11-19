@@ -50,7 +50,6 @@ namespace Halite3.hlt
             neighbors.Add(At(p.DirectionalOffset(Direction.SOUTH)));
             neighbors.Add(At(p.DirectionalOffset(Direction.EAST)));
             neighbors.Add(At(p.DirectionalOffset(Direction.WEST)));
-            neighbors.Add(At(p.DirectionalOffset(Direction.STILL)));
             return neighbors;
         }
 

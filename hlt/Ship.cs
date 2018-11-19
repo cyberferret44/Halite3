@@ -23,7 +23,7 @@ namespace Halite3.hlt
         }
 
         public MapCell CurrentMapCell => Map.At(this.position);
-        public int DistanceToShipyard => Map.CalculateDistance(this.position, MyShipyards[0].position); //TODO change to list format
+        public int DistanceToShipyard => MyShipyards.Select(sy => Map.CalculateDistance(this.position, sy.position)).Max();
 
         /// <summary>
         /// Returns true if this ship is carrying the max amount of halite possible.
