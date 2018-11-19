@@ -3,16 +3,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+//using GeneticTuner;
 
 namespace Halite3
 {
     public class MyBot
     {
-
         public static GameMap GameMap;
         public static Dictionary<MapCell, Direction> CollisionCells;
+        public static HashSet<Ship> FinalReturnToHome = new HashSet<Ship>();
+        //public static Specimen specimen;
+        public static HyperParameters HParams;
         public static void Main(string[] args)
         {
+            //specimen = Specimen.RandomSpecimen();
+            //var child = specimen.SpawnChild();
+            HParams = new HyperParameters("HyperParameters.txt"); //specimen.hyperParameters;
+
             int rngSeed;
             if (args.Length > 1)
             {
@@ -29,7 +36,7 @@ namespace Halite3
             // At this point "game" variable is populated with initial map data.
             // This is a good place to do computationally expensive start-up pre-processing.
             // As soon as you call "ready" function below, the 2 second per turn timer will start.
-            game.Ready("BasicStarterBot");
+            game.Ready("GeneticBot");
 
             Log.LogMessage("Successfully created bot! My Player ID is " + game.myId + ". Bot rng seed is " + rngSeed + ".");
             HashSet<Ship> movingtowardsbase = new HashSet<Ship>();
@@ -41,6 +48,8 @@ namespace Halite3
                 GameMap = game.gameMap;
                 Ship.Map = GameMap;
                 Ship.MyShipyards = new List<Shipyard> { me.shipyard };
+                Position.MapWidth = GameMap.width;
+                Position.MapHeight =  GameMap.height;
 
                 List<Command> commandQueue = new List<Command>();
                 CollisionCells = new Dictionary<MapCell, Direction>();
@@ -54,16 +63,22 @@ namespace Halite3
                         movingtowardsbase.Remove(ship);
 
                     // TODO add hyperparameters and tuning
-                    if(ship.halite > .7f * Constants.MAX_HALITE)
+                    if(ship.halite > HParams[Parameters.CARGO_TO_MOVE])
                         movingtowardsbase.Add(ship);
+
+                    //if(ship.DistanceToShipyard > game.turnNumber)
                 }
 
-                // TODO avoid thread lock where 4 ships surround base... easy to solve by forcing ships to approach from top or bottom
                 // move to base
                 foreach (var ship in me.ships.Values.OrderBy(x => x.DistanceToShipyard).ToList()) {
                     if(!movingtowardsbase.Contains(ship))
                         continue;
-                    var direction = me.shipyard.position.GetDirectionTo(ship.position);
+                    Direction direction = me.shipyard.position.GetDirectionTo(ship.position);
+                    if(ship.position.y == me.shipyard.position.y) {
+                        direction = GameMap.At(ship.position.DirectionalOffset(Direction.NORTH)).IsEmpty() ? Direction.NORTH :
+                                GameMap.At(ship.position.DirectionalOffset(Direction.SOUTH)).IsEmpty() ? Direction.SOUTH :
+                                DirectionExtensions.InvertDirection(direction);
+                    }
                     commandQueue.Add(ship.Move(GetMove(ship, direction)));
                     usedShips.Add(ship);
                 }
@@ -94,7 +109,7 @@ namespace Halite3
                         if(ship.CurrentMapCell.halite * 1.5 > bestNeighbors[i].halite) {
                             break;
                         }
-                        var direction = bestNeighbors[i].position.GetDirectionTo(ship.position);
+                        var direction = bestNeighbors[i].position.GetDirectionTo(ship.position); //HERE!!!
                         if(IsSafeMove(ship.CurrentMapCell, direction)) {
                             d = direction;
                         }
@@ -105,7 +120,7 @@ namespace Halite3
                 }
 
                 // spawn ships
-                if (game.turnNumber <= 200 &&
+                if (game.turnNumber <= HParams[Parameters.TURNS_TO_SAVE] &&
                     me.halite >= Constants.SHIP_COST &&
                     IsSafeMove(GameMap.At(me.shipyard.position), Direction.STILL))
                 {
@@ -135,9 +150,9 @@ namespace Halite3
             CollisionCells[current] = unsafeMove;
         }
 
-        public static Direction GetMove(Ship e, Direction d) {
-            if(IsSafeMove(e.CurrentMapCell, d)) {
-                AddMoveCollision(e.CurrentMapCell, d);
+        public static Direction GetMove(Ship ship, Direction d) {
+            if(ship.halite > ship.CurrentMapCell.halite / 10 && IsSafeMove(ship.CurrentMapCell, d)) {
+                AddMoveCollision(ship.CurrentMapCell, d);
                 return d;
             } else {
                 return Direction.STILL; // todo set to null

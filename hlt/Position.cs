@@ -12,6 +12,9 @@ namespace Halite3.hlt
         public readonly int x;
         public readonly int y;
 
+        public static int MapWidth;
+        public static int MapHeight;
+
         public Position(int x, int y)
         {
             this.x = x;
@@ -63,14 +66,18 @@ namespace Halite3.hlt
         }
 
         public Direction GetDirectionTo(Position otherPosition) {
+            int DirectX = Math.Abs(this.x - otherPosition.x);
+            int WrapX = MapWidth - DirectX;
+            int DirectY = Math.Abs(this.y - otherPosition.y);
+            int WrapY = MapHeight - DirectY;
             if(this.x < otherPosition.x)
-                return Direction.WEST;
+                return DirectX < WrapX ? Direction.WEST : Direction.EAST;
             if(this.x > otherPosition.x)
-                return Direction.EAST;
+                return DirectX < WrapX ? Direction.EAST : Direction.WEST;
             if(this.y > otherPosition.y)
-                return Direction.SOUTH;
+                return DirectY < WrapY ? Direction.SOUTH : Direction.NORTH;
             if(this.y < otherPosition.y)
-                return Direction.NORTH;
+                return DirectY < WrapY ? Direction.NORTH : Direction.SOUTH;
             return Direction.STILL;
         }
     }
