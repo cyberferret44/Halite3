@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Halite3.hlt
 {
@@ -51,6 +52,13 @@ namespace Halite3.hlt
             neighbors.Add(At(p.DirectionalOffset(Direction.EAST)));
             neighbors.Add(At(p.DirectionalOffset(Direction.WEST)));
             return neighbors;
+        }
+
+        public MapCell AnyEmptyNeighbor(Position p) {
+            if(NeighborsAt(p).Any(n => !n.IsOccupied())) {
+                return NeighborsAt(p).Where(n => !n.IsOccupied()).First();
+            }
+            return null;
         }
 
         /// <summary>

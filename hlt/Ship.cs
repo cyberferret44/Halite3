@@ -16,6 +16,8 @@ namespace Halite3.hlt
 
         public static GameMap Map;
         public static List<Shipyard> MyShipyards = new List<Shipyard>();
+        public int Id => this.id.id;
+        public bool CanMove => this.halite >= this.CurrentMapCell.halite / 10;
 
         public Ship(PlayerId owner, EntityId id, Position position, int halite) : base(owner, id, position)
         {
@@ -24,6 +26,7 @@ namespace Halite3.hlt
 
         public MapCell CurrentMapCell => Map.At(this.position);
         public int DistanceToShipyard => MyShipyards.Select(sy => Map.CalculateDistance(this.position, sy.position)).Max();
+        public MapCell BestNeighbor => Map.NeighborsAt(position).OrderBy(n => n.halite).Last();
 
         /// <summary>
         /// Returns true if this ship is carrying the max amount of halite possible.

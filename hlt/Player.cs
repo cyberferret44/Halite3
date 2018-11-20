@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Halite3.hlt
 {
@@ -14,6 +15,7 @@ namespace Halite3.hlt
         public int halite;
         public readonly Dictionary<int, Ship> ships = new Dictionary<int, Ship>();
         public readonly Dictionary<int, Dropoff> dropoffs = new Dictionary<int, Dropoff>();
+        public List<Ship> ShipsSorted = new List<Ship>();
 
         private Player(PlayerId playerId, Shipyard shipyard, int halite = 0)
         {
@@ -35,6 +37,7 @@ namespace Halite3.hlt
                 Ship ship = Ship._generate(id);
                 ships[ship.id.id] = ship;
             }
+            ShipsSorted = ships.Values.OrderBy(s => s.DistanceToShipyard).ToList();
 
             dropoffs.Clear();
             for (int i = 0; i < numDropoffs; ++i)

@@ -80,5 +80,9 @@ namespace Halite3.hlt
                 return DirectY < WrapY ? Direction.NORTH : Direction.SOUTH;
             return Direction.STILL;
         }
+
+        public bool Equals(Position otherPosition) {
+            return this.x == otherPosition.x && this.y == otherPosition.y;
+        }
     }
 }

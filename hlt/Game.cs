@@ -17,6 +17,13 @@ namespace Halite3.hlt
         public readonly Player me;
         public readonly GameMap gameMap;
 
+        public int TotalTurns => gameMap.width == 32 ? 400 :
+                                 gameMap.width == 40 ? 425 :
+                                 gameMap.width == 48 ? 450 :
+                                 gameMap.width == 56 ? 475 :
+                                 500;
+        public int TurnsRemaining => TotalTurns - turnNumber;
+
         /// <summary>
         /// Initiates a game object collecting all start-state instances for the contained items for pre-game.
         /// Also sets up basic logging.
