@@ -58,7 +58,7 @@ namespace Halite3
             }
             using(StreamWriter sw = File.AppendText(file)) {
                 sw.Write(content);              
-            }  
+            }
         }
     }
 }
