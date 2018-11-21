@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-//using GeneticTuner;
+using GeneticTuner;
+using System.IO;
 
 /* TODOS
 Low hanging
@@ -36,10 +37,14 @@ namespace Halite3
         public static HyperParameters HParams;
         public static void Main(string[] args)
         {
-            try { 
+            //SpecimenExaminer.GenerateCSVFromSpecimenFolder(); // uncomment to enable csv generation
+            Specimen specimen;
+            try {
                 HParams = new HyperParameters("HyperParameters.txt"); //production
+                specimen = new FakeSpecimen();
             } catch(System.IO.FileNotFoundException) {
-                HParams = new HyperParameters("Halite3/HyperParameters.txt"); //local
+                specimen = GeneticSpecimen.RandomSpecimen();
+                HParams = specimen.GetHyperParameters(); //local
             }
 
             int rngSeed;
@@ -56,7 +61,7 @@ namespace Halite3
             // At this point "game" variable is populated with initial map data.
             // This is a good place to do computationally expensive start-up pre-processing.
             // As soon as you call "ready" function below, the 2 second per turn timer will start.
-            game.Ready("GeneticBot2.0");
+            game.Ready("GeneticBot3.0");
             //while(!Debugger.IsAttached);
             //game.Ready("GeneticBot_debug");
 
@@ -76,6 +81,15 @@ namespace Halite3
                 CommandQueue = new List<Command>();
                 CollisionCells = new HashSet<MapCell>();
                 UsedShips = new HashSet<int>();
+
+                // Specimen control logic for GeneticTuner
+                if(game.TurnsRemaining <= 0) {
+                    if(me.halite > game.players.Where(p => p != me).Max(p => p.halite)) {
+                        specimen.SpawnChildren();
+                    } else {
+                        specimen.Kill();
+                    }
+                }
 
                 //logical marking
                 foreach(var ship in me.ShipsSorted) {
