@@ -15,16 +15,15 @@ namespace Halite3
     public class HyperParameters {
         private class Bounds {
             public double Lower, Upper;
-            public Bounds(double low, double up) {
-                this.Lower = low;
-                this.Upper = up;
+            public Bounds(double lower, double upper) {
+                this.Lower = lower;
+                this.Upper = upper;
             }
         }
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
             { Parameters.CARGO_TO_MOVE, new Bounds(0, 1000) },
-            { Parameters.TURNS_TO_SAVE, new Bounds(0, 400) }
-            //TODO add in a new row to tune until evenly distributed
+            { Parameters.TURNS_TO_SAVE, new Bounds(0, 400) }  //todo change to percent of turns to save
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();

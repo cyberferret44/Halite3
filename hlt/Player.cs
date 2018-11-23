@@ -14,8 +14,14 @@ namespace Halite3.hlt
         public readonly Shipyard shipyard;
         public int halite;
         public readonly Dictionary<int, Ship> ships = new Dictionary<int, Ship>();
-        public readonly Dictionary<int, Dropoff> dropoffs = new Dictionary<int, Dropoff>();
+        public readonly Dictionary<int, Dropoff> dropoffDictionary = new Dictionary<int, Dropoff>();
         public List<Ship> ShipsSorted = new List<Ship>();
+
+        public List<Entity> GetDropoffs()  {
+            var dropoffs = dropoffDictionary.Values.Select(v => (Entity)v).ToList();
+            dropoffs.Add((Entity)shipyard);
+            return dropoffs;
+        }
 
         private Player(PlayerId playerId, Shipyard shipyard, int halite = 0)
         {
@@ -37,14 +43,15 @@ namespace Halite3.hlt
                 Ship ship = Ship._generate(id);
                 ships[ship.id.id] = ship;
             }
-            ShipsSorted = ships.Values.OrderBy(s => s.DistanceToShipyard).ToList();
-
-            dropoffs.Clear();
+            
+            dropoffDictionary.Clear();
             for (int i = 0; i < numDropoffs; ++i)
             {
                 Dropoff dropoff = Dropoff._generate(id);
-                dropoffs[dropoff.id.id] = dropoff;
+                dropoffDictionary[dropoff.id.id] = dropoff;
             }
+
+            ShipsSorted = ships.Values.OrderBy(s => s.DistanceToDropoff).ToList();
         }
 
         /// <summary>

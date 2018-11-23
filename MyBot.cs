@@ -13,6 +13,7 @@ Low hanging
 - refactor for multiple shipyard, test by creating shipyard at most valuable location at turn 50
 -- todo recursive cascade to push ships out
 -- move back to base, priortize path of least resistance
+-- create a batch file folder with multiple other previous bots and run them against each other
 
 Difficult
 - add a preprocessing and prioritization strategy
@@ -35,6 +36,7 @@ namespace Halite3
         public static HashSet<int> UsedShips = new HashSet<int>();
         public static HashSet<int> FinalReturnToHome = new HashSet<int>();
         public static HyperParameters HParams;
+        public static bool CreatedDropoff = false;
         public static void Main(string[] args)
         {
             //SpecimenExaminer.GenerateCSVFromSpecimenFolder(); // uncomment to enable csv generation
@@ -74,7 +76,7 @@ namespace Halite3
                 Player me = game.me;
                 GameMap = game.gameMap;
                 Ship.Map = GameMap;
-                Ship.MyShipyards = new List<Shipyard> { me.shipyard };
+                Ship.MyDropoffs = me.GetDropoffs();
                 Position.MapWidth = GameMap.width;
                 Position.MapHeight =  GameMap.height;
 
@@ -83,23 +85,31 @@ namespace Halite3
                 UsedShips = new HashSet<int>();
 
                 // Specimen control logic for GeneticTuner
-                if(game.TurnsRemaining <= 0) {
-                    if(me.halite > game.players.Where(p => p != me).Max(p => p.halite)) {
+                if(game.TurnsRemaining == 0) {
+                    if(me.halite >= game.Opponents.Max(p => p.halite)) {
                         specimen.SpawnChildren();
                     } else {
                         specimen.Kill();
                     }
                 }
 
+                // todo fix this later, testing purposes only
+                if(me.halite > 5000 && !CreatedDropoff) {
+                    var dropoffship = me.ShipsSorted.OrderBy(s => GameMap.NeighborsAt(s.position).Sum(n => n.halite) + GameMap.At(s.position).halite).Last();
+                    CommandQueue.Add(dropoffship.MakeDropoff());
+                    UsedShips.Add(dropoffship.Id);
+                    CreatedDropoff = true;
+                }
+
                 //logical marking
                 foreach(var ship in me.ShipsSorted) {
-                    if(ship.CurrentMapCell == GameMap.At(me.shipyard) && movingtowardsbase.Contains(ship.Id))
+                    if(ship.CurrentMapCell.structure != null && movingtowardsbase.Contains(ship.Id))
                         movingtowardsbase.Remove(ship.Id);
 
                     if(ship.halite > HParams[Parameters.CARGO_TO_MOVE])
                         movingtowardsbase.Add(ship.Id);
 
-                    if(ship.DistanceToShipyard * 1.5 > game.TurnsRemaining) {
+                    if(ship.DistanceToDropoff * 1.5 > game.TurnsRemaining) {
                         FinalReturnToHome.Add(ship.Id);
                     }
 
@@ -109,27 +119,36 @@ namespace Halite3
                 }
 
                 // End game, return all ships to nearest dropoff
+                // todo refactor this to be prettier....
                 foreach (var ship in me.ShipsSorted.Where(s => FinalReturnToHome.Contains(s.Id) && !UsedShips.Contains(s.Id))) {
-                    Direction direction = me.shipyard.position.GetDirectionTo(ship.position);
-                    if(!IsSafeMove(ship, direction)) {
-                        direction = Direction.STILL;
+                    var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
+                    bool used = false;
+                    foreach(var d in directions) {
+                        if(IsSafeMove(ship, d) && !used) {
+                            MakeMove(ship, d);
+                            used = true;
+                        }
                     }
-                    MakeMove(ship, direction);
+                    if(!used)
+                        MakeMove(ship, Direction.STILL);
                 }
 
                 // move to base
                 // first move the ship on the base...
-                var shipOnYard = GameMap.At(me.shipyard.position).ship;
-                if(shipOnYard != null && shipOnYard.owner == me.id && ! UsedShips.Contains(shipOnYard.Id)) {
-                    var n = GameMap.AnyEmptyNeighbor(shipOnYard.position);
-                    if(n == null)
-                        MakeBestSafeMove(shipOnYard, false);
-                    else
-                        MakeMove(shipOnYard, n); 
+                // todo is this necessary?
+                foreach(var drop in me.GetDropoffs()) {
+                    var shipOnDrop = GameMap.At(drop.position).ship;
+                    if(shipOnDrop != null && shipOnDrop.owner == me.id && ! UsedShips.Contains(shipOnDrop.Id)) {
+                        var n = GameMap.AnyEmptyNeighbor(shipOnDrop.position);
+                        if(n == null)
+                            MakeBestSafeMove(shipOnDrop, false);
+                        else
+                            MakeMove(shipOnDrop, n); 
+                        }
                 }
                 var shipsToMoveToBase = me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id) && movingtowardsbase.Contains(s.Id));
                 foreach (var ship in shipsToMoveToBase) {
-                    MakeBestReturnToDropoffMove(ship, me.shipyard);
+                    MakeBestReturnToDropoffMove(ship);
                 }
 
                 // collect halite (move or stay)
@@ -152,7 +171,7 @@ namespace Halite3
 
         public static bool IsSafeMove(Ship ship, Direction move) {
             MapCell target = GameMap.At(ship.position.DirectionalOffset(move));
-            if(target.structure != null && target.structure is Shipyard && FinalReturnToHome.Contains(ship.Id))
+            if(target.structure != null && FinalReturnToHome.Contains(ship.Id))
                 return true;
             return !CollisionCells.Contains(target);
         }
@@ -162,11 +181,18 @@ namespace Halite3
             CollisionCells.Add(targetCell);
         }
 
-        public static void MakeBestReturnToDropoffMove(Ship ship, Shipyard shipyard) {
-            Direction direction = shipyard.position.GetDirectionTo(ship.position);
-            if(IsSafeMove(ship, direction))
-                MakeMove(ship, direction);
-            else if(IsSafeMove(ship, Direction.STILL))
+        /// Move back to base, priortize path of least resistance, but take either move if other isn't available
+        public static void MakeBestReturnToDropoffMove(Ship ship) {
+            Entity closestDrop = ship.ClosestDropoff;
+            List<Direction> directions = closestDrop.position.GetAllDirectionsTo(ship.position);
+            directions = directions.OrderBy(d => GameMap.At(ship.position.DirectionalOffset(d)).halite).ToList();
+            foreach(Direction d in directions) {
+                if(IsSafeMove(ship, d)) {
+                    MakeMove(ship, d);
+                    return;
+                }
+            }
+            if(IsSafeMove(ship, Direction.STILL))
                 MakeMove(ship, Direction.STILL);
             else
                 MakeBestSafeMove(ship);
@@ -187,7 +213,7 @@ namespace Halite3
                     return;
                 }
             }
-            //throw new Exception("this should never happen"); //exception....
+            throw new Exception("this should never happen"); //exception....
         }
 
         public static void MakeMove(Ship ship, MapCell target) {

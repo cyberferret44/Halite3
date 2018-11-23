@@ -15,7 +15,7 @@ namespace Halite3.hlt
         public readonly int halite;
 
         public static GameMap Map;
-        public static List<Shipyard> MyShipyards = new List<Shipyard>();
+        public static List<Entity> MyDropoffs = new List<Entity>();
         public int Id => this.id.id;
         public bool CanMove => this.halite >= this.CurrentMapCell.halite / 10;
 
@@ -25,7 +25,8 @@ namespace Halite3.hlt
         }
 
         public MapCell CurrentMapCell => Map.At(this.position);
-        public int DistanceToShipyard => MyShipyards.Select(sy => Map.CalculateDistance(this.position, sy.position)).Max();
+        public int DistanceToDropoff => Map.CalculateDistance(this.position, ClosestDropoff.position);
+        public Entity ClosestDropoff => MyDropoffs.OrderBy(d => Map.CalculateDistance(this.position, d.position)).ToList()[0];
         public MapCell BestNeighbor => Map.NeighborsAt(position).OrderBy(n => n.halite).Last();
 
         /// <summary>

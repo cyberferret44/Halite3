@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using static Halite3.hlt.Direction;
 
 namespace Halite3.hlt
@@ -79,6 +80,24 @@ namespace Halite3.hlt
             if(this.y < otherPosition.y)
                 return DirectY < WrapY ? Direction.NORTH : Direction.SOUTH;
             return Direction.STILL;
+        }
+
+        public List<Direction> GetAllDirectionsTo(Position otherPosition) {
+            int DirectX = Math.Abs(this.x - otherPosition.x);
+            int WrapX = MapWidth - DirectX;
+            int DirectY = Math.Abs(this.y - otherPosition.y);
+            int WrapY = MapHeight - DirectY;
+            List<Direction> possibleDirections = new List<Direction>();
+            if(this.x < otherPosition.x)
+                possibleDirections.Add(DirectX < WrapX ? Direction.WEST : Direction.EAST);
+            if(this.x > otherPosition.x)
+                possibleDirections.Add(DirectX < WrapX ? Direction.EAST : Direction.WEST);
+            if(this.y > otherPosition.y)
+                possibleDirections.Add(DirectY < WrapY ? Direction.SOUTH : Direction.NORTH);
+            if(this.y < otherPosition.y)
+                possibleDirections.Add(DirectY < WrapY ? Direction.NORTH : Direction.SOUTH);
+            
+            return possibleDirections;
         }
 
         public bool Equals(Position otherPosition) {

@@ -22,7 +22,7 @@ namespace GeneticTuner
     }
 
     public class GeneticSpecimen : Specimen {
-        public static readonly string SPECIMEN_FOLDER = "C:\\Users\\Chase\\Desktop\\Halite3_CSharp_None\\Halite3\\GeneticTuner\\Specimen";
+        public static readonly string SPECIMEN_FOLDER = "Halite3/GeneticTuner/Specimen";
         private static Random random = new Random();
         private static int NUM_CHILDREN = 1; // population control level
         private HyperParameters hyperParameters;
