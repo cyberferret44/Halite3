@@ -61,6 +61,19 @@ namespace Halite3.hlt
             return null;
         }
 
+        public List<MapCell> GetXLayers(Position position, int numLayers) {
+            HashSet<MapCell> cells = new HashSet<MapCell>();
+            for(int i=0; i <= numLayers; i++) {
+                for(int x = -i; x<=i; x++) {
+                    int yp = i - Math.Abs(x);
+                    int yn = -yp;
+                    cells.Add(this.At(new Position(x, yp)));
+                    cells.Add(this.At(new Position(x, yn)));
+                }
+            }
+            return cells.ToList();
+        }
+
         /// <summary>
         /// Normalizes the position of an Entity and returns the corresponding MapCell.
         /// </summary>
