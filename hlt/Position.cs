@@ -103,5 +103,15 @@ namespace Halite3.hlt
         public bool Equals(Position otherPosition) {
             return this.x == otherPosition.x && this.y == otherPosition.y;
         }
+
+        public int DeltaX(Position otherPosition) {
+            int diff = Math.Abs(this.x - otherPosition.x);
+            return Math.Min(diff, MapWidth-diff);
+        }
+
+        public int DeltaY(Position otherPosition) {
+            int diff = Math.Abs(this.y - otherPosition.y);
+            return Math.Min(diff, MapWidth-diff);
+        }
     }
 }

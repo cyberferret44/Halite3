@@ -51,7 +51,14 @@ namespace Halite3.hlt
                 dropoffDictionary[dropoff.id.id] = dropoff;
             }
 
-            ShipsSorted = ships.Values.OrderBy(s => s.DistanceToDropoff).ToList();
+            ShipsSorted = ships.Values.OrderBy(s => SpecialDistance(s, s.ClosestDropoff.position)).ToList();
+        }
+
+        private double SpecialDistance(Ship ship, Position target) {
+            double dist = (double)ship.DistanceToDropoff;
+            double Xcomponent = Math.Pow(ship.position.DeltaX(target), 2);
+            double Ycomponent = Math.Pow(ship.position.DeltaY(target), 2);
+            return dist + (Xcomponent + Ycomponent)/10000.0;
         }
 
         /// <summary>
