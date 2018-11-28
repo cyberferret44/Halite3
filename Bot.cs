@@ -33,16 +33,19 @@ namespace Halite3
     public class MyBot
     {
         public static GameMap GameMap;
-        public static HashSet<MapCell> CollisionCells;
-        public static List<Command> CommandQueue = new List<Command>();
-        public static HashSet<int> UsedShips = new HashSet<int>();
-        public static HashSet<int> FinalReturnToHome = new HashSet<int>();
+        public static HashSet<MapCell> CollisionCells = new HashSet<MapCell>();
         public static HyperParameters HParams;
-        public static bool CreatedDropoff = false;
-        public static Logic MyLogic = new AntLogic();
+        public static Player Me;
+
+        private static List<Command> CommandQueue = new List<Command>();
+        private static Logic MyLogic = new WallLogic();
+        //private static bool CreatedDropoff = false;
+        private static HashSet<int> FinalReturnToHome = new HashSet<int>();
+        private static HashSet<int> UsedShips = new HashSet<int>();
+        private static HashSet<int> MovingTowardsBase = new HashSet<int>();
+
         public static void Main(string[] args)
         {
-            //SpecimenExaminer.GenerateCSVFromSpecimenFolder(); // uncomment to enable csv generation
             Specimen specimen;
             try {
                 HParams = new HyperParameters("Halite3/HyperParameters.txt"); //production
@@ -52,16 +55,6 @@ namespace Halite3
                 HParams = specimen.GetHyperParameters(); //local
             }
 
-            int rngSeed;
-            if (args.Length > 1)
-            {
-                rngSeed = int.Parse(args[1]);
-            }
-            else
-            {
-                rngSeed = System.DateTime.Now.Millisecond;
-            }
-            Random rng = new Random(rngSeed);
             Game game = new Game();
             // At this point "game" variable is populated with initial map data.
             // This is a good place to do computationally expensive start-up pre-processing.
@@ -69,32 +62,25 @@ namespace Halite3
             GameMap = game.gameMap;
             MyLogic.DoPreProcessing();
             //MyLogic.WriteToFile();
-            game.Ready("AntBot");
+            game.Ready("WallBot");
             //while(!Debugger.IsAttached);
-            //game.Ready("GeneticBot_debug");
 
-            Log.LogMessage("Successfully created bot! My Player ID is " + game.myId + ". Bot rng seed is " + rngSeed + ".");
-            HashSet<int> movingtowardsbase = new HashSet<int>();
+            Log.LogMessage("Successfully created bot! My Player ID is " + game.myId);
 
             for (; ; )
             {
+                // Basic processing for the turn start
                 game.UpdateFrame();
-                Player me = game.me;
+                Me = game.me;
                 GameMap = game.gameMap;
-                Ship.Map = GameMap;
-                Ship.MyDropoffs = me.GetDropoffs();
-                Position.MapWidth = GameMap.width;
-                Position.MapHeight =  GameMap.height;
-
-                CommandQueue = new List<Command>();
-                CollisionCells = new HashSet<MapCell>();
-                UsedShips = new HashSet<int>();
-
+                CommandQueue.Clear();
+                CollisionCells.Clear();
+                UsedShips.Clear();
                 MyLogic.ProcessTurn();
 
-                // Specimen control logic for GeneticTuner
+                // Specimen spawn logic for GeneticTuner
                 if(game.TurnsRemaining == 0) {
-                    if(me.halite >= game.Opponents.Max(p => p.halite)) {
+                    if(Me.halite >= game.Opponents.Max(p => p.halite)) {
                         specimen.SpawnChildren();
                     } else {
                         specimen.Kill();
@@ -102,20 +88,20 @@ namespace Halite3
                 }
 
                 // todo fix this later, testing purposes only
-                if(me.halite > 5000 && !CreatedDropoff) {
-                    var dropoffship = me.ShipsSorted.OrderBy(s => GameMap.NeighborsAt(s.position).Sum(n => n.halite) + GameMap.At(s.position).halite).Last();
+                /* if(Me.halite > 5000 && !CreatedDropoff) {
+                    var dropoffship = Me.ShipsSorted.OrderBy(s => GameMap.NeighborsAt(s.position).Sum(n => n.halite) + GameMap.At(s.position).halite).Last();
                     CommandQueue.Add(dropoffship.MakeDropoff());
                     UsedShips.Add(dropoffship.Id);
                     CreatedDropoff = true;
-                }
+                } */
 
                 //logical marking
-                foreach(var ship in me.ShipsSorted) {
-                    if(ship.CurrentMapCell.structure != null && movingtowardsbase.Contains(ship.Id))
-                        movingtowardsbase.Remove(ship.Id);
+                foreach(var ship in Me.ShipsSorted) {
+                    if(ship.CurrentMapCell.structure != null && MovingTowardsBase.Contains(ship.Id))
+                        MovingTowardsBase.Remove(ship.Id);
 
                     if(ship.halite > HParams[Parameters.CARGO_TO_MOVE])
-                        movingtowardsbase.Add(ship.Id);
+                        MovingTowardsBase.Add(ship.Id);
 
                     if(ship.DistanceToDropoff * 1.5 > game.TurnsRemaining) {
                         FinalReturnToHome.Add(ship.Id);
@@ -127,7 +113,7 @@ namespace Halite3
                 }
 
                 // End game, return all ships to nearest dropoff
-                foreach (var ship in me.ShipsSorted.Where(s => FinalReturnToHome.Contains(s.Id) && !UsedShips.Contains(s.Id))) {
+                foreach (var ship in Me.ShipsSorted.Where(s => FinalReturnToHome.Contains(s.Id) && !UsedShips.Contains(s.Id))) {
                     var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
                     bool used = false;
                     foreach(var d in directions) {
@@ -141,7 +127,7 @@ namespace Halite3
                 }
 
                 // move to base...
-                foreach(var ship in me.ShipsOnDropoffs().Where(s => !UsedShips.Contains(s.Id))) {
+                foreach(var ship in Me.ShipsOnDropoffs().Where(s => !UsedShips.Contains(s.Id))) {
                     var bestNeighbors = MyLogic.GetBestNeighbors(ship.position);
                     if(bestNeighbors.All(n => n.IsOccupied())) {
                         MakeMove(ship, bestNeighbors.First(n => !CollisionCells.Contains(n)));
@@ -150,13 +136,13 @@ namespace Halite3
                         MakeMove(ship, target);
                     }
                 }
-                var shipsToMoveToBase = me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id) && movingtowardsbase.Contains(s.Id));
+                var shipsToMoveToBase = Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id) && MovingTowardsBase.Contains(s.Id));
                 foreach (var ship in shipsToMoveToBase) {
                     MakeBestReturnToDropoffMove(ship);
                 }
 
                 // collect halite (move or stay)
-                foreach (Ship ship in me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)))
+                foreach (Ship ship in Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)))
                 {
                     if(GameMap.At(ship.position).halite >= 70) {
                         MakeMove(ship, Direction.STILL);
@@ -175,10 +161,10 @@ namespace Halite3
 
                 // spawn ships
                 if (game.turnNumber <= HParams[Parameters.TURNS_TO_SAVE] &&
-                    me.halite >= Constants.SHIP_COST &&
-                    !CollisionCells.Contains(GameMap.At(me.shipyard.position)))
+                    Me.halite >= Constants.SHIP_COST &&
+                    !CollisionCells.Contains(GameMap.At(Me.shipyard.position)))
                 {
-                    CommandQueue.Add(me.shipyard.Spawn());
+                    CommandQueue.Add(Me.shipyard.Spawn());
                 }
 
                 game.EndTurn(CommandQueue);

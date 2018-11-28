@@ -14,8 +14,8 @@ namespace Halite3.hlt
     {
         public readonly int halite;
 
-        public static GameMap Map;
-        public static List<Entity> MyDropoffs = new List<Entity>();
+        public static GameMap Map => MyBot.GameMap;
+        public static List<Entity> MyDropoffs => MyBot.Me.GetDropoffs();
         public int Id => this.id.id;
         public bool CanMove => this.halite >= this.CurrentMapCell.halite / 10;
 

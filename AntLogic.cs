@@ -16,7 +16,7 @@ namespace Halite3
         private static double MoveDegredation => 1.0 - (1.0/(double)gameMap.width);
         private static int XLayers => gameMap.width/16;
         private static int XNeighbors => 4*XLayers/2;
-        private static double CellTurnDegredation = .97;
+        //private static double CellTurnDegredation = .97;
 
         public void DoPreProcessing() {
             CellValues = new Dictionary<Point, double>();

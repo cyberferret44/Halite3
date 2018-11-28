@@ -13,8 +13,8 @@ namespace Halite3.hlt
         public readonly int x;
         public readonly int y;
 
-        public static int MapWidth;
-        public static int MapHeight;
+        public static int MapWidth => MyBot.GameMap.width;
+        public static int MapHeight => MyBot.GameMap.height;
 
         public Point CartesianPosition => new Point{ x = this.x, y = this.y };
 
