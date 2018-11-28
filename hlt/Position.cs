@@ -16,6 +16,8 @@ namespace Halite3.hlt
         public static int MapWidth;
         public static int MapHeight;
 
+        public Point CartesianPosition => new Point{ x = this.x, y = this.y };
+
         public Position(int x, int y)
         {
             this.x = x;
@@ -113,5 +115,9 @@ namespace Halite3.hlt
             int diff = Math.Abs(this.y - otherPosition.y);
             return Math.Min(diff, MapWidth-diff);
         }
+    }
+
+    public struct Point {
+        public int x, y;
     }
 }

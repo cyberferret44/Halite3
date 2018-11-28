@@ -23,6 +23,17 @@ namespace Halite3.hlt
             return dropoffs;
         }
 
+        public List<Ship> ShipsOnDropoffs() {
+            var myShips = new List<Ship>();
+            foreach(var drop in GetDropoffs()) {
+                var shipOnDrop = MyBot.GameMap.At(drop.position).ship;
+                if(shipOnDrop != null && shipOnDrop.owner == id) {
+                    myShips.Add(shipOnDrop);
+                }
+            }
+            return myShips;
+        }
+
         private Player(PlayerId playerId, Shipyard shipyard, int halite = 0)
         {
             this.id = playerId;

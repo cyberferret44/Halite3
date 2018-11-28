@@ -1,4 +1,6 @@
-﻿namespace Halite3.hlt
+﻿using System;
+
+namespace Halite3.hlt
 {
     /// <summary>
     /// A map cell is an object representation of a cell on the game map.

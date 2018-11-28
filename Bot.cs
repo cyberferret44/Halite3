@@ -10,14 +10,13 @@ using System.IO;
 /* TODOS
 Low hanging
 - create separate hyperparameters for num players and board size
-- refactor for multiple shipyard, test by creating shipyard at most valuable location at turn 50
--- todo recursive cascade to push ships out
--- move back to base, priortize path of least resistance
 -- create a batch file folder with multiple other previous bots and run them against each other
+-- add a hyper parameter to look at halite per cell remaining instead of looking at turns remaining in order to decide when to save
 
 Difficult
 - add a preprocessing and prioritization strategy
 - add a javascript suite to visualize the genetic algorithm and run multiple runs
+- ant scent implementation 
 
 Things to consider
 - utilize command line args to pass a hyperparameters.txt file (using HyperParameters.txt by default)
@@ -25,6 +24,9 @@ Things to consider
     to the genetic algorithm tuning tool.
 - Consider creating a GameLogic class that way the MyBot class is just a flow controller
 - pre-process quadrant values (maybe cetered on a point, radiating out by 5)
+
+Ant algorithm....
+- 
  */
 namespace Halite3
 {
@@ -63,7 +65,10 @@ namespace Halite3
             // At this point "game" variable is populated with initial map data.
             // This is a good place to do computationally expensive start-up pre-processing.
             // As soon as you call "ready" function below, the 2 second per turn timer will start.
-            game.Ready("GeneticBot3.0");
+            GameMap = game.gameMap;
+            AntLogic.PrecaculateAntSniffs();
+            AntLogic.WriteToFile();
+            game.Ready("AntBot");
             //while(!Debugger.IsAttached);
             //game.Ready("GeneticBot_debug");
 
@@ -83,6 +88,9 @@ namespace Halite3
                 CommandQueue = new List<Command>();
                 CollisionCells = new HashSet<MapCell>();
                 UsedShips = new HashSet<int>();
+
+                //AntLogic.ProcessTurn();
+                AntLogic.PrecaculateAntSniffs();
 
                 // Specimen control logic for GeneticTuner
                 if(game.TurnsRemaining == 0) {
@@ -111,6 +119,7 @@ namespace Halite3
 
                     if(ship.DistanceToDropoff * 1.5 > game.TurnsRemaining) {
                         FinalReturnToHome.Add(ship.Id);
+                        //AntLogic.ProcessReturnShip(ship);
                     }
 
                     if(!ship.CanMove) {
@@ -119,7 +128,6 @@ namespace Halite3
                 }
 
                 // End game, return all ships to nearest dropoff
-                // todo refactor this to be prettier....
                 foreach (var ship in me.ShipsSorted.Where(s => FinalReturnToHome.Contains(s.Id) && !UsedShips.Contains(s.Id))) {
                     var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
                     bool used = false;
@@ -133,18 +141,15 @@ namespace Halite3
                         MakeMove(ship, Direction.STILL);
                 }
 
-                // move to base
-                // first move the ship on the base...
-                // todo is this necessary?
-                foreach(var drop in me.GetDropoffs()) {
-                    var shipOnDrop = GameMap.At(drop.position).ship;
-                    if(shipOnDrop != null && shipOnDrop.owner == me.id && ! UsedShips.Contains(shipOnDrop.Id)) {
-                        var n = GameMap.AnyEmptyNeighbor(shipOnDrop.position);
-                        if(n == null)
-                            MakeBestSafeMove(shipOnDrop, false);
-                        else
-                            MakeMove(shipOnDrop, n); 
-                        }
+                // move to base...
+                foreach(var ship in me.ShipsOnDropoffs().Where(s => !UsedShips.Contains(s.Id))) {
+                    var bestNeighbors = AntLogic.SortedNeighbors(ship);
+                    if(bestNeighbors.All(n => n.IsOccupied())) {
+                        MakeMove(ship, bestNeighbors.First(n => !CollisionCells.Contains(n)));
+                    } else {
+                        var target = bestNeighbors.First(n => !n.IsOccupied());
+                        MakeMove(ship, target);
+                    }
                 }
                 var shipsToMoveToBase = me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id) && movingtowardsbase.Contains(s.Id));
                 foreach (var ship in shipsToMoveToBase) {
@@ -154,7 +159,19 @@ namespace Halite3
                 // collect halite (move or stay)
                 foreach (Ship ship in me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)))
                 {
-                    MakeBestSafeMove(ship);
+                    if(GameMap.At(ship.position).halite >= 70) {
+                        MakeMove(ship, Direction.STILL);
+                        continue;
+                    }
+
+                    var bestNeighbors = AntLogic.SortedNeighbors(ship).Where(n => !CollisionCells.Contains(n)).ToList();
+                    if(bestNeighbors.All(n => n.IsOccupied() && n.halite >= 70)) {
+                        MakeMove(ship, bestNeighbors[0]);
+                    } else {
+                        var target = bestNeighbors.First(n => !n.IsOccupied() || n.halite < 70);
+                        MakeMove(ship, target);
+                    }
+                    UsedShips.Add(ship.Id);
                 }
 
                 // spawn ships

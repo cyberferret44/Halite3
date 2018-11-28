@@ -65,10 +65,11 @@ namespace Halite3.hlt
             HashSet<MapCell> cells = new HashSet<MapCell>();
             for(int i=0; i <= numLayers; i++) {
                 for(int x = -i; x<=i; x++) {
-                    int yp = i - Math.Abs(x);
-                    int yn = -yp;
-                    cells.Add(this.At(new Position(x, yp)));
-                    cells.Add(this.At(new Position(x, yn)));
+                    int yp = position.y + (i - Math.Abs(x));
+                    int yn = position.y - (i - Math.Abs(x));
+                    int xp = position.x + x;
+                    cells.Add(this.At(new Position(xp, yp)));
+                    cells.Add(this.At(new Position(xp, yn)));
                 }
             }
             return cells.ToList();
