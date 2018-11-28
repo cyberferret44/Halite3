@@ -39,12 +39,13 @@ namespace Halite3
         public static HashSet<int> FinalReturnToHome = new HashSet<int>();
         public static HyperParameters HParams;
         public static bool CreatedDropoff = false;
+        public static Logic MyLogic = new AntLogic();
         public static void Main(string[] args)
         {
             //SpecimenExaminer.GenerateCSVFromSpecimenFolder(); // uncomment to enable csv generation
             Specimen specimen;
             try {
-                HParams = new HyperParameters("HyperParameters.txt"); //production
+                HParams = new HyperParameters("Halite3/HyperParameters.txt"); //production
                 specimen = new FakeSpecimen();
             } catch(System.IO.FileNotFoundException) {
                 specimen = GeneticSpecimen.RandomSpecimen();
@@ -66,8 +67,8 @@ namespace Halite3
             // This is a good place to do computationally expensive start-up pre-processing.
             // As soon as you call "ready" function below, the 2 second per turn timer will start.
             GameMap = game.gameMap;
-            AntLogic.PrecaculateAntSniffs();
-            AntLogic.WriteToFile();
+            MyLogic.DoPreProcessing();
+            //MyLogic.WriteToFile();
             game.Ready("AntBot");
             //while(!Debugger.IsAttached);
             //game.Ready("GeneticBot_debug");
@@ -89,8 +90,7 @@ namespace Halite3
                 CollisionCells = new HashSet<MapCell>();
                 UsedShips = new HashSet<int>();
 
-                //AntLogic.ProcessTurn();
-                AntLogic.PrecaculateAntSniffs();
+                MyLogic.ProcessTurn();
 
                 // Specimen control logic for GeneticTuner
                 if(game.TurnsRemaining == 0) {
@@ -119,7 +119,6 @@ namespace Halite3
 
                     if(ship.DistanceToDropoff * 1.5 > game.TurnsRemaining) {
                         FinalReturnToHome.Add(ship.Id);
-                        //AntLogic.ProcessReturnShip(ship);
                     }
 
                     if(!ship.CanMove) {
@@ -143,7 +142,7 @@ namespace Halite3
 
                 // move to base...
                 foreach(var ship in me.ShipsOnDropoffs().Where(s => !UsedShips.Contains(s.Id))) {
-                    var bestNeighbors = AntLogic.SortedNeighbors(ship);
+                    var bestNeighbors = MyLogic.GetBestNeighbors(ship.position);
                     if(bestNeighbors.All(n => n.IsOccupied())) {
                         MakeMove(ship, bestNeighbors.First(n => !CollisionCells.Contains(n)));
                     } else {
@@ -164,7 +163,7 @@ namespace Halite3
                         continue;
                     }
 
-                    var bestNeighbors = AntLogic.SortedNeighbors(ship).Where(n => !CollisionCells.Contains(n)).ToList();
+                    var bestNeighbors = MyLogic.GetBestNeighbors(ship.position).Where(n => !CollisionCells.Contains(n)).ToList();
                     if(bestNeighbors.All(n => n.IsOccupied() && n.halite >= 70)) {
                         MakeMove(ship, bestNeighbors[0]);
                     } else {
