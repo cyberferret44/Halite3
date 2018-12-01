@@ -14,18 +14,14 @@ Low hanging
 -- add a hyper parameter to look at halite per cell remaining instead of looking at turns remaining in order to decide when to save
 
 Difficult
-- add a preprocessing and prioritization strategy
 - add a javascript suite to visualize the genetic algorithm and run multiple runs
-- ant scent implementation 
+- make a perfect return to base algorithm...
 
 Things to consider
 - utilize command line args to pass a hyperparameters.txt file (using HyperParameters.txt by default)
     and altering run.bat to pass in Halite3.HyperParameters.txt.  Then factor the specimen logic out
     to the genetic algorithm tuning tool.
-- Consider creating a GameLogic class that way the MyBot class is just a flow controller
 - pre-process quadrant values (maybe cetered on a point, radiating out by 5)
-
-Ant algorithm....
 - 
  */
 namespace Halite3
@@ -39,16 +35,16 @@ namespace Halite3
 
         private static List<Command> CommandQueue = new List<Command>();
         private static Logic MyLogic = new WallLogic();
-        //private static bool CreatedDropoff = false;
+        private static bool CreatedDropoff = false;
         private static HashSet<int> FinalReturnToHome = new HashSet<int>();
         private static HashSet<int> UsedShips = new HashSet<int>();
-        private static HashSet<int> MovingTowardsBase = new HashSet<int>();
+        public static HashSet<int> MovingTowardsBase = new HashSet<int>();
 
         public static void Main(string[] args)
         {
             Specimen specimen;
             try {
-                HParams = new HyperParameters("Halite3/HyperParameters.txt"); //production
+                HParams = new HyperParameters("HyperParameters.txt"); //production
                 specimen = new FakeSpecimen();
             } catch(System.IO.FileNotFoundException) {
                 specimen = GeneticSpecimen.RandomSpecimen();
@@ -60,6 +56,7 @@ namespace Halite3
             // This is a good place to do computationally expensive start-up pre-processing.
             // As soon as you call "ready" function below, the 2 second per turn timer will start.
             GameMap = game.gameMap;
+            Me = game.me;
             MyLogic.DoPreProcessing();
             //MyLogic.WriteToFile();
             game.Ready("WallBot");
@@ -88,15 +85,15 @@ namespace Halite3
                 }
 
                 // todo fix this later, testing purposes only
-                /* if(Me.halite > 5000 && !CreatedDropoff) {
+                if(Me.halite > 5000 && !CreatedDropoff) {
                     var dropoffship = Me.ShipsSorted.OrderBy(s => GameMap.NeighborsAt(s.position).Sum(n => n.halite) + GameMap.At(s.position).halite).Last();
                     CommandQueue.Add(dropoffship.MakeDropoff());
                     UsedShips.Add(dropoffship.Id);
                     CreatedDropoff = true;
-                } */
+                }
 
                 //logical marking
-                foreach(var ship in Me.ShipsSorted) {
+                foreach(var ship in Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id))) {
                     if(ship.CurrentMapCell.structure != null && MovingTowardsBase.Contains(ship.Id))
                         MovingTowardsBase.Remove(ship.Id);
 
@@ -126,37 +123,30 @@ namespace Halite3
                         MakeMove(ship, Direction.STILL);
                 }
 
-                // move to base...
+                // Move Ships off of Drops.  Try moving to empty spaces first, then move to habited spaces and push others off
                 foreach(var ship in Me.ShipsOnDropoffs().Where(s => !UsedShips.Contains(s.Id))) {
-                    var bestNeighbors = MyLogic.GetBestNeighbors(ship.position);
-                    if(bestNeighbors.All(n => n.IsOccupied())) {
-                        MakeMove(ship, bestNeighbors.First(n => !CollisionCells.Contains(n)));
+                    var bestMoves = MyLogic.GetBestMoves(ship);
+                    if(bestMoves.Any(m => IsSafeMove(ship, m) && !GameMap.At(ship.position.DirectionalOffset(m)).IsOccupied())) {
+                        var move = bestMoves.First(m => IsSafeMove(ship, m) && !GameMap.At(ship.position.DirectionalOffset(m)).IsOccupied());
+                        MakeMove(ship, move);
                     } else {
-                        var target = bestNeighbors.First(n => !n.IsOccupied());
-                        MakeMove(ship, target);
+                        MakeMove(ship, bestMoves.First(m => IsSafeMove(ship, m)));
                     }
                 }
+
+                // Move ships to dropoffs
                 var shipsToMoveToBase = Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id) && MovingTowardsBase.Contains(s.Id));
                 foreach (var ship in shipsToMoveToBase) {
                     MakeBestReturnToDropoffMove(ship);
                 }
 
-                // collect halite (move or stay)
+                // collect halite (move or stay) using Logic interface
                 foreach (Ship ship in Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)))
                 {
-                    if(GameMap.At(ship.position).halite >= 70) {
-                        MakeMove(ship, Direction.STILL);
-                        continue;
+                    var bestMoves = MyLogic.GetBestMoves(ship);
+                    if(bestMoves.Any(m => IsSafeMove(ship, m))) {
+                        MakeMove(ship, bestMoves.First(m => IsSafeMove(ship, m))); //todo fix possible collisions here
                     }
-
-                    var bestNeighbors = MyLogic.GetBestNeighbors(ship.position).Where(n => !CollisionCells.Contains(n)).ToList();
-                    if(bestNeighbors.All(n => n.IsOccupied() && n.halite >= 70)) {
-                        MakeMove(ship, bestNeighbors[0]);
-                    } else {
-                        var target = bestNeighbors.First(n => !n.IsOccupied() || n.halite < 70);
-                        MakeMove(ship, target);
-                    }
-                    UsedShips.Add(ship.Id);
                 }
 
                 // spawn ships
@@ -191,31 +181,9 @@ namespace Halite3
             foreach(Direction d in directions) {
                 if(IsSafeMove(ship, d)) {
                     MakeMove(ship, d);
-                    return;
+                    break;
                 }
             }
-            if(IsSafeMove(ship, Direction.STILL))
-                MakeMove(ship, Direction.STILL);
-            else
-                MakeBestSafeMove(ship);
-        }
-
-        // TODO rename to be someting about collecting halite
-        public static void MakeBestSafeMove(Ship ship, bool includeStill = true) {
-            var availableCells = GameMap.NeighborsAt(ship.position).ToList();
-            if(includeStill) {
-                availableCells.Add(ship.CurrentMapCell);
-            }
-            availableCells = availableCells.OrderByDescending(c => c == ship.CurrentMapCell ? c.halite * (ship.CurrentMapCell.halite > 100 ? 3.0 : 1.4) : c.halite).ToList();
-            foreach(MapCell cell in availableCells) {
-                if(!CollisionCells.Contains(cell) && 
-                    (CollisionCells.Contains(ship.CurrentMapCell) || cell.ship == null || cell.ship.BestNeighbor != ship.CurrentMapCell)) {
-                    var d = cell.position.GetDirectionTo(ship.position);
-                    MakeMove(ship, d);
-                    return;
-                }
-            }
-            throw new Exception("this should never happen"); //exception....
         }
 
         public static void MakeMove(Ship ship, MapCell target) {
@@ -223,6 +191,7 @@ namespace Halite3
         }
 
         public static void MakeMove(Ship ship, Direction move) {
+            Log.LogMessage($"{ship.Id} moving {move.ToString()}");
             CommandQueue.Add(ship.Move(move));
             UsedShips.Add(ship.Id);
             AddCollision(ship, move);

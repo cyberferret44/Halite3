@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Halite3
 {
-    public class AntLogic : Logic
+    public class AntLogic
     {
         private static GameMap gameMap => MyBot.GameMap;
         private Dictionary<Point, double> CellValues = new Dictionary<Point, double>();
@@ -23,7 +23,7 @@ namespace Halite3
 
             foreach(var row in gameMap.cells) {
                 foreach(MapCell cell in row) {
-                    CellValues[cell.position.CartesianPosition] = ValueOfCell(cell);
+                    CellValues[cell.position.AsPoint] = ValueOfCell(cell);
                 }
             }
             foreach(var kvp in CellValues.OrderByDescending(k => k.Value)) {
@@ -32,10 +32,10 @@ namespace Halite3
         }
 
         private void SetAntScentRecursive(MapCell cell, double value) {
-            if(CellValues[cell.position.CartesianPosition] >= value)
+            if(CellValues[cell.position.AsPoint] >= value)
                 return;
             
-            CellValues[cell.position.CartesianPosition] = value;
+            CellValues[cell.position.AsPoint] = value;
             value *= MoveDegredation;
             foreach(var n in gameMap.NeighborsAt(cell.position)) {
                 SetAntScentRecursive(n, value);
@@ -55,7 +55,7 @@ namespace Halite3
         }
 
         public List<MapCell> GetBestNeighbors(Position p) {
-            return gameMap.GetXLayers(p, 1).OrderByDescending(n => CellValues[n.position.CartesianPosition]).ToList();
+            return gameMap.GetXLayers(p, 1).OrderByDescending(n => CellValues[n.position.AsPoint]).ToList();
         }
 
         /*public static void WriteToFile() {

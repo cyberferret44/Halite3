@@ -16,7 +16,7 @@ namespace Halite3.hlt
         public static int MapWidth => MyBot.GameMap.width;
         public static int MapHeight => MyBot.GameMap.height;
 
-        public Point CartesianPosition => new Point{ x = this.x, y = this.y };
+        public Point AsPoint => new Point{ x = this.x, y = this.y };
 
         public Position(int x, int y)
         {
@@ -98,6 +98,8 @@ namespace Halite3.hlt
                 possibleDirections.Add(DirectY < WrapY ? Direction.SOUTH : Direction.NORTH);
             if(this.y < otherPosition.y)
                 possibleDirections.Add(DirectY < WrapY ? Direction.NORTH : Direction.SOUTH);
+            if(this.x == otherPosition.x && this.y == otherPosition.y)
+                possibleDirections.Add(Direction.STILL);
             
             return possibleDirections;
         }

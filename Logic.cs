@@ -3,5 +3,5 @@ using System.Collections.Generic;
 public interface Logic {
     void DoPreProcessing();
     void ProcessTurn();
-    List<MapCell> GetBestNeighbors(Position p);
+    List<Direction> GetBestMoves(Ship ship);
 }
