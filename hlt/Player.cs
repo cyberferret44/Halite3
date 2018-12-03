@@ -14,8 +14,27 @@ namespace Halite3.hlt
         public readonly Shipyard shipyard;
         public int halite;
         public readonly Dictionary<int, Ship> ships = new Dictionary<int, Ship>();
-        public readonly Dictionary<int, Dropoff> dropoffs = new Dictionary<int, Dropoff>();
+        public readonly Dictionary<int, Dropoff> dropoffDictionary = new Dictionary<int, Dropoff>();
         public List<Ship> ShipsSorted = new List<Ship>();
+
+        public List<Entity> GetDropoffs()  {
+            var dropoffs = dropoffDictionary.Values.Select(v => (Entity)v).ToList();
+            dropoffs.Add((Entity)shipyard);
+            return dropoffs;
+        }
+
+        public Ship GetShipById(int id) => ships.ContainsKey(id) ? ships[id] : null;
+        
+        public List<Ship> ShipsOnDropoffs() {
+            var myShips = new List<Ship>();
+            foreach(var drop in GetDropoffs()) {
+                var shipOnDrop = MyBot.GameMap.At(drop.position).ship;
+                if(shipOnDrop != null && shipOnDrop.owner == id) {
+                    myShips.Add(shipOnDrop);
+                }
+            }
+            return myShips;
+        }
 
         private Player(PlayerId playerId, Shipyard shipyard, int halite = 0)
         {
@@ -35,16 +54,24 @@ namespace Halite3.hlt
             for (int i = 0; i < numShips; ++i)
             {
                 Ship ship = Ship._generate(id);
-                ships[ship.id.id] = ship;
+                ships[ship.Id] = ship;
             }
-            ShipsSorted = ships.Values.OrderBy(s => s.DistanceToShipyard).ToList();
-
-            dropoffs.Clear();
+            
+            dropoffDictionary.Clear();
             for (int i = 0; i < numDropoffs; ++i)
             {
                 Dropoff dropoff = Dropoff._generate(id);
-                dropoffs[dropoff.id.id] = dropoff;
+                dropoffDictionary[dropoff.id.id] = dropoff;
             }
+
+            ShipsSorted = ships.Values.OrderBy(s => SpecialDistance(s, s.ClosestDropoff.position)).ToList();
+        }
+
+        private double SpecialDistance(Ship ship, Position target) {
+            double dist = (double)ship.DistanceToDropoff;
+            double Xcomponent = Math.Pow(ship.position.DeltaX(target), 2);
+            double Ycomponent = Math.Pow(ship.position.DeltaY(target), 2);
+            return dist + (Xcomponent + Ycomponent)/10000.0;
         }
 
         /// <summary>

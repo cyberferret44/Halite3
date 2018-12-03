@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace Halite3.hlt
 {
@@ -23,6 +24,7 @@ namespace Halite3.hlt
                                  gameMap.width == 56 ? 475 :
                                  500;
         public int TurnsRemaining => TotalTurns - turnNumber;
+        public List<Player> Opponents => players.Where(p => !p.id.Equals(myId)).ToList();
 
         /// <summary>
         /// Initiates a game object collecting all start-state instances for the contained items for pre-game.
@@ -88,7 +90,7 @@ namespace Halite3.hlt
 
                 gameMap.At(player.shipyard).structure = player.shipyard;
 
-                foreach (Dropoff dropoff in player.dropoffs.Values)
+                foreach (Dropoff dropoff in player.dropoffDictionary.Values)
                 {
                     gameMap.At(dropoff).structure = dropoff;
                 }

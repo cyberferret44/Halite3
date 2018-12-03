@@ -3,6 +3,10 @@
     public class Command
     {
         public readonly string command;
+        public MapCell TargetCell;
+        public Ship Ship;
+        private static GameMap gameMap => MyBot.GameMap;
+        private static Player me => MyBot.Me;
 
         /// <summary>
         /// Create a new Spawn Ship command
@@ -10,7 +14,10 @@
         /// <returns>Command("g")</returns>
         public static Command SpawnShip()
         {
-            return new Command("g");
+            return new Command("g") {
+                Ship = null,
+                TargetCell = gameMap.At(me.shipyard.position)
+            };
         }
 
         /// <summary>
@@ -19,7 +26,10 @@
         /// <returns>Command("g")</returns>
         public static Command TransformShipIntoDropoffSite(EntityId id)
         {
-            return new Command("c " + id);
+            return new Command("c " + id) {
+                Ship = me.GetShipById(id.id),
+                TargetCell = me.GetShipById(id.id).CurrentMapCell
+            };
         }
 
         /// <summary>
@@ -30,7 +40,10 @@
         /// <returns></returns>
         public static Command Move(EntityId id, Direction direction)
         {
-            return new Command("m " + id + ' ' + (char)direction);
+            return new Command("m " + id + ' ' + (char)direction) {
+                Ship = me.GetShipById(id.id),
+                TargetCell = gameMap.At(me.GetShipById(id.id).position.DirectionalOffset(direction))
+            };
         }
 
         private Command(string command)

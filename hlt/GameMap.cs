@@ -61,6 +61,20 @@ namespace Halite3.hlt
             return null;
         }
 
+        public List<MapCell> GetXLayers(Position position, int numLayers) {
+            HashSet<MapCell> cells = new HashSet<MapCell>();
+            for(int i=0; i <= numLayers; i++) {
+                for(int x = -i; x<=i; x++) {
+                    int yp = position.y + (i - Math.Abs(x));
+                    int yn = position.y - (i - Math.Abs(x));
+                    int xp = position.x + x;
+                    cells.Add(this.At(new Position(xp, yp)));
+                    cells.Add(this.At(new Position(xp, yn)));
+                }
+            }
+            return cells.ToList();
+        }
+
         /// <summary>
         /// Normalizes the position of an Entity and returns the corresponding MapCell.
         /// </summary>
@@ -136,26 +150,6 @@ namespace Halite3.hlt
             }
 
             return possibleMoves;
-        }
-
-        /// <summary>
-        /// A method that returns a direction to move closer to a target without colliding with other entities.
-        /// Returns a direction of “still” if no such move exists.
-        /// </summary>
-        public Direction NaiveNavigate(Ship ship, Position destination)
-        {
-            // getUnsafeMoves normalizes for us
-            foreach (Direction direction in GetUnsafeMoves(ship.position, destination))
-            {
-                Position targetPos = ship.position.DirectionalOffset(direction);
-                if (!At(targetPos).IsOccupied())
-                {
-                    At(targetPos).MarkUnsafe(ship);
-                    return direction;
-                }
-            }
-
-            return Direction.STILL;
         }
 
         /// <summary>

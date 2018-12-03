@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using static Halite3.hlt.Direction;
 
 namespace Halite3.hlt
@@ -12,8 +13,10 @@ namespace Halite3.hlt
         public readonly int x;
         public readonly int y;
 
-        public static int MapWidth;
-        public static int MapHeight;
+        public static int MapWidth => MyBot.GameMap.width;
+        public static int MapHeight => MyBot.GameMap.height;
+
+        public Point AsPoint => new Point{ x = this.x, y = this.y };
 
         public Position(int x, int y)
         {
@@ -81,8 +84,42 @@ namespace Halite3.hlt
             return Direction.STILL;
         }
 
+        public List<Direction> GetAllDirectionsTo(Position otherPosition) {
+            int DirectX = Math.Abs(this.x - otherPosition.x);
+            int WrapX = MapWidth - DirectX;
+            int DirectY = Math.Abs(this.y - otherPosition.y);
+            int WrapY = MapHeight - DirectY;
+            List<Direction> possibleDirections = new List<Direction>();
+            if(this.x < otherPosition.x)
+                possibleDirections.Add(DirectX < WrapX ? Direction.WEST : Direction.EAST);
+            if(this.x > otherPosition.x)
+                possibleDirections.Add(DirectX < WrapX ? Direction.EAST : Direction.WEST);
+            if(this.y > otherPosition.y)
+                possibleDirections.Add(DirectY < WrapY ? Direction.SOUTH : Direction.NORTH);
+            if(this.y < otherPosition.y)
+                possibleDirections.Add(DirectY < WrapY ? Direction.NORTH : Direction.SOUTH);
+            if(this.x == otherPosition.x && this.y == otherPosition.y)
+                possibleDirections.Add(Direction.STILL);
+            
+            return possibleDirections;
+        }
+
         public bool Equals(Position otherPosition) {
             return this.x == otherPosition.x && this.y == otherPosition.y;
         }
+
+        public int DeltaX(Position otherPosition) {
+            int diff = Math.Abs(this.x - otherPosition.x);
+            return Math.Min(diff, MapWidth-diff);
+        }
+
+        public int DeltaY(Position otherPosition) {
+            int diff = Math.Abs(this.y - otherPosition.y);
+            return Math.Min(diff, MapWidth-diff);
+        }
+    }
+
+    public struct Point {
+        public int x, y;
     }
 }
