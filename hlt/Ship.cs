@@ -19,6 +19,8 @@ namespace Halite3.hlt
         public int Id => this.id.id;
         public bool CanMove => this.halite >= this.CurrentMapCell.halite / 10;
 
+        public bool OnDropoff => MyDropoffs.Any(d => d.position.Equals(this.position));
+
         public Ship(PlayerId owner, EntityId id, Position position, int halite) : base(owner, id, position)
         {
             this.halite = halite;

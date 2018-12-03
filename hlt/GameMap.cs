@@ -153,26 +153,6 @@ namespace Halite3.hlt
         }
 
         /// <summary>
-        /// A method that returns a direction to move closer to a target without colliding with other entities.
-        /// Returns a direction of “still” if no such move exists.
-        /// </summary>
-        public Direction NaiveNavigate(Ship ship, Position destination)
-        {
-            // getUnsafeMoves normalizes for us
-            foreach (Direction direction in GetUnsafeMoves(ship.position, destination))
-            {
-                Position targetPos = ship.position.DirectionalOffset(direction);
-                if (!At(targetPos).IsOccupied())
-                {
-                    At(targetPos).MarkUnsafe(ship);
-                    return direction;
-                }
-            }
-
-            return Direction.STILL;
-        }
-
-        /// <summary>
         /// Clears all the ships in preparation for player._update() and updates the halite on each cell.
         /// </summary>
         public void _update()

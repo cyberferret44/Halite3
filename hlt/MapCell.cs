@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Halite3.hlt
 {
@@ -13,6 +14,14 @@ namespace Halite3.hlt
         public int halite;
         public Ship ship;
         public Entity structure;
+
+        // mainly for debugging
+        private GameMap Map = MyBot.GameMap;
+        public MapCell North => Map.At(position.DirectionalOffset(Direction.NORTH));
+        public MapCell South => Map.At(position.DirectionalOffset(Direction.SOUTH));
+        public MapCell East => Map.At(position.DirectionalOffset(Direction.EAST));
+        public MapCell West => Map.At(position.DirectionalOffset(Direction.WEST));
+        public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
 
         public MapCell(Position position, int halite)
         {

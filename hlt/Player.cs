@@ -23,6 +23,8 @@ namespace Halite3.hlt
             return dropoffs;
         }
 
+        public Ship GetShipById(int id) => ships.ContainsKey(id) ? ships[id] : null;
+        
         public List<Ship> ShipsOnDropoffs() {
             var myShips = new List<Ship>();
             foreach(var drop in GetDropoffs()) {
@@ -52,7 +54,7 @@ namespace Halite3.hlt
             for (int i = 0; i < numShips; ++i)
             {
                 Ship ship = Ship._generate(id);
-                ships[ship.id.id] = ship;
+                ships[ship.Id] = ship;
             }
             
             dropoffDictionary.Clear();

@@ -23,7 +23,7 @@ namespace Halite3
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
             { Parameters.CARGO_TO_MOVE, new Bounds(0, 1000) },
-            { Parameters.TURNS_TO_SAVE, new Bounds(0, 400) }  //todo change to percent of resources remaining combined with turns remaining?
+            { Parameters.TURNS_TO_SAVE, new Bounds(0, 400) }
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
