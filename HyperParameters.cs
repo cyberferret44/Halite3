@@ -7,10 +7,13 @@ using System.IO;
 
 namespace Halite3
 {
+    // Genetically tuned parameters
     public enum Parameters {
         CARGO_TO_MOVE,
         TURNS_TO_SAVE
     }
+
+    // Non tuned parameters.  Keeping here so I can easily find & tune them later
 
     public class HyperParameters {
         private class Bounds {

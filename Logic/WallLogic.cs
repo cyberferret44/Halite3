@@ -16,9 +16,7 @@ namespace Halite3.Logic {
 
         private int TotalWallCells => Assignments.Values.Where(v => v != null).Count() + Wall.Count;
 
-        public override void Initialize() {
-            ExpandWall(Map.At(MyBot.Me.shipyard.position));
-        }
+        public override void Initialize() { /* Nothing to do */ }
 
         public override void ProcessTurn() {
             // unassign ships not accounted for
@@ -28,20 +26,22 @@ namespace Halite3.Logic {
             // clear the ships accounted for set
             ShipsAccountedFor.Clear();
 
-            // if cells run out 
-            if(!HasChanged && TotalWallCells < Me.ShipsSorted.Count && MyBot.game.turnNumber > 30) {
-                HasChanged = true;
-                NumToIgnore /= 5;
-                IgnoredCells.Clear();
-                foreach(var d in MyBot.Me.GetDropoffs()) {
-                    ExpandWall(Map.At(d.position));
-                }
-            }
-
             // redefine our wall
             IgnoredCells.Clear();
+            Wall.Clear();
+
             foreach(var d in MyBot.Me.GetDropoffs()) {
-                ExpandWall(MyBot.GameMap.At(d.position));
+                CreateWall();
+            }
+
+            // if cells run out 
+            if(!HasChanged && TotalWallCells < Me.ShipsSorted.Count * (MyBot.game.Opponents.Count + 1) && MyBot.game.turnNumber > 30) {
+                HasChanged = true;
+                NumToIgnore /= 5;
+            }
+
+            if(HasChanged && TotalWallCells < Me.ShipsSorted.Count/2) {
+                NumToIgnore = 0;
             }
         }
 
@@ -73,6 +73,12 @@ namespace Halite3.Logic {
             List<Direction> directions = target.GetAllDirectionsTo(ship.position);
             directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
 
+            foreach(var d in directions.ToList()) {
+                if(Map.At(ship.position.DirectionalOffset(d)).IsStructure) {
+                    directions.Remove(d);
+                }
+            }
+
             // todo reassign the cell
             if(!directions.Contains(Direction.STILL) && ship.CurrentMapCell.halite >= NumToIgnore) {
                 directions.Insert(0, Direction.STILL);
@@ -91,6 +97,8 @@ namespace Halite3.Logic {
         }
 
         private List<Direction> AddRemaining(List<Direction> directions) {
+            if(!directions.Contains(Direction.STILL))
+                directions.Add(Direction.STILL);
             if(directions.Contains(Direction.NORTH)) {
                 if(!directions.Contains(Direction.EAST))
                     directions.Add(Direction.EAST);
@@ -123,15 +131,14 @@ namespace Halite3.Logic {
                 directions.Add(Direction.EAST);
             if(!directions.Contains(Direction.WEST))
                 directions.Add(Direction.WEST);
-            if(!directions.Contains(Direction.STILL))
-                directions.Add(Direction.STILL);
             return directions;
         }
 
         private double CellValue(Ship ship, MapCell cell) {
             int dist = Map.CalculateDistance(ship.position, cell.position);
             var neighbors = Map.GetXLayers(cell.position, 3); // todo magic number
-            var sum = neighbors.OrderByDescending(n => n.halite).Take(neighbors.Count/2).Sum(n => n.halite);
+            var vals = neighbors.Select(n => n.halite / (Map.CalculateDistance(n.position, cell.position) + 1));
+            var sum = vals.OrderByDescending(v => v).Take(neighbors.Count/2).Sum(v => v);
             return sum * Math.Pow(Degredation, dist);
         }
 
@@ -155,29 +162,20 @@ namespace Halite3.Logic {
             }
         }
 
-        private void ExpandWall(MapCell cell) {
-            if(IgnoredCells.Contains(cell.position.AsPoint))
-                return;
-
-            if(cell.halite >= NumToIgnore) {
-                if(!Assignments.ContainsValue(cell.position.AsPoint) && !Wall.Contains(cell.position.AsPoint)) {
-                    Wall.Add(cell.position.AsPoint);
+        private void CreateWall() {
+            foreach(var cell in Map.GetAllCells()) {
+                bool assigned = Assignments.ContainsValue(cell.position.AsPoint);
+                if(cell.halite >= NumToIgnore) {
+                    if(!assigned) {
+                        Wall.Add(cell.position.AsPoint);
+                    }
+                } else {
+                    IgnoredCells.Add(cell.position.AsPoint);
+                    if(assigned) {
+                        var element = Assignments.First(a => a.Value.HasValue && a.Value.Value.Equals(cell.position.AsPoint));
+                        Assignments[element.Key] = null; // unassign it
+                    }
                 }
-                return;
-            }
-
-            // less than target halite, skip and add neighbors
-            IgnoredCells.Add(cell.position.AsPoint);
-            if(Assignments.Any(x => x.Value.HasValue && x.Value.Value.Equals(cell.position.AsPoint))) {
-                var kvp = Assignments.First(x => x.Value.HasValue && x.Value.Value.Equals(cell.position.AsPoint));
-                Assignments[kvp.Key] = null;
-            }
-            if(Wall.Contains(cell.position.AsPoint)) {
-                Wall.Remove(cell.position.AsPoint);
-            }
-            var neighbors = Map.NeighborsAt(cell.position);
-            foreach(var n in neighbors) {
-                ExpandWall(n);
             }
         }
     }

@@ -17,6 +17,19 @@ namespace Halite3.hlt
         public readonly int width;
         public readonly int height;
         public readonly MapCell[][] cells;
+        public int HaliteRemaining = 0;
+        public int InitialHalite = 0;
+        public double PercentHaliteCollected => 1.0 - (((double)HaliteRemaining)/((double)InitialHalite));
+
+        public List<MapCell> GetAllCells() {
+            List<MapCell> allCells = new List<MapCell>();
+            foreach(var row in cells) {
+                foreach(var cell in row) {
+                    allCells.Add(cell);
+                }
+            }
+            return allCells;
+        }
 
         /// <summary>
         /// Creates a new instance of a GameMap
@@ -173,7 +186,9 @@ namespace Halite3.hlt
                 int x = input.GetInt();
                 int y = input.GetInt();
 
-                cells[y][x].halite = input.GetInt();
+                int halite = input.GetInt();
+                HaliteRemaining += halite - cells[y][x].halite;
+                cells[y][x].halite = halite;
             }
         }
 
@@ -189,6 +204,9 @@ namespace Halite3.hlt
 
             GameMap map = new GameMap(width, height);
 
+            map.HaliteRemaining = 0;
+            map.InitialHalite = 0;
+
             for (int y = 0; y < height; ++y)
             {
                 Input rowInput = Input.ReadInput();
@@ -197,8 +215,11 @@ namespace Halite3.hlt
                 {
                     int halite = rowInput.GetInt();
                     map.cells[y][x] = new MapCell(new Position(x, y), halite);
+                    map.HaliteRemaining += halite;
                 }
             }
+
+            map.InitialHalite = map.HaliteRemaining;
 
             return map;
         }

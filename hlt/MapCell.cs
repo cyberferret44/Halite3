@@ -15,6 +15,8 @@ namespace Halite3.hlt
         public Ship ship;
         public Entity structure;
 
+        public bool IsStructure => structure != null;
+
         // mainly for debugging
         private GameMap Map = MyBot.GameMap;
         public MapCell North => Map.At(position.DirectionalOffset(Direction.NORTH));
@@ -43,6 +45,10 @@ namespace Halite3.hlt
         public bool IsOccupied()
         {
             return ship != null;
+        }
+
+        public bool IsOccupiedByOpponent() {
+            return ship != null && ship.owner.id != MyBot.Me.id.id;
         }
 
         /// <summary>
