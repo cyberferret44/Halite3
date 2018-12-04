@@ -36,6 +36,7 @@ namespace Halite3.Logic {
                 Entity closestDrop = ship.ClosestDropoff;
                 List<Direction> directions = closestDrop.position.GetAllDirectionsTo(ship.position);
                 directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
+                directions.Add(Direction.STILL);
                 foreach(Direction d in directions) {
                     if(IsSafeMove(ship, d)) {
                         MyBot.MakeMove(ship.Move(d));

@@ -55,7 +55,7 @@ namespace Halite3
             EndOfGameLogic.Initialize();
 
             //MyLogic.WriteToFile();
-            game.Ready("NoWallsBot");
+            game.Ready("NoWallsBot_DropoffFix");
             //while(!Debugger.IsAttached);
 
             Log.LogMessage("Successfully created bot! My Player ID is " + game.myId);
