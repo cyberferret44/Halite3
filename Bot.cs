@@ -55,7 +55,8 @@ namespace Halite3
             EndOfGameLogic.Initialize();
 
             //MyLogic.WriteToFile();
-            game.Ready("NoWallsBot_DropoffFix");
+            string BotName = "Dropoff_Locations_Bot";
+            game.Ready(BotName);
             //while(!Debugger.IsAttached);
 
             Log.LogMessage("Successfully created bot! My Player ID is " + game.myId);
@@ -81,6 +82,15 @@ namespace Halite3
                         specimen.SpawnChildren();
                     } else {
                         specimen.Kill();
+                    }
+                    if(game.myId.id == 1 && IsLocal) {
+                        string content = $"\n{BotName},{Me.halite}";
+                        foreach(var o in game.Opponents) {
+                            content += $",{o.id.id},{o.halite}";
+                        }
+                        using(StreamWriter sw = File.AppendText("ResultsHistory.txt")) {
+                            sw.Write(content);
+                        }
                     }
                 }
 
