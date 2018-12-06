@@ -4,9 +4,9 @@ using Halite3;
 using System.Linq;
 using System;
 namespace Halite3.Logic {
-    public class WallLogic : Logic {
-        private static int NumToIgnore = 100;
-        private static double Degredation => .8;
+    public class CollectLogic : Logic {
+        private static int NumToIgnore;
+        private static double Degradation;
         private HashSet<Point> IgnoredCells = new HashSet<Point>();
         private HashSet<Point> Wall = new HashSet<Point>();
         private Dictionary<int, Point?> Assignments = new Dictionary<int, Point?>();
@@ -16,7 +16,10 @@ namespace Halite3.Logic {
 
         private int TotalWallCells => Assignments.Values.Where(v => v != null).Count() + Wall.Count;
 
-        public override void Initialize() { /* Nothing to do */ }
+        public override void Initialize() {
+            Degradation = HParams[Parameters.CELL_VALUE_DEGRADATION];
+            NumToIgnore = (int)(Map.GetAllCells().Average(c => c.halite) * HParams[Parameters.PERCENT_OF_AVERAGE_TO_IGNORE]);
+        }
 
         public override void ProcessTurn() {
             // unassign ships not accounted for
@@ -139,7 +142,7 @@ namespace Halite3.Logic {
             var neighbors = Map.GetXLayers(cell.position, 3); // todo magic number
             var vals = neighbors.Select(n => n.halite / (Map.CalculateDistance(n.position, cell.position) + 1));
             var sum = vals.OrderByDescending(v => v).Take(neighbors.Count/2).Sum(v => v);
-            return sum * Math.Pow(Degredation, dist);
+            return sum * Math.Pow(Degradation, dist);
         }
 
         private Position GetBestMoveTarget(Ship ship) {

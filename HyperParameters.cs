@@ -10,12 +10,15 @@ namespace Halite3
     // Genetically tuned parameters
     public enum Parameters {
         CARGO_TO_MOVE,
-        TURNS_TO_SAVE
+        TURNS_TO_SAVE,
+        CELL_VALUE_DEGRADATION,
+        PERCENT_OF_AVERAGE_TO_IGNORE
     }
 
-    // Non tuned parameters.  Keeping here so I can easily find & tune them later
-
     public class HyperParameters {
+        // Non tuned parameters.  Keeping here so I can easily find & tune them later
+
+        // Dynamic hyper parameters
         private class Bounds {
             public double Lower, Upper;
             public Bounds(double lower, double upper) {
@@ -26,7 +29,9 @@ namespace Halite3
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
             { Parameters.CARGO_TO_MOVE, new Bounds(0, 1000) },
-            { Parameters.TURNS_TO_SAVE, new Bounds(0, 400) }
+            { Parameters.TURNS_TO_SAVE, new Bounds(0, 400) },
+            { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0)},
+            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0)}
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
