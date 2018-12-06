@@ -18,7 +18,11 @@ namespace Halite3.Logic {
 
         public override void Initialize() {
             Degradation = HParams[Parameters.CELL_VALUE_DEGRADATION];
-            NumToIgnore = (int)(Map.GetAllCells().Average(c => c.halite) * HParams[Parameters.PERCENT_OF_AVERAGE_TO_IGNORE]);
+            var cellsOrdered = Map.GetAllCells().OrderByDescending(x => x.halite).ToList();
+            cellsOrdered = cellsOrdered.Take(cellsOrdered.Count * 2 / 3).ToList();
+            NumToIgnore = (int)(cellsOrdered.Average(c => c.halite) * HParams[Parameters.PERCENT_OF_AVERAGE_TO_IGNORE]);
+            Log.LogMessage($"Degradation: {Degradation}");
+            Log.LogMessage($"NumToIgnore: {NumToIgnore}");
         }
 
         public override void ProcessTurn() {
@@ -44,7 +48,7 @@ namespace Halite3.Logic {
             }
 
             if(HasChanged && TotalWallCells < Me.ShipsSorted.Count/2) {
-                NumToIgnore = 0;
+                NumToIgnore = 1;
             }
         }
 

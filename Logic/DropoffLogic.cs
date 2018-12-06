@@ -5,12 +5,54 @@ using System;
 
 namespace Halite3.Logic {
     public class DropoffLogic : Logic {
+        // virtual drop off
+        private class VirtualDropoff {
+            public Position Position;
+            public int InitialHalite;
+            public VirtualDropoff(Position p, int halite) {
+                Position = p;
+                InitialHalite = halite;
+            }
+        }
+
         // local parameters
-        private bool CreatedDropoff = false;
         private HashSet<int> MovingTowardsBase = new HashSet<int>();
+        private List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
+        VirtualDropoff NextDropoff = null;
+        private int Xlayers;
+        private int MinDropoffValue;
+        private int Spacing;
+        private double HarvestedPercentToDelete = .8;
+        HashSet<int> shipsAssignedToNextDropoff = new HashSet<int>();
 
         // Abstractc Logic Implementation
-        public override void Initialize() { /* TODO */ }
+        public override void Initialize() {
+            // value initialization
+            Xlayers = Map.width / 4;
+            MinDropoffValue = (int)(((double)Xlayers + 1.0) / 2.0 * 4.0 * (double)Xlayers * 135.0);
+            Spacing = (int)Math.Sqrt(Map.width * Map.height / (MyBot.game.Opponents.Count + 1) / 2);
+            Log.LogMessage($"Spacing is {Spacing}");
+
+            // todo one magic number
+            // todo set min to either MinDropoffValue, or like half of the max value so we don't get stuck in too-small of a local minima
+            var availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Map.width/3).ToList();
+            while(availableCells.Count > 0) {
+                int max = -1;
+                Position pos = null;
+                foreach(var cell in availableCells) {
+                    int val = Map.GetXLayers(cell.position, Xlayers).Sum(x => x.halite);
+                    if(val > max || (val == max && Map.CalculateDistance(cell.position, Me.shipyard.position) < Map.CalculateDistance(pos, Me.shipyard.position))) {
+                        pos = cell.position;
+                        max = val;
+                    }
+                }
+                if(max < MinDropoffValue || (BestDropoffs.Count > 0 && max < BestDropoffs[0].InitialHalite / 1.75))
+                    break;
+                BestDropoffs.Add(new VirtualDropoff(pos, max));
+                Log.LogMessage($"Best drop at point ({pos.x},{pos.y}), with a val {max}");
+                availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= 15).ToList();
+            }
+        }
 
         public override void ProcessTurn() {
             foreach(var ship in Me.ShipsSorted) {
@@ -19,40 +61,102 @@ namespace Halite3.Logic {
                 if(ship.OnDropoff)
                     MovingTowardsBase.Remove(ship.Id);
             }
+
+            foreach(var d in BestDropoffs.ToList()) {
+                int halite = Map.GetXLayers(d.Position, Xlayers).Sum(x => x.halite);
+                if(halite < d.InitialHalite * HarvestedPercentToDelete) {
+                    if(NextDropoff == d) {
+                        DeleteNextDropoff();
+                    }
+                    BestDropoffs.Remove(d);
+                }
+            }
         }
 
         public override void CommandShips(List<Ship> ships) {
-            // todo alter this to be more advanced
-            Ship exclude = null; // prevents sending 2 commands to the same ship
-            if(Me.halite >= 5000 && !CreatedDropoff && ships.Count > 0 && MyBot.game.turnNumber > 100 && MyBot.GameMap.PercentHaliteCollected < Math.Min(.5, ((double)MyBot.game.turnNumber)/((double)MyBot.game.TotalTurns))) {
-                var dropoffship = ships.OrderBy(s => Map.GetXLayers(s.position, 3).Sum(n => n.halite)).Last();
-                MyBot.MakeMove(dropoffship.MakeDropoff());
-                CreatedDropoff = true;
-                exclude = dropoffship;
-            }
-
-            // todo, if bot in way can't move, then wait
-            foreach(var ship in ships.Where(s => MovingTowardsBase.Contains(s.Id) && s != exclude)) {
-                Entity closestDrop = ship.ClosestDropoff;
-                List<Direction> directions = closestDrop.position.GetAllDirectionsTo(ship.position);
-                directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
-                directions.Add(Direction.STILL);
-                foreach(Direction d in directions) {
-                    if(IsSafeMove(ship, d)) {
-                        MyBot.MakeMove(ship.Move(d));
-                        break;
+            // need this for the virtual dropoff to be included
+            ships = ships.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
+            ships = ships.OrderBy(s => Map.CalculateDistance(s.position, GetClosestDropoff(s))).ToList();
+            // todo, queue up ships
+            // todo move around enemy if in path, or crash them
+            foreach(var ship in ships) {
+                if(NextDropoff != null && ship.position.Equals(NextDropoff.Position) && CanCreateDropoff(ship) /* && !ship.CurrentMapCell.IsStructure*/) {
+                    MyBot.MakeMove(ship.MakeDropoff());
+                    DeleteNextDropoff();
+                } else {
+                    Position closestDrop = GetClosestDropoff(ship);
+                    List<Direction> directions = closestDrop.GetAllDirectionsTo(ship.position);
+                    directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
+                    directions.Add(Direction.STILL);
+                    foreach(Direction d in directions) {
+                        if(IsSafeMove(ship, d)) {
+                            MyBot.MakeMove(ship.Move(d));
+                            break;
+                        }
                     }
                 }
             }
         }
 
-        // todo make this logic more robust to consider opponents, and dynamic values
-        private bool ShouldMoveShip(Ship ship) {
-            return ship.halite > HParams[Parameters.CARGO_TO_MOVE];
+        private int DistanceToClosestVirtualOrRealDropoff(Position position) {
+            if(BestDropoffs.Count == 0)
+                return int.MaxValue;
+            int closestReal = Me.GetDropoffs().Min(x => Map.CalculateDistance(position, x.position));
+            int closestVirtual = BestDropoffs.Min(x => Map.CalculateDistance(x.Position, position));
+            return Math.Min(closestReal, closestVirtual);
         }
 
-        private Position ForecastLocation() {
-            return null; // todo
+        private VirtualDropoff GetClosestVirtualDropoff(Position position) {
+            if(BestDropoffs.Count == 0)
+                return null;
+            return BestDropoffs.OrderBy(d => Map.CalculateDistance(position, d.Position)).First();
+        }
+
+        // Forecasting!!!
+        private Position GetClosestDropoff(Ship ship) {
+            // if the next drop is closer than the closest REAL dropoff, reassign it
+            if(shipsAssignedToNextDropoff.Contains(ship.Id)) {
+                return NextDropoff.Position;
+            }
+            else if(NextDropoff != null && Map.CalculateDistance(NextDropoff.Position, ship.position) < ship.DistanceToDropoff && shipsAssignedToNextDropoff.Count < Me.ShipsSorted.Count / 4) {
+                shipsAssignedToNextDropoff.Add(ship.Id);
+                Log.LogMessage($"Ship {ship.Id} assigned to ({NextDropoff.Position.x},{NextDropoff.Position.y}).");
+                return NextDropoff.Position;
+            }
+            else if(NextDropoff == null && ShouldCreateDropoff() && DistanceToClosestVirtualOrRealDropoff(ship.position) < ship.DistanceToDropoff) {
+                var next = GetClosestVirtualDropoff(ship.position);
+                CreateNextDropoff(next);
+                shipsAssignedToNextDropoff.Add(ship.Id);
+                Log.LogMessage($"Next dropoff at position ({next.Position.x},{next.Position.y}) has been assigned to ship {ship.Id}");
+                return NextDropoff.Position;
+            }
+            return ship.ClosestDropoff.position;
+        }
+
+        private bool ShouldCreateDropoff() {
+            return  MyBot.game.turnNumber > 100;
+        }
+
+        private bool CanCreateDropoff(Ship ship) {
+            return Me.halite + ship.halite + ship.CurrentMapCell.halite >= 5000;
+        }
+
+        // todo consider opponents
+        private bool ShouldMoveShip(Ship ship) {
+            return ship.IsFull() ||
+                ship.halite > HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + .25 * ship.CurrentMapCell.halite;
+        }
+
+        private void DeleteNextDropoff() {
+            Log.LogMessage($"Dropoff {NextDropoff.Position.x},{NextDropoff.Position.y} was deleted.");
+            MyBot.ReserveForDropoff = false;
+            NextDropoff = null;
+            shipsAssignedToNextDropoff.Clear();
+        }
+
+        private void CreateNextDropoff(VirtualDropoff v) {
+            MyBot.ReserveForDropoff = true;
+            NextDropoff = v;
         }
     }
 }

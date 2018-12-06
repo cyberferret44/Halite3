@@ -22,6 +22,7 @@ namespace Halite3
         public static HyperParameters HParams;
         public static Player Me;
         public static Game game;
+        public static bool ReserveForDropoff = false;
 
         // Private Variables
         private static List<Command> CommandQueue = new List<Command>();
@@ -55,7 +56,7 @@ namespace Halite3
             EndOfGameLogic.Initialize();
 
             //MyLogic.WriteToFile();
-            string BotName = "Dropoff_Locations_Bot";
+            string BotName = "MultipleDropsBot";
             game.Ready(BotName);
             //while(!Debugger.IsAttached);
 
@@ -129,9 +130,9 @@ namespace Halite3
 
         // TODO add a more advanced solution here
         private static bool ShouldSpawnShip() {
-            return GameMap.PercentHaliteCollected < .55 &&
-                    (game.turnNumber <= HParams[Parameters.TURNS_TO_SAVE] || (Me.halite >= 6000 && (GameMap.PercentHaliteCollected < .3 && game.TurnsRemaining > 100))) &&
-                    Me.halite >= Constants.SHIP_COST &&
+            return GameMap.PercentHaliteCollected < .6 &&
+                    (game.turnNumber <= game.TotalTurns * HParams[Parameters.TURNS_TO_SAVE] || (Me.halite >= 6000 && (GameMap.PercentHaliteCollected < .3 && game.TurnsRemaining > 100))) &&
+                    Me.halite >= (ReserveForDropoff ? 6000 : Constants.SHIP_COST) &&
                     !CollisionCells.Contains(GameMap.At(Me.shipyard.position));
         }
     }

@@ -69,8 +69,8 @@ namespace Halite3.hlt
 
         private double SpecialDistance(Ship ship, Position target) {
             double dist = (double)ship.DistanceToDropoff;
-            double Xcomponent = Math.Pow(ship.position.DeltaX(target), 2);
-            double Ycomponent = Math.Pow(ship.position.DeltaY(target), 2);
+            double Xcomponent = Math.Pow(ship.position.DeltaX(target)+.01, .5);
+            double Ycomponent = Math.Pow(ship.position.DeltaY(target)+.01, .5);
             return dist + (Xcomponent + Ycomponent)/10000.0;
         }
 

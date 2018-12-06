@@ -28,8 +28,8 @@ namespace Halite3
         }
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
-            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1000) },
-            { Parameters.TURNS_TO_SAVE, new Bounds(0, 400) },
+            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0) },
+            { Parameters.TURNS_TO_SAVE, new Bounds(0, 1.0) },
             { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0)},
             { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0)}
         };
