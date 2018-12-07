@@ -57,7 +57,7 @@ namespace GeneticTuner
 
                 // tune our hyperparameters
                 foreach(var param in Enum.GetValues(typeof(Parameters)).Cast<Parameters>()) {
-                    double multiplier = 1.0 + ((random.NextDouble() - .5) / 30.0);
+                    double multiplier = 1.0 + ((random.NextDouble() - .5) / 50.0);
                     double curValue = hyperParameters.GetValue(param);
                     child.hyperParameters[param] = curValue * multiplier;
                 }

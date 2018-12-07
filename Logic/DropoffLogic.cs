@@ -78,11 +78,9 @@ namespace Halite3.Logic {
             ships = ships.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
             ships = ships.OrderBy(s => Map.CalculateDistance(s.position, GetClosestDropoff(s))).ToList();
             // todo, queue up ships
-            // todo move around enemy if in path, or crash them
             foreach(var ship in ships) {
-                if(NextDropoff != null && ship.position.Equals(NextDropoff.Position) && CanCreateDropoff(ship) /* && !ship.CurrentMapCell.IsStructure*/) {
+                if(NextDropoff != null && ship.position.Equals(NextDropoff.Position) && CanCreateDropoff(ship)) {
                     MyBot.MakeMove(ship.MakeDropoff());
-                    DeleteNextDropoff();
                 } else {
                     Position closestDrop = GetClosestDropoff(ship);
                     List<Direction> directions = closestDrop.GetAllDirectionsTo(ship.position);

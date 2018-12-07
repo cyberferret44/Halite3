@@ -9,6 +9,9 @@ namespace Halite3.Logic {
         protected static HashSet<MapCell> CollisionCells => MyBot.CollisionCells;
         protected HyperParameters HParams => MyBot.HParams;
 
+        // Shared Information
+        protected List<MapCell> PleaseAvoidCells = new List<MapCell>();
+
         //abstract methods
         public abstract void Initialize();
         public abstract void ProcessTurn();

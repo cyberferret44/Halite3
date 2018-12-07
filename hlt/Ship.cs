@@ -21,6 +21,13 @@ namespace Halite3.hlt
 
         public bool OnDropoff => MyDropoffs.Any(d => d.position.Equals(this.position));
 
+        public List<MapCell> Neighbors => new List<MapCell> {
+            Map.At(position.DirectionalOffset(Direction.NORTH)),
+            Map.At(position.DirectionalOffset(Direction.SOUTH)),
+            Map.At(position.DirectionalOffset(Direction.EAST)),
+            Map.At(position.DirectionalOffset(Direction.WEST))
+        };
+
         public Ship(PlayerId owner, EntityId id, Position position, int halite) : base(owner, id, position)
         {
             this.halite = halite;

@@ -125,6 +125,9 @@ namespace Halite3
             CommandQueue.Add(command);
             UsedShips.Add(command.Ship.Id);
             CollisionCells.Add(command.TargetCell);
+            if(command.Ship.Neighbors.Any(n => n.IsStructure) && command.Ship.halite > 0 && command.Ship.CurrentMapCell.halite == 0 && command.TargetCell == command.Ship.CurrentMapCell) {
+                Log.LogMessage((new System.Diagnostics.StackTrace()).ToString());
+            }
         }
 
         // TODO add a more advanced solution here
