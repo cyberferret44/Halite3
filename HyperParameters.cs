@@ -17,6 +17,7 @@ namespace Halite3
 
     public class HyperParameters {
         // Non tuned parameters.  Keeping here so I can easily find & tune them later
+        public static List<Parameters> AllParameters = Enum.GetValues(typeof(Parameters)).Cast<Parameters>().ToList();
 
         // Dynamic hyper parameters
         private class Bounds {

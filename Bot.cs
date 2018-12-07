@@ -33,13 +33,13 @@ namespace Halite3
         {
             Specimen specimen;
             if(IsLocal) {
-                HParams = new HyperParameters("Halite3/HyperParameters.txt");
-                specimen = new FakeSpecimen();
-                //specimen = GeneticSpecimen.RandomSpecimen();
-                //HParams = specimen.GetHyperParameters();
+                //HParams = new HyperParameters("Halite3/HyperParameters.txt");
+                //specimen = new FakeSpecimen();
+                specimen = GeneticSpecimen.RandomSpecimen("Halite3/");
+                HParams = specimen.GetHyperParameters();
             } else  {
-                HParams = new HyperParameters("HyperParameters.txt");
-                specimen = new FakeSpecimen();
+                specimen = GeneticSpecimen.RandomSpecimen("");
+                HParams = specimen.GetHyperParameters();
             }
 
             game = new Game();
@@ -56,12 +56,11 @@ namespace Halite3
             EndOfGameLogic.Initialize();
 
             //MyLogic.WriteToFile();
-            string BotName = "MultipleDropsBot";
+            string BotName = specimen.Name();
             game.Ready(BotName);
             //while(!Debugger.IsAttached);
 
             Log.LogMessage("Successfully created bot! My Player ID is " + game.myId);
-
             for (; ; )
             {
                 // Basic processing for the turn start
@@ -131,7 +130,7 @@ namespace Halite3
         // TODO add a more advanced solution here
         private static bool ShouldSpawnShip() {
             return GameMap.PercentHaliteCollected < .6 &&
-                    (game.turnNumber <= game.TotalTurns * HParams[Parameters.TURNS_TO_SAVE] || (Me.halite >= 6000 && (GameMap.PercentHaliteCollected < .3 && game.TurnsRemaining > 100))) &&
+                    (game.turnNumber <= game.TotalTurns * HParams[Parameters.TURNS_TO_SAVE] || (Me.halite >= 6000 && (GameMap.PercentHaliteCollected < .4 && game.TurnsRemaining > 100))) &&
                     Me.halite >= (ReserveForDropoff ? 6000 : Constants.SHIP_COST) &&
                     !CollisionCells.Contains(GameMap.At(Me.shipyard.position));
         }

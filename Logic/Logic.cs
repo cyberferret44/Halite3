@@ -17,7 +17,7 @@ namespace Halite3.Logic {
         //concrete methods
         protected virtual bool IsSafeMove(Ship ship, Direction move) {
             MapCell target = Map.At(ship.position.DirectionalOffset(move));
-            if(target.IsOccupiedByOpponent() && target.IsStructure && target.structure.owner.id.Equals(Me.id)) {
+            if(target.IsStructure && !CollisionCells.Contains(target)) {
                 return true;
             }
             return !CollisionCells.Contains(target) && !target.IsOccupiedByOpponent();

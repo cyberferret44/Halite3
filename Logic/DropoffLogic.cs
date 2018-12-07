@@ -35,7 +35,7 @@ namespace Halite3.Logic {
 
             // todo one magic number
             // todo set min to either MinDropoffValue, or like half of the max value so we don't get stuck in too-small of a local minima
-            var availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Map.width/3).ToList();
+            var availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Spacing).ToList();
             while(availableCells.Count > 0) {
                 int max = -1;
                 Position pos = null;
@@ -50,7 +50,7 @@ namespace Halite3.Logic {
                     break;
                 BestDropoffs.Add(new VirtualDropoff(pos, max));
                 Log.LogMessage($"Best drop at point ({pos.x},{pos.y}), with a val {max}");
-                availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= 15).ToList();
+                availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Spacing).ToList();
             }
         }
 
@@ -64,7 +64,7 @@ namespace Halite3.Logic {
 
             foreach(var d in BestDropoffs.ToList()) {
                 int halite = Map.GetXLayers(d.Position, Xlayers).Sum(x => x.halite);
-                if(halite < d.InitialHalite * HarvestedPercentToDelete) {
+                if(Map.At(d.Position).IsStructure || halite < d.InitialHalite * HarvestedPercentToDelete) {
                     if(NextDropoff == d) {
                         DeleteNextDropoff();
                     }
@@ -87,6 +87,16 @@ namespace Halite3.Logic {
                     Position closestDrop = GetClosestDropoff(ship);
                     List<Direction> directions = closestDrop.GetAllDirectionsTo(ship.position);
                     directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
+                    if(directions.Count == 1 && Map.At(ship.position.DirectionalOffset(directions[0])).IsOccupiedByOpponent()) {
+                        if(directions[0] == Direction.NORTH)
+                            directions.AddRange(new List<Direction>{ Direction.EAST, Direction.WEST});
+                        if(directions[0] == Direction.SOUTH)
+                            directions.AddRange(new List<Direction>{ Direction.EAST, Direction.WEST});
+                        if(directions[0] == Direction.EAST)
+                            directions.AddRange(new List<Direction>{ Direction.NORTH, Direction.SOUTH});
+                        if(directions[0] == Direction.WEST)
+                            directions.AddRange(new List<Direction>{ Direction.NORTH, Direction.SOUTH});
+                    }
                     directions.Add(Direction.STILL);
                     foreach(Direction d in directions) {
                         if(IsSafeMove(ship, d)) {
