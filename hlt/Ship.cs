@@ -18,7 +18,7 @@ namespace Halite3.hlt
         public static List<Entity> MyDropoffs => MyBot.Me.GetDropoffs();
         public int Id => this.id.id;
         public bool CanMove => this.halite >= this.CurrentMapCell.halite / 10;
-        public bool IsMine => owner.id.Equals(MyBot.Me.id);
+        public bool IsMine => this.owner.id == MyBot.Me.id.id;
 
         public bool OnDropoff => MyDropoffs.Any(d => d.position.Equals(this.position));
 

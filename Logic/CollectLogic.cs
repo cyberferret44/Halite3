@@ -84,7 +84,7 @@ namespace Halite3.Logic {
                         bool nnOccupiedAndReturning = nnCell.IsOccupied() && nnCell.ship.halite > 500; //todo weird logic
                         Log.LogMessage($"nnOccupiedAndReturning.... {nnOccupiedAndReturning}");
                         bool nnnOccupiedAndReturning = nnnCell.IsOccupied() && nnnCell.ship.halite > 500; //todo weird logic
-                        Log.LogMessage($"nnOccupiedAndReturning.... {nnnOccupiedAndReturning}");
+                        Log.LogMessage($"nnnOccupiedAndReturning.... {nnnOccupiedAndReturning}");
                         Log.LogMessage($"IsSafeMove(ship, d).... {IsSafeMove(ship, d)}");
                         Log.LogMessage($"(couldMove || !nnOccupiedAndReturning).... {(couldMove || !nnOccupiedAndReturning)}");
                         Log.LogMessage($"!(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1).... {!(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1)}");
