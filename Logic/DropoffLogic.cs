@@ -5,6 +5,9 @@ using System;
 
 namespace Halite3.Logic {
     public class DropoffLogic : Logic {
+        // Super optomized dropoff logic
+        Dictionary<Point, int[]> DropoffQueue = new Dictionary<Point, int[]>();
+
         // virtual drop off
         private class VirtualDropoff {
             public Position Position;
@@ -141,7 +144,7 @@ namespace Halite3.Logic {
         }
 
         private bool ShouldCreateDropoff() {
-            return  MyBot.game.turnNumber > 100;
+            return  MyBot.game.turnNumber > 100 && (Me.ShipsSorted.Count / Me.GetDropoffs().Count) > 15;
         }
 
         private bool CanCreateDropoff(Ship ship) {

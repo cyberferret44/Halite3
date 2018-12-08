@@ -37,6 +37,14 @@ namespace Halite3
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32) }
         };
 
+        public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
+            { Parameters.CARGO_TO_MOVE, .02 },
+            { Parameters.TURNS_TO_SAVE, .02 },
+            { Parameters.CELL_VALUE_DEGRADATION, .02},
+            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, .02},
+            { Parameters.DROPOFF_DISTANCE, .1 }
+        };
+
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
 
         public double LowerBound(Parameters p) => BoundDictionary[p].Lower;

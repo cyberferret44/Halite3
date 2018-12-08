@@ -76,8 +76,8 @@ namespace Halite3
 
                 // Specimen spawn logic for GeneticTuner
                 if(game.TurnsRemaining == 0) {
-                    if((game.Opponents.Count == 1 && Me.halite >= game.Opponents[0].halite) ||
-                        game.Opponents.Count == 3 && Me.halite >= game.Opponents.OrderBy(x => x.halite).ElementAt(1).halite) {
+                    if((game.Opponents.Count == 1 && Me.halite >= 1.02 * game.Opponents[0].halite) ||
+                        game.Opponents.Count == 3 && Me.halite >= 1.03 * game.Opponents.OrderBy(x => x.halite).ElementAt(1).halite) {
                         specimen.SpawnChildren();
                     } else {
                         specimen.Kill();

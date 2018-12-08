@@ -18,7 +18,7 @@ namespace Halite3.hlt
         public bool IsStructure => structure != null;
 
         // mainly for debugging
-        private GameMap Map = MyBot.GameMap;
+        private GameMap Map => MyBot.GameMap;
         public MapCell North => Map.At(position.DirectionalOffset(Direction.NORTH));
         public MapCell South => Map.At(position.DirectionalOffset(Direction.SOUTH));
         public MapCell East => Map.At(position.DirectionalOffset(Direction.EAST));

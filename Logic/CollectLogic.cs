@@ -63,14 +63,36 @@ namespace Halite3.Logic {
 
                 // Special logic for a ship on a dropoff
                 if(ship.OnDropoff) {
+                    directions.Remove(Direction.STILL);
+                    Log.LogMessage($"ship on drop {ship.Id}... Preferred Directions are...");
+                    directions.ForEach(d => Log.LogMessage(d.ToString("g")));
                     bool cont = false;
+                    var returningNeighbors = ship.CurrentMapCell.Neighbors.Where(n => n.IsOccupied() && n.ship.IsMine && n.ship.halite > 500).Select(n => n.ship).ToList();
+                    Log.LogMessage("returning neighbors are...");
+                    returningNeighbors = returningNeighbors.OrderBy(s => ships.IndexOf(s)).ToList();
+                    returningNeighbors.ForEach(s => Log.LogMessage(s.id.id.ToString()));
                     foreach(var d in directions) {
+                        Log.LogMessage("Direction.... " + d.ToString("g"));
+                        var nCell = Map.At(ship.position.DirectionalOffset(d));
+                        Log.LogMessage($"nCell.... ({nCell.position.AsPoint.x},{nCell.position.AsPoint.y})");
                         var nnCell = Map.At(ship.position.DirectionalOffset(d).DirectionalOffset(d));
-                        bool couldMove = Map.At(ship.position.DirectionalOffset(d)).halite < 10;
+                        Log.LogMessage($"nnCell.... ({nnCell.position.AsPoint.x},{nnCell.position.AsPoint.y})");
+                        var nnnCell = Map.At(ship.position.DirectionalOffset(d).DirectionalOffset(d).DirectionalOffset(d));
+                        Log.LogMessage($"nnCell.... ({nnnCell.position.AsPoint.x},{nnnCell.position.AsPoint.y})");
+                        bool couldMove = nCell.halite < 10;
+                        Log.LogMessage($"could Move.... {couldMove}");
                         bool nnOccupiedAndReturning = nnCell.IsOccupied() && nnCell.ship.halite > 500; //todo weird logic
-                        if(IsSafeMove(ship, d) && (couldMove || !nnOccupiedAndReturning)) {
+                        Log.LogMessage($"nnOccupiedAndReturning.... {nnOccupiedAndReturning}");
+                        bool nnnOccupiedAndReturning = nnnCell.IsOccupied() && nnnCell.ship.halite > 500; //todo weird logic
+                        Log.LogMessage($"nnOccupiedAndReturning.... {nnnOccupiedAndReturning}");
+                        Log.LogMessage($"IsSafeMove(ship, d).... {IsSafeMove(ship, d)}");
+                        Log.LogMessage($"(couldMove || !nnOccupiedAndReturning).... {(couldMove || !nnOccupiedAndReturning)}");
+                        Log.LogMessage($"!(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1).... {!(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1)}");
+                        
+                        if(IsSafeMove(ship, d) && !nnOccupiedAndReturning && (couldMove || !nnnOccupiedAndReturning) && !(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1)) {
                             cont = true;
                             MyBot.MakeMove(ship.Move(d));
+                            Log.LogMessage($"Ship {ship.id.id} moved {d.ToString("g")}");
                             break;
                         }
                     }
@@ -118,7 +140,7 @@ namespace Halite3.Logic {
                 if(!directions.Contains(Direction.STILL) && ship.CurrentMapCell.halite >= NumToIgnore) {
                     directions.Insert(0, Direction.STILL);
                 }
-                directions = AddRemaining(directions);
+                directions = AddRemaining(directions, !ship.OnDropoff);
                 return directions;
             }
         }

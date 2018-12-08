@@ -58,8 +58,8 @@ namespace GeneticTuner
                 };
 
                 // tune our hyperparameters
-                foreach(var param in Enum.GetValues(typeof(Parameters)).Cast<Parameters>()) {
-                    double multiplier = 1.0 + ((random.NextDouble() - .5) / 50.0);
+                foreach(var param in HyperParameters.AllParameters) {
+                    double multiplier = 1.0 + ((random.NextDouble() * 2 - 1) * HyperParameters.VarianceDictionary[param]);
                     double curValue = hyperParameters.GetValue(param);
                     child.hyperParameters[param] = curValue * multiplier;
                 }
@@ -84,7 +84,7 @@ namespace GeneticTuner
 
         public void Kill() {
             // want a minimum of 10 specimen
-            if(Directory.EnumerateFiles(SpecimenFolder).Count() > 20) {
+            if(Directory.EnumerateFiles(SpecimenFolder).Count() > 12) {
                 File.Delete(this.FilePath);
             }
         }
