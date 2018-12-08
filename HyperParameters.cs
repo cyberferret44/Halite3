@@ -12,7 +12,8 @@ namespace Halite3
         CARGO_TO_MOVE,
         TURNS_TO_SAVE,
         CELL_VALUE_DEGRADATION,
-        PERCENT_OF_AVERAGE_TO_IGNORE
+        PERCENT_OF_AVERAGE_TO_IGNORE,
+        DROPOFF_DISTANCE
     }
 
     public class HyperParameters {
@@ -32,7 +33,8 @@ namespace Halite3
             { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0) },
             { Parameters.TURNS_TO_SAVE, new Bounds(0, 1.0) },
             { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0)},
-            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0)}
+            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0)},
+            { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32) }
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();

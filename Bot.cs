@@ -31,32 +31,30 @@ namespace Halite3
 
         public static void Main(string[] args)
         {
+            // Get initial game state
+            game = new Game();
+            GameMap = game.gameMap;
+            Me = game.me;
+
+            // Do Genetic Algorithm Specimen implementation
             Specimen specimen;
             if(IsLocal) {
-                //HParams = new HyperParameters("Halite3/HyperParameters.txt");
-                //specimen = new FakeSpecimen();
-                specimen = GeneticSpecimen.RandomSpecimen("Halite3/");
+                specimen = GeneticSpecimen.RandomSpecimen("Halite3/", game);
                 HParams = specimen.GetHyperParameters();
             } else  {
-                specimen = GeneticSpecimen.RandomSpecimen("");
+                specimen = GeneticSpecimen.RandomSpecimen("", game);
                 HParams = specimen.GetHyperParameters();
             }
 
-            game = new Game();
+            // Handle Logic
             Logic.Logic CollectLogic = LogicFactory.GetCollectLogic();
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
-            // At this point "game" variable is populated with initial map data.
-            // This is a good place to do computationally expensive start-up pre-processing.
-            // As soon as you call "ready" function below, the 2 second per turn timer will start.
-            GameMap = game.gameMap;
-            Me = game.me;
             CollectLogic.Initialize();
             DropoffLogic.Initialize();
             EndOfGameLogic.Initialize();
 
-            //MyLogic.WriteToFile();
-            string BotName = specimen.Name();
+            string BotName = "NEW_" + specimen.Name();
             game.Ready(BotName);
             //while(!Debugger.IsAttached);
 
@@ -78,7 +76,8 @@ namespace Halite3
 
                 // Specimen spawn logic for GeneticTuner
                 if(game.TurnsRemaining == 0) {
-                    if(Me.halite >= game.Opponents.Max(p => p.halite)) {
+                    if((game.Opponents.Count == 1 && Me.halite >= game.Opponents[0].halite) ||
+                        game.Opponents.Count == 3 && Me.halite >= game.Opponents.OrderBy(x => x.halite).ElementAt(1).halite) {
                         specimen.SpawnChildren();
                     } else {
                         specimen.Kill();

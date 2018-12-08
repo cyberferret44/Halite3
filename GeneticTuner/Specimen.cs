@@ -3,6 +3,7 @@ using System.Linq;
 using System;
 using System.IO;
 using Halite3;
+using Halite3.hlt;
 
 namespace GeneticTuner
 {
@@ -24,6 +25,7 @@ namespace GeneticTuner
     }
 
     public class GeneticSpecimen : Specimen {
+        public static readonly string SPECIMEN_FOLDER = "Specimen2";
         public readonly string SpecimenFolder;
         private static Random random = new Random();
         private static int NUM_CHILDREN = 1; // population control level
@@ -34,10 +36,10 @@ namespace GeneticTuner
 
         private List<GeneticSpecimen> children = new List<GeneticSpecimen>();
 
-        public GeneticSpecimen(string file, string rootFolder) {
+        public GeneticSpecimen(string file, string specimenFolder) {
             FilePath = file;
             hyperParameters = new HyperParameters(FilePath);
-            SpecimenFolder = rootFolder + "GeneticTuner/Specimen";
+            SpecimenFolder = specimenFolder;
             CreateChildren();
         }
         private GeneticSpecimen() {}
@@ -65,10 +67,12 @@ namespace GeneticTuner
             }
         }
 
-        public static Specimen RandomSpecimen(string rootFolder) {
-            var files = Directory.EnumerateFiles(rootFolder + "GeneticTuner/Specimen").ToArray();
+        public static Specimen RandomSpecimen(string rootFolder, Game game) {
+            string folder = rootFolder + $"GeneticTuner/{SPECIMEN_FOLDER}/";
+            folder += game.NumPlayers.ToString() + "x" + game.gameMap.width + "/";
+            var files = Directory.EnumerateFiles(folder).ToArray();
             int randomOne = random.Next(0, files.Count());
-            return new GeneticSpecimen(files[randomOne], rootFolder);
+            return new GeneticSpecimen(files[randomOne], folder);
         }
 
         public void SpawnChildren() {
@@ -80,7 +84,7 @@ namespace GeneticTuner
 
         public void Kill() {
             // want a minimum of 10 specimen
-            if(Directory.EnumerateFiles(SpecimenFolder).Count() > 10) {
+            if(Directory.EnumerateFiles(SpecimenFolder).Count() > 20) {
                 File.Delete(this.FilePath);
             }
         }

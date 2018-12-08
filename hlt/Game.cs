@@ -25,6 +25,7 @@ namespace Halite3.hlt
                                  500;
         public int TurnsRemaining => TotalTurns - turnNumber;
         public List<Player> Opponents => players.Where(p => !p.id.Equals(myId)).ToList();
+        public int NumPlayers => players.Count;
 
         /// <summary>
         /// Initiates a game object collecting all start-state instances for the contained items for pre-game.

@@ -30,7 +30,7 @@ namespace Halite3.Logic {
             // value initialization
             Xlayers = Map.width / 4;
             MinDropoffValue = (int)(((double)Xlayers + 1.0) / 2.0 * 4.0 * (double)Xlayers * 135.0);
-            Spacing = (int)Math.Sqrt(Map.width * Map.height / (MyBot.game.Opponents.Count + 1) / 2);
+            Spacing = (int)HParams[Parameters.DROPOFF_DISTANCE];
             Log.LogMessage($"Spacing is {Spacing}");
 
             // todo one magic number
@@ -49,7 +49,6 @@ namespace Halite3.Logic {
                 if(max < MinDropoffValue || (BestDropoffs.Count > 0 && max < BestDropoffs[0].InitialHalite / 1.75))
                     break;
                 BestDropoffs.Add(new VirtualDropoff(pos, max));
-                Log.LogMessage($"Best drop at point ({pos.x},{pos.y}), with a val {max}");
                 availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Spacing).ToList();
             }
         }
