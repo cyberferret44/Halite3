@@ -5,7 +5,7 @@ using System;
 
 namespace Halite3.Logic {
     public class DropoffLogic : Logic {
-        // Super optomized dropoff logic
+        // TODO Meant for Super optomized dropoff logic
         Dictionary<Point, int[]> DropoffQueue = new Dictionary<Point, int[]>();
 
         // virtual drop off

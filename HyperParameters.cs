@@ -52,7 +52,13 @@ namespace Halite3
         public double GetValue(Parameters p) => ParametersDictionary[p];
         public double this[Parameters param]
         {
-            get { return ParametersDictionary[param]; }
+            get { 
+                if(param == Parameters.DROPOFF_DISTANCE) {
+                    return ParametersDictionary[param] * 150 / MyBot.GameMap.AverageHalite;
+                } else  {
+                    return ParametersDictionary[param];
+                }
+            }
             set { 
                 value = Math.Max(BoundDictionary[param].Lower, value);
                 value = Math.Min(BoundDictionary[param].Upper, value);

@@ -20,6 +20,7 @@ namespace Halite3.hlt
         public int HaliteRemaining = 0;
         public int InitialHalite = 0;
         public double PercentHaliteCollected => 1.0 - (((double)HaliteRemaining)/((double)InitialHalite));
+        public int AverageHalite => GetAllCells().Sum(c => c.halite) / GetAllCells().Count();
 
         public List<MapCell> GetAllCells() {
             List<MapCell> allCells = new List<MapCell>();

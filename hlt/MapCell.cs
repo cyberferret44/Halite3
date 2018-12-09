@@ -51,6 +51,10 @@ namespace Halite3.hlt
             return ship != null && ship.owner.id != MyBot.Me.id.id;
         }
 
+        public bool IsOccupiedByMe() {
+            return ship != null && ship.owner.id == MyBot.Me.id.id;
+        }
+
         /// <summary>
         /// Returns true if there is a structure on this MapCell.
         /// </summary>
