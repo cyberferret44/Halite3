@@ -47,14 +47,16 @@ namespace Halite3
             }
 
             // Handle Logic
+            Logic.Logic CombatLogic = LogicFactory.GetCombatLogic(Me.id.id, IsLocal);
             Logic.Logic CollectLogic = LogicFactory.GetCollectLogic();
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
+            CombatLogic.Initialize();
             CollectLogic.Initialize();
             DropoffLogic.Initialize();
             EndOfGameLogic.Initialize();
 
-            string BotName = "NEW_" + specimen.Name();
+            string BotName = (Me.id.id == 0 ? "Aggro_" : "NEW_") + specimen.Name();
             game.Ready(BotName);
             //while(!Debugger.IsAttached);
 
@@ -73,11 +75,12 @@ namespace Halite3
                 CollectLogic.ProcessTurn();
                 DropoffLogic.ProcessTurn();
                 EndOfGameLogic.ProcessTurn();
+                CombatLogic.ProcessTurn();
 
                 // Specimen spawn logic for GeneticTuner
                 if(game.TurnsRemaining == 0) {
-                    if((game.Opponents.Count == 1 && Me.halite >= 1.02 * game.Opponents[0].halite) ||
-                        game.Opponents.Count == 3 && Me.halite >= 1.03 * game.Opponents.OrderBy(x => x.halite).ElementAt(1).halite) {
+                    if((game.Opponents.Count == 1 && Me.halite >= game.Opponents[0].halite) ||
+                        game.Opponents.Count == 3 && Me.halite >= game.Opponents.OrderBy(x => x.halite).ElementAt(1).halite) {
                         specimen.SpawnChildren();
                     } else {
                         specimen.Kill();
@@ -99,6 +102,9 @@ namespace Halite3
 
                 // End game, return all ships to nearest dropoff
                 EndOfGameLogic.CommandShips(UnusedShips);
+
+                // Combat Logic!!!
+                CombatLogic.CommandShips(UnusedShips);
 
                 // Move Ships off of Drops.  Try moving to empty spaces first, then move to habited spaces and push others off
                 var shipsOnDropoffs = Me.ShipsOnDropoffs().Where(s => !UsedShips.Contains(s.Id)).ToList();

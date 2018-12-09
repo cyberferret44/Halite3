@@ -144,7 +144,7 @@ namespace Halite3.Logic {
         }
 
         private bool ShouldCreateDropoff() {
-            return  MyBot.game.turnNumber > 100 && (Me.ShipsSorted.Count / Me.GetDropoffs().Count) > 15;
+            return  MyBot.game.turnNumber > 100 && ((Me.ShipsSorted.Count / Me.GetDropoffs().Count)+1) > 15;
         }
 
         private bool CanCreateDropoff(Ship ship) {
@@ -154,7 +154,8 @@ namespace Halite3.Logic {
         // todo consider opponents
         private bool ShouldMoveShip(Ship ship) {
             return ship.IsFull() ||
-                ship.halite > HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + .25 * ship.CurrentMapCell.halite;
+                ship.halite > HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + .25 * ship.CurrentMapCell.halite ||
+                ship.halite > 300 && ship.Neighbors.Any(n => n.IsOccupiedByOpponent() && n.ship.halite * 2 < ship.halite);
         }
 
         private void DeleteNextDropoff() {

@@ -1,6 +1,7 @@
 using Halite3.hlt;
 using System.Collections.Generic;
 using Halite3;
+using System.Linq;
 namespace Halite3.Logic {
     public abstract class Logic {
         // shortcut accessors
@@ -23,7 +24,19 @@ namespace Halite3.Logic {
             if(target.IsStructure && !CollisionCells.Contains(target)) {
                 return true;
             }
+            if(target.IsOccupiedByMe()) {
+                var s = target.ship;
+                if(s.Neighbors.All(n => CollisionCells.Contains(n) || n.IsOccupiedByOpponent())) {
+                    return false;
+                }
+            }
             return !CollisionCells.Contains(target) && !target.IsOccupiedByOpponent();
         }
+    }
+
+    public class EmptyLogic : Logic {
+        public override void Initialize() { }
+        public override void ProcessTurn() { }
+        public override void CommandShips(List<Ship> ships) { }
     }
 }

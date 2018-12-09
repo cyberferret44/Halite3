@@ -54,7 +54,17 @@ namespace Halite3
         {
             get { 
                 if(param == Parameters.DROPOFF_DISTANCE) {
-                    return ParametersDictionary[param] * 150 / MyBot.GameMap.AverageHalite;
+                    var value = ParametersDictionary[param];
+                    int numCellsCovered = (int) (((value * value / 2) + (value / 2)) * 4.0) + 1;
+                    int haliteCovered = numCellsCovered * 170;
+                    int actualLayers=0;
+                    while(true) {
+                        actualLayers++;
+                        var numCells = (((actualLayers * actualLayers / 2) + (actualLayers / 2)) * 4.0) + 1;
+                        if(numCells * (MyBot.GameMap.AverageHalitePerCell + 20) >= haliteCovered) {
+                            return actualLayers;
+                        }
+                    }
                 } else  {
                     return ParametersDictionary[param];
                 }
@@ -67,9 +77,11 @@ namespace Halite3
         }
 
         public HyperParameters(string file) {
-            var lines = System.IO.File.ReadAllText(file).Split("\n");
-            for(int i=0; i<Enum.GetNames(typeof(Parameters)).Length; i++) {
-                string[] values = lines[i].Split(",");
+            var lines = System.IO.File.ReadAllText(file).Split("\n").ToList();
+            foreach(var line in lines) {
+                if(line.Trim().Length == 0)
+                    continue;
+                var values = line.Split(",").ToList();
                 Parameters param = (Parameters)Enum.Parse(typeof(Parameters), values[0]);
                 ParametersDictionary.Add(param, double.Parse(values[1]));
             }

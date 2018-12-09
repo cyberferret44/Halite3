@@ -49,7 +49,6 @@ namespace Halite3.Logic {
 
         public override void CommandShips(List<Ship> ships) {
             // add accounted for ships
-            //todo disable frim mmoving onto structure???  https://halite.io/play/?game_id=2809368&replay_class=1&replay_name=replay-20181207-083825%2B0000-1544171717-64-64-2809368
             ships.ForEach(s => ShipsAccountedFor.Add(s.Id));
 
             // command the ships
@@ -60,45 +59,45 @@ namespace Halite3.Logic {
                 }
                 var target = GetBestMoveTarget(ship);
                 var directions = GetDirections(target, ship);
+                bool cont = false;
 
                 // Special logic for a ship on a dropoff
                 if(ship.OnDropoff) {
                     directions.Remove(Direction.STILL);
-                    Log.LogMessage($"ship on drop {ship.Id}... Preferred Directions are...");
                     directions.ForEach(d => Log.LogMessage(d.ToString("g")));
-                    bool cont = false;
-                    var returningNeighbors = ship.CurrentMapCell.Neighbors.Where(n => n.IsOccupied() && n.ship.IsMine && n.ship.halite > 500).Select(n => n.ship).ToList();
-                    Log.LogMessage("returning neighbors are...");
+                    var returningNeighbors = ship.CurrentMapCell.Neighbors.Where(n => n.IsOccupied() && n.ship.IsMine 
+                                            && n.ship.halite > 500).Select(n => n.ship).ToList();
                     returningNeighbors = returningNeighbors.OrderBy(s => ships.IndexOf(s)).ToList();
                     returningNeighbors.ForEach(s => Log.LogMessage(s.id.id.ToString()));
                     foreach(var d in directions) {
-                        Log.LogMessage("Direction.... " + d.ToString("g"));
                         var nCell = Map.At(ship.position.DirectionalOffset(d));
-                        Log.LogMessage($"nCell.... ({nCell.position.AsPoint.x},{nCell.position.AsPoint.y})");
                         var nnCell = Map.At(ship.position.DirectionalOffset(d).DirectionalOffset(d));
-                        Log.LogMessage($"nnCell.... ({nnCell.position.AsPoint.x},{nnCell.position.AsPoint.y})");
                         var nnnCell = Map.At(ship.position.DirectionalOffset(d).DirectionalOffset(d).DirectionalOffset(d));
-                        Log.LogMessage($"nnCell.... ({nnnCell.position.AsPoint.x},{nnnCell.position.AsPoint.y})");
                         bool couldMove = nCell.halite < 10;
-                        Log.LogMessage($"could Move.... {couldMove}");
                         bool nnOccupiedAndReturning = nnCell.IsOccupied() && nnCell.ship.halite > 500; //todo weird logic
-                        Log.LogMessage($"nnOccupiedAndReturning.... {nnOccupiedAndReturning}");
                         bool nnnOccupiedAndReturning = nnnCell.IsOccupied() && nnnCell.ship.halite > 500; //todo weird logic
-                        Log.LogMessage($"nnnOccupiedAndReturning.... {nnnOccupiedAndReturning}");
-                        Log.LogMessage($"IsSafeMove(ship, d).... {IsSafeMove(ship, d)}");
-                        Log.LogMessage($"(couldMove || !nnOccupiedAndReturning).... {(couldMove || !nnOccupiedAndReturning)}");
-                        Log.LogMessage($"!(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1).... {!(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1)}");
-                        
                         if(IsSafeMove(ship, d) && !nnOccupiedAndReturning && (couldMove || !nnnOccupiedAndReturning) && !(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1)) {
                             cont = true;
                             MyBot.MakeMove(ship.Move(d));
-                            Log.LogMessage($"Ship {ship.id.id} moved {d.ToString("g")}");
                             break;
                         }
                     }
-                    if(cont)
-                        continue;
                 }
+
+                if(cont)
+                    continue;
+
+                for(int i=0; i< directions.Count && directions[i] != Direction.STILL; i++) {
+                    if(IsSafeMove(ship, directions[i])) {
+                        MyBot.MakeMove(ship.Move(directions[i]));
+                        cont = true;
+                        break;
+                    }
+                }
+
+                if(cont)
+                    continue;
+
                 if(directions.Any(m => IsSafeMove(ship, m))) {
                     MyBot.MakeMove(ship.Move(directions.First(m => IsSafeMove(ship, m)))); //todo fix possible collisions here
                     continue;
@@ -207,6 +206,15 @@ namespace Halite3.Logic {
         }
 
         private Position GetBestMoveTarget(Ship ship) {
+            // if there's a collided cell nearby, target it
+            var info = new XLayersInfo(3, ship.position);
+            foreach(var cell in info.AllCells) {
+                if(cell.halite > Map.AverageHalitePerCell * 20 && info.MyClosestShip().Id == ship.Id) {
+                    Assign(ship, cell.position.AsPoint);
+                    break;
+                }
+            }
+
             // if not assigned, assign
             if(!Assignments.ContainsKey(ship.Id) || Assignments[ship.Id] == null) {
                 Point? best = null;

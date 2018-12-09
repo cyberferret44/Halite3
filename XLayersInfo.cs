@@ -2,6 +2,7 @@ using Halite3;
 using Halite3.hlt;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 // This is a class for harvesting data to be used for logic and, more importantly, scoring moves
 // Everything should be lazy loaded since the class likely will only be instantiated to get one piece of information
@@ -25,6 +26,7 @@ namespace Halite3 {
         public int NumEnemyShips => Cells.Where(c => c.IsOccupiedByOpponent()).Count();
         public int NumMyShips => Cells.Where(c => c.IsOccupiedByMe()).Count();
         public int MyShipMargin => NumMyShips - NumEnemyShips;
+        public double MyShipRatio => NumMyShips / Math.Min(1, NumEnemyShips);
         public int Halite => Cells.Sum(c => c.halite);
         public int NumCells => Cells.Count;
         public int HalitePerCell => Halite / NumCells;
@@ -34,5 +36,15 @@ namespace Halite3 {
         public int NumMyDropoffs => Cells.Where(c => c.IsStructure && c.structure.IsMine).Count();
         public int NumOpponentDropoffs => Cells.Where(c => c.IsStructure && c.structure.IsOpponents).Count();
         public int MyDropoffMargin => NumMyDropoffs - NumOpponentDropoffs;
+        public List<MapCell> AllCells => Cells;
+        public Ship MyClosestShip() {
+            for(int i=0; i<= Layers.Count(); i++) {
+                if(Layers[i].Any(cell => cell.IsOccupiedByMe())) {
+                    return Layers[i].First(cell => cell.IsOccupiedByMe()).ship;
+                }
+            }
+            return null;
+        }
+
     }
 }

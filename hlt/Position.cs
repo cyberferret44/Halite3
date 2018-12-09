@@ -121,5 +121,12 @@ namespace Halite3.hlt
 
     public struct Point {
         public int x, y;
+        public override bool Equals(Object obj)  {
+            return obj is Point && this.x == ((Point)obj).x && this.y == ((Point)obj).y;
+        }
+        public override int GetHashCode() 
+        {
+            return x.GetHashCode() ^ y.GetHashCode();
+        }
     }
 }
