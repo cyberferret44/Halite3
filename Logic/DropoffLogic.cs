@@ -75,14 +75,15 @@ namespace Halite3.Logic {
             }
         }
 
-        public override void CommandShips(List<Ship> ships) {
+        public override void CommandShips() {
             // need this for the virtual dropoff to be included
-            ships = ships.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
+            var ships = UnusedShips.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
             ships = ships.OrderBy(s => Map.CalculateDistance(s.position, GetClosestDropoff(s))).ToList();
-            // todo, queue up ships
+
+
             foreach(var ship in ships) {
                 if(NextDropoff != null && ship.position.Equals(NextDropoff.Position) && CanCreateDropoff(ship)) {
-                    MyBot.MakeMove(ship.MakeDropoff());
+                    MakeMove(ship.MakeDropoff(), "make into dropoff");
                 } else {
                     Position closestDrop = GetClosestDropoff(ship);
                     List<Direction> directions = closestDrop.GetAllDirectionsTo(ship.position);
@@ -100,7 +101,7 @@ namespace Halite3.Logic {
                     directions.Add(Direction.STILL);
                     foreach(Direction d in directions) {
                         if(IsSafeMove(ship, d)) {
-                            MyBot.MakeMove(ship.Move(d));
+                            MakeMove(ship.Move(d),  "moving to dropoff");
                             break;
                         }
                     }

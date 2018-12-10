@@ -12,12 +12,9 @@ namespace GeneticTuner
         private static readonly string SPECIMEN_CSV = "Halite3/GeneticTuner/SpecimenAnalysis.csv";
         public static void GenerateCSVFromSpecimenFolder() {
             List<GeneticSpecimen> specimens = new List<GeneticSpecimen>();
-            Halite3.hlt.Log.LogMessage("asdf");
             foreach(var f in Directory.EnumerateFiles("Halite3/GeneticTuner/Specimen")) {
-                Halite3.hlt.Log.LogMessage("hurr: " + f);
                 specimens.Add(new GeneticSpecimen(f, "Halite3/"));
             }
-            Halite3.hlt.Log.LogMessage("fdas");
 
             string output = "";
             var hParams = HyperParameters.AllParameters;

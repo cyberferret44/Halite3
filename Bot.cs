@@ -15,19 +15,14 @@ namespace Halite3
         // Simple Variable to tell if bot is running locally vs on the server
         private static bool IsLocal = Directory.GetCurrentDirectory().StartsWith("/Users/cviolet") ||
                                       Directory.GetCurrentDirectory().StartsWith("C://Users");
+        private static bool IsDebug = false;
         
         // Public Variables
         public static GameMap GameMap;
-        public static HashSet<MapCell> CollisionCells = new HashSet<MapCell>();
         public static HyperParameters HParams;
         public static Player Me;
         public static Game game;
         public static bool ReserveForDropoff = false;
-
-        // Private Variables
-        private static List<Command> CommandQueue = new List<Command>();
-        private static HashSet<int> UsedShips = new HashSet<int>();
-        private static List<Ship> UnusedShips => Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)).ToList();
 
         public static void Main(string[] args)
         {
@@ -35,6 +30,9 @@ namespace Halite3
             game = new Game();
             GameMap = game.gameMap;
             Me = game.me;
+
+            IsDebug = IsLocal && args.Count() > 0 && args[0] == "debug";
+            Log.LogMessage("Is debug? "+ IsDebug);
 
             // Do Genetic Algorithm Specimen implementation
             Specimen specimen;
@@ -58,7 +56,13 @@ namespace Halite3
 
             string BotName = (Me.id.id == 0 ? "Aggro_" : "NEW_") + specimen.Name();
             game.Ready(BotName);
-            //while(!Debugger.IsAttached);
+            
+            if(IsDebug) {
+                Stopwatch s = new Stopwatch();
+                s.Start();
+                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 30000); // max 30 seconds to attach, prevents memory leaks;
+                s.Stop();
+            }
 
             Log.LogMessage("Successfully created bot! My Player ID is " + game.myId);
             for (; ; )
@@ -67,15 +71,15 @@ namespace Halite3
                 game.UpdateFrame();
                 Me = game.me;
                 GameMap = game.gameMap;
-                CommandQueue.Clear();
-                CollisionCells.Clear();
-                UsedShips.Clear();
 
                 // logic turn processing
                 CollectLogic.ProcessTurn();
                 DropoffLogic.ProcessTurn();
                 EndOfGameLogic.ProcessTurn();
                 CombatLogic.ProcessTurn();
+
+                // Score the ships first 
+                Logic.Logic.InitializeNewTurn();
 
                 // Specimen spawn logic for GeneticTuner
                 if(game.TurnsRemaining == 0) {
@@ -96,42 +100,25 @@ namespace Halite3
                     }
                 }
 
-                // Can't move, just hold still to define the CollisionCell before other ships move
-                var shipsThatCantMove = UnusedShips.Where(s => !s.CanMove).ToList();
-                CollectLogic.CommandShips(shipsThatCantMove);
-
                 // End game, return all ships to nearest dropoff
-                EndOfGameLogic.CommandShips(UnusedShips);
+                EndOfGameLogic.CommandShips();
 
                 // Combat Logic!!!
-                CombatLogic.CommandShips(UnusedShips);
-
-                // Move Ships off of Drops.  Try moving to empty spaces first, then move to habited spaces and push others off
-                var shipsOnDropoffs = Me.ShipsOnDropoffs().Where(s => !UsedShips.Contains(s.Id)).ToList();
-                CollectLogic.CommandShips(shipsOnDropoffs);
+                CombatLogic.CommandShips();
 
                 // Move ships to dropoffs
-                DropoffLogic.CommandShips(UnusedShips);
+                DropoffLogic.CommandShips();
 
                 // collect halite (move or stay) using Logic interface
-                CollectLogic.CommandShips(UnusedShips);
+                CollectLogic.CommandShips();
 
                 // spawn ships
                 if (ShouldSpawnShip())
                 {
-                    CommandQueue.Add(Me.shipyard.Spawn());
+                    Logic.Logic.CommandQueue.Add(Me.shipyard.Spawn());
                 }
 
-                game.EndTurn(CommandQueue);
-            }
-        }
-
-        public static void MakeMove(Command command) {
-            CommandQueue.Add(command);
-            UsedShips.Add(command.Ship.Id);
-            CollisionCells.Add(command.TargetCell);
-            if(command.Ship.Neighbors.Any(n => n.IsStructure) && command.Ship.halite > 0 && command.Ship.CurrentMapCell.halite == 0 && command.TargetCell == command.Ship.CurrentMapCell) {
-                Log.LogMessage((new System.Diagnostics.StackTrace()).ToString());
+                game.EndTurn(Logic.Logic.CommandQueue);
             }
         }
 
@@ -140,7 +127,7 @@ namespace Halite3
             return GameMap.PercentHaliteCollected < .6 &&
                     (game.turnNumber <= game.TotalTurns * HParams[Parameters.TURNS_TO_SAVE] || (Me.halite >= 6000 && (GameMap.PercentHaliteCollected < .4 && game.TurnsRemaining > 100))) &&
                     Me.halite >= (ReserveForDropoff ? 6000 : Constants.SHIP_COST) &&
-                    !CollisionCells.Contains(GameMap.At(Me.shipyard.position));
+                    !Logic.Logic.CollisionCells.Contains(GameMap.At(Me.shipyard.position));
         }
     }
 }

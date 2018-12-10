@@ -16,14 +16,14 @@ namespace Halite3.Logic {
             }
         }
 
-        public override void CommandShips(List<Ship> ships) {
-            foreach(var ship in ships.Where(s => FinalReturnToHome.Contains(s.Id))) {
+        public override void CommandShips() {
+            foreach(var ship in UnusedShips.Where(s => FinalReturnToHome.Contains(s.Id))) {
                 var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
                 directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
                     if(IsSafeMove(ship, d)) {
-                        MyBot.MakeMove(ship.Move(d));
+                        MakeMove(ship.Move(d), "end of game");
                         break;
                     }
                 }

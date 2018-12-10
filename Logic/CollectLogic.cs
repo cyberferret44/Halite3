@@ -12,8 +12,6 @@ namespace Halite3.Logic {
         private Dictionary<int, Point?> Assignments = new Dictionary<int, Point?>();
         private bool HasChanged = false;
 
-        private HashSet<int> ShipsAccountedFor = new HashSet<int>();
-
         private int TotalWallCells => Assignments.Values.Where(v => v != null).Count() + Wall.Count;
 
         public override void Initialize() {
@@ -31,7 +29,6 @@ namespace Halite3.Logic {
             UnassignUnavailableShips();
 
             // Reset Variables
-            ShipsAccountedFor.Clear();
             IgnoredCells.Clear();
             Wall.Clear();
             CreateWall();
@@ -47,14 +44,16 @@ namespace Halite3.Logic {
             }
         }
 
-        public override void CommandShips(List<Ship> ships) {
+        public override void CommandShips() {
             // add accounted for ships
-            ships.ForEach(s => ShipsAccountedFor.Add(s.Id));
+            UnassignUnavailableShips();
 
             // command the ships
-            foreach(var ship in ships) {
+            foreach(var ship in UnusedShips) {
+                if(UsedShips.Contains(ship.Id))
+                    continue;
                 if(!ship.CanMove) {
-                    MyBot.MakeMove(ship.Move(Direction.STILL));
+                    MakeMove(ship.Move(Direction.STILL), "ship can't move from collect logic");
                     continue;
                 }
                 var target = GetBestMoveTarget(ship);
@@ -64,10 +63,9 @@ namespace Halite3.Logic {
                 // Special logic for a ship on a dropoff
                 if(ship.OnDropoff) {
                     directions.Remove(Direction.STILL);
-                    directions.ForEach(d => Log.LogMessage(d.ToString("g")));
                     var returningNeighbors = ship.CurrentMapCell.Neighbors.Where(n => n.IsOccupied() && n.ship.IsMine 
                                             && n.ship.halite > 500).Select(n => n.ship).ToList();
-                    returningNeighbors = returningNeighbors.OrderBy(s => ships.IndexOf(s)).ToList();
+                    returningNeighbors = returningNeighbors.OrderBy(s => AllShips.IndexOf(s)).ToList();
                     returningNeighbors.ForEach(s => Log.LogMessage(s.id.id.ToString()));
                     foreach(var d in directions) {
                         var nCell = Map.At(ship.position.DirectionalOffset(d));
@@ -78,7 +76,7 @@ namespace Halite3.Logic {
                         bool nnnOccupiedAndReturning = nnnCell.IsOccupied() && nnnCell.ship.halite > 500; //todo weird logic
                         if(IsSafeMove(ship, d) && !nnOccupiedAndReturning && (couldMove || !nnnOccupiedAndReturning) && !(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1)) {
                             cont = true;
-                            MyBot.MakeMove(ship.Move(d));
+                            MakeMove(ship.Move(d), "ship on dropoff best move");
                             break;
                         }
                     }
@@ -87,20 +85,24 @@ namespace Halite3.Logic {
                 if(cont)
                     continue;
 
-                for(int i=0; i< directions.Count && directions[i] != Direction.STILL; i++) {
+                /* for(int i=0; i< directions.Count && directions[i] != Direction.STILL; i++) {
                     if(IsSafeMove(ship, directions[i])) {
-                        MyBot.MakeMove(ship.Move(directions[i]));
+                        MakeMove(ship.Move(directions[i]));
                         cont = true;
                         break;
                     }
                 }
 
                 if(cont)
-                    continue;
+                    continue;*/
 
                 if(directions.Any(m => IsSafeMove(ship, m))) {
-                    MyBot.MakeMove(ship.Move(directions.First(m => IsSafeMove(ship, m)))); //todo fix possible collisions here
+                    Direction first = directions.First(m => IsSafeMove(ship, m));
+                    MakeMove(ship.Move(first), "move from collect logic safest best move");
                     continue;
+                } else {
+                    Log.LogMessage($"Critical Failure for ship {ship.Id}");
+                    CollisionCells.ToList().ForEach(c => Log.LogMessage($"{c.position.x},{c.position.y}"));
                 }
             }
         }
@@ -146,8 +148,10 @@ namespace Halite3.Logic {
 
         /// This method will unassign any ships not available in the list
         private void UnassignUnavailableShips() {
+            var accountedFor = new HashSet<int>();
+            UnusedShips.ForEach(s => accountedFor.Add(s.Id));
             foreach(var key in Assignments.Keys.ToList()) {
-                if(!ShipsAccountedFor.Contains(key)) {
+                if(!accountedFor.Contains(key)) {
                     Unassign(key);
                 }
             }
@@ -252,13 +256,9 @@ namespace Halite3.Logic {
         }
 
         private void Assign(Ship ship, Point? point) {
-            if(point.HasValue)
-                Log.LogMessage($"ship {ship.Id} has been assigned to ({point.Value.x},{point.Value.y})");
             Assignments[ship.Id] = point;
         }
         private void Unassign(int shipId) {
-            if(Assignments[shipId] != null)
-                Log.LogMessage($"ship {shipId} has been unassigned");
             Assignments[shipId] = null;
         }
     }
