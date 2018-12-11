@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Halite3.hlt
 {
@@ -27,6 +28,7 @@ namespace Halite3.hlt
 
         // Other things
         public bool IsInspired => new XLayersInfo(4, position).NumEnemyShips > 1;
+        public bool IsThreatened => Neighbors.Any(n => n.IsOccupiedByOpponent());
         public List<Ship> ThreatenedBy => new XLayersInfo(1, position).EnemyShips;
 
         public MapCell(Position position, int halite)
