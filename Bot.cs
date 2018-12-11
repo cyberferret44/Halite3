@@ -54,7 +54,7 @@ namespace Halite3
             DropoffLogic.Initialize();
             EndOfGameLogic.Initialize();
 
-            string BotName = (Me.id.id == 0 ? "Aggro_" : "NEW_") + specimen.Name();
+            string BotName = "MoveScoreBot"; //(Me.id.id == 0 ? "Aggro_" : "NEW_") + specimen.Name();
             game.Ready(BotName);
             
             if(IsDebug) {

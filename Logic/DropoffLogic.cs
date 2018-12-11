@@ -6,7 +6,6 @@ using System;
 namespace Halite3.Logic {
     public class DropoffLogic : Logic {
         // TODO Meant for Super optomized dropoff logic
-        Dictionary<Point, int[]> DropoffQueue = new Dictionary<Point, int[]>();
         public override void ScoreMoves() { }
 
         // virtual drop off
@@ -114,18 +113,48 @@ namespace Halite3.Logic {
         }
 
         public override void CommandShips() {
-            // Sort the ships based on distances to the virtual dropoff
+            // get the ships to use
             var ships = UnusedShips.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
-            ships = ships.OrderBy(s => Map.CalculateDistance(s.position, GetClosestDropoff(s))).ToList();
 
-            foreach(var ship in ships) {
+            // first make dropoffs...
+            foreach(var ship in ships.ToList()) {
                 if(NextDropoff != null && ship.position.Equals(NextDropoff.Position) && CanCreateDropoff(ship.position)) {
                     MakeMove(ship.MakeDropoff(), "make into drop-off");
-                } else {
-                    Position closestDrop = GetClosestDropoff(ship);
-                    NavigateToDropoff(ship, closestDrop);
+                    ships.Remove(ship);
                 }
             }
+
+            // go through buckets and move the ships...
+            var dropoffBuckets = GetBuckets(ships);
+            foreach(var bucket in dropoffBuckets) {
+                var drop = bucket.Key;
+                int maxDist = 0;
+                foreach(var ship in bucket.Value) {
+                    int thisDist = Map.CalculateDistance(ship.position, drop);
+                    if(thisDist > maxDist || ship.CurrentMapCell.halite < 10 || !IsSafeMove(ship, Direction.STILL)) {
+                        NavigateToDropoff(ship, drop);
+                    } else {
+                        ship.StayStill();
+                    }
+                    maxDist = Math.Max(maxDist, thisDist);
+                }
+            }
+        }
+
+        Dictionary<Position, List<Ship>> GetBuckets(List<Ship> ships) {
+            var buckets = new Dictionary<Position, List<Ship>>();
+            foreach(var ship in ships) {
+                var drop = GetClosestDropoff(ship); // includes virtual ones
+                if(!buckets.ContainsKey(drop)) {
+                    buckets.Add(drop, new List<Ship>());
+                }
+                buckets[drop].Add(ship);
+            }
+            foreach(var key in buckets.Keys.ToList()) {
+                // ordering them by 10k * distance minus halite, which prioritizes moving full ships
+                buckets[key] = buckets[key].OrderBy(s => Map.CalculateDistance(s.position, key) * 10000 - s.halite).ToList();
+            }
+            return buckets;
         }
 
         private void NavigateToDropoff(Ship ship, Position drop) {

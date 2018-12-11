@@ -15,10 +15,10 @@ namespace Halite3.Logic {
         }
 
         public static Logic GetCombatLogic(int playerId, bool isLocal) {
-            if(!isLocal || playerId == 0)
+            //if(!isLocal || playerId == 0)
                 return new CombatLogic();
-            else
-                return new EmptyLogic();
+            //else
+             //   return new EmptyLogic();
         }
     }
 }
