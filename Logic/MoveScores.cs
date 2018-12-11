@@ -20,52 +20,63 @@ namespace Halite3.Logic {
         }
     }
 
-    // Aggregate class that contains and calaulcates all scores for all ships passed to it
-    public class MoveScores {
-        // This class offloads the nitty gritty logic from the calculate method
-        public class ScoredMoves {
-            // Variables
-            public readonly Ship Ship;
-            public readonly Dictionary<Direction, double> Scores;
-            private readonly List<KeyValuePair<Direction, double>> RemovedMoves;
+    public class ScoredMoves {
+        // Variables
+        public readonly Ship Ship;
+        public readonly Dictionary<Direction, double> Scores;
+        private readonly List<KeyValuePair<Direction, double>> RemovedMoves;
 
-            // Constructor
-            public ScoredMoves(Ship ship) { 
-                Ship = ship;
-                Scores = new Dictionary<Direction, double>();
-                RemovedMoves = new List<KeyValuePair<Direction, double>>();
-            }
-
-            // Accessor Variables
-            public ScoredMove BestMove => Scores.Count == 0 ? null : Scores.Count == 1 ? new ScoredMove(Scores.Keys.First(), double.MaxValue, Ship) : new ScoredMove(Scores.OrderBy(kvp => kvp.Value).First(), Ship);
-            private Point Target(Direction d) => MyBot.GameMap.At(Ship.position.DirectionalOffset(d)).position.AsPoint;
-
-            // Logical Methods
-            public void AddMove(Direction direction, double Value) => Scores[direction] = Value;
-            public void MultiplyValue(Direction direction, double value) => Scores[direction] = Scores[direction] * value;
-
-            // Heavier Methods
-            public void TapCell(MapCell target) {
-                foreach(var kvp in Scores) {
-                    var targetPos = Ship.position.DirectionalOffset(kvp.Key).AsPoint;
-                    if(targetPos.Equals(target.position.AsPoint)) {
-                        RemovedMoves.Add(kvp);
-                        Scores.Remove(kvp.Key);
-                        break;
-                    }
-                }
-
-                // if there's only one remaining move for this agent, we need to set it to max value
-                if(Scores.Count == 1) {
-                    Scores[Scores.Keys.First()] = double.MaxValue;
-                }
-            }
+        // Constructor
+        public ScoredMoves(Ship ship) { 
+            Ship = ship;
+            Scores = new Dictionary<Direction, double>();
+            RemovedMoves = new List<KeyValuePair<Direction, double>>();
         }
 
-        public List<ScoredMoves> Moves;
+        // Accessor Variables
+        public ScoredMove BestMove => Scores.Count == 0 ? null : Scores.Count == 1 ? new ScoredMove(Scores.Keys.First(), double.MaxValue, Ship) : new ScoredMove(Scores.OrderBy(kvp => kvp.Value).Last(), Ship);
+        private Point Target(Direction d) => MyBot.GameMap.At(Ship.position.DirectionalOffset(d)).position.AsPoint;
 
+        // Logical Methods
+        // Logical Methods
+        public void AddMove(Direction direction, double Value) {
+            if(RemovedMoves.All(m => m.Key != direction))
+                Scores[direction] = Value;
+        }
+        public void RemoveValue(Direction direction) => Scores.Remove(direction);
+        public void MultiplyValue(Direction direction, double value) => Scores[direction] = Scores[direction] * value;
+
+        // Heavier Methods
+        public void TapCell(MapCell target) {
+            foreach(var kvp in Scores) {
+                var targetPos = MyBot.GameMap.At(Ship.position.DirectionalOffset(kvp.Key));
+                if(targetPos.Equals(target)) {
+                    RemovedMoves.Add(kvp);
+                    Scores.Remove(kvp.Key);
+                    break;
+                }
+            }
+
+            // if there's only one remaining move for this agent, we need to set it to max value
+            if(Scores.Count == 1) {
+                Scores[Scores.Keys.First()] = double.MaxValue;
+            }
+        }
+    }
+
+    // Aggregate class that contains and calaulcates all scores for all ships passed to it
+    public class MoveScores {
+        // Local Variables
+        public Dictionary<int, ScoredMoves> Moves;
+
+        // Logical Methods
+        public void AddMove(Ship ship, Direction direction, double value) => Moves[ship.Id].AddMove(direction, value);
+        public void RemoveValue(Ship ship, Direction direction) => Moves[ship.Id].RemoveValue(direction);
+        public void MultiplyValue(Ship ship, Direction direction, double value) => Moves[ship.Id].MultiplyValue(direction, value);
+
+        // Methods
         public void ScoreMoves(List<Ship> ships) {
-            Moves = new List<ScoredMoves>();
+            Moves = new Dictionary<int, ScoredMoves>();
             foreach(var ship in ships) {
                 var scoredMoves = new ScoredMoves(ship);
 
@@ -78,20 +89,32 @@ namespace Halite3.Logic {
                         scoredMoves.AddMove(d, 1.0);
                     }
                 }
-                Moves.Add(scoredMoves);
-            }
-
-            foreach(var eShip in MyBot.game.Opponents.SelectMany(x => x.ships.Values)) {
-                var cell = MyBot.GameMap.At(eShip.position);
-                Moves.ForEach(m => m.TapCell(cell));
+                Moves.Add(ship.Id, scoredMoves);
             }
         }
 
-        // todo test when you get back this should fix the collision issue
+        // Get next best command.....
+        public ScoredMove GetBestAvailableMove() {
+            //todo consider how it would affect the other agent's command
+            ScoredMoves best = null;
+            double maxValue = double.MinValue;
+            foreach(var move in Moves.Values) {
+                if(move.BestMove.MoveValue >= maxValue) {
+                    maxValue = move.BestMove.MoveValue;
+                    best = move;
+                }
+            }
+            return best.BestMove;
+        }
+
         public void AddCommand(Command command) {
-            var move = Moves.Single(m => m.Ship.Id.Equals(command.Ship.Id));
-            Moves.Remove(move);
-            Moves.ForEach(m => m.TapCell(command.TargetCell));
+            var move = Moves.Single(m => m.Key == command.Ship.Id);
+            Moves.Remove(move.Key);
+            TapCell(command.TargetCell);
+        }
+
+        private void TapCell(MapCell cell) {
+            Moves.Values.ToList().ForEach(m => m.TapCell(cell));
         }
     }
 }

@@ -25,6 +25,10 @@ namespace Halite3.hlt
         public MapCell West => Map.At(position.DirectionalOffset(Direction.WEST));
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
 
+        // Other things
+        public bool IsInspired => new XLayersInfo(4, position).NumEnemyShips > 1;
+        public List<Ship> ThreatenedBy => new XLayersInfo(1, position).EnemyShips;
+
         public MapCell(Position position, int halite)
         {
             this.position = position;

@@ -24,6 +24,7 @@ namespace Halite3 {
         }
 
         public int NumEnemyShips => Cells.Where(c => c.IsOccupiedByOpponent()).Count();
+        public List<Ship> EnemyShips => Cells.Where(c => c.IsOccupiedByOpponent()).Select(c => c.ship).ToList();
         public int NumMyShips => Cells.Where(c => c.IsOccupiedByMe()).Count();
         public int MyShipMargin => NumMyShips - NumEnemyShips;
         public double MyShipRatio => NumMyShips / Math.Min(1, NumEnemyShips);

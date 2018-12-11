@@ -6,6 +6,7 @@ namespace Halite3.Logic {
     public class CombatLogic : Logic {
         public override void Initialize() { /* TODO */ }
         public override void ProcessTurn() { /* TODO */ }
+        public override void ScoreMoves() { /* TODO */ }
 
         public override void CommandShips() {
             foreach(var ship in UnusedShips) {

@@ -23,6 +23,7 @@ namespace Halite3.Logic {
         public abstract void Initialize();
         public abstract void ProcessTurn();
         public abstract void CommandShips();
+        public abstract void ScoreMoves();
 
         // New Turn Method
         public static void InitializeNewTurn() {
@@ -45,7 +46,7 @@ namespace Halite3.Logic {
         }
 
         public static void MakeMandatoryMoves() {
-            foreach(var v in Scores.Moves) {
+            foreach(var v in Scores.Moves.Values) {
                 if(v.BestMove.MoveValue >= 100000000.0) {
                     Log.LogMessage($"Ship {v.Ship.Id} has only one move, {v.BestMove.Direction.ToString("g")}");
                     MakeMove(v.Ship.Move(v.BestMove.Direction), "move scores incidental mandatory");
@@ -69,5 +70,6 @@ namespace Halite3.Logic {
         public override void Initialize() { }
         public override void ProcessTurn() { }
         public override void CommandShips() { }
+        public override void ScoreMoves() { }
     }
 }

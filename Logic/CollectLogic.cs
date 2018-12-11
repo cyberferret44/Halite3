@@ -7,7 +7,6 @@ namespace Halite3.Logic {
     public class CollectLogic : Logic {
         private static int NumToIgnore;
         private static double Degradation;
-        private HashSet<Point> IgnoredCells = new HashSet<Point>();
         private HashSet<Point> Wall = new HashSet<Point>();
         private Dictionary<int, Point?> Assignments = new Dictionary<int, Point?>();
         private bool HasChanged = false;
@@ -24,12 +23,7 @@ namespace Halite3.Logic {
         }
 
         public override void ProcessTurn() {
-            // unassign ships not accounted for
-            // todo this is not optimum, but it is cleaner
-            UnassignUnavailableShips();
-
             // Reset Variables
-            IgnoredCells.Clear();
             Wall.Clear();
             CreateWall();
 
@@ -47,166 +41,34 @@ namespace Halite3.Logic {
         public override void CommandShips() {
             // add accounted for ships
             UnassignUnavailableShips();
+            this.ScoreMoves();
 
-            // command the ships
-            foreach(var ship in UnusedShips) {
-                if(UsedShips.Contains(ship.Id))
-                    continue;
-                if(!ship.CanMove) {
-                    MakeMove(ship.Move(Direction.STILL), "ship can't move from collect logic");
-                    continue;
-                }
-                var target = GetBestMoveTarget(ship);
-                var directions = GetDirections(target, ship);
-                bool cont = false;
-
-                // Special logic for a ship on a dropoff
-                if(ship.OnDropoff) {
-                    directions.Remove(Direction.STILL);
-                    var returningNeighbors = ship.CurrentMapCell.Neighbors.Where(n => n.IsOccupied() && n.ship.IsMine 
-                                            && n.ship.halite > 500).Select(n => n.ship).ToList();
-                    returningNeighbors = returningNeighbors.OrderBy(s => AllShips.IndexOf(s)).ToList();
-                    returningNeighbors.ForEach(s => Log.LogMessage(s.id.id.ToString()));
-                    foreach(var d in directions) {
-                        var nCell = Map.At(ship.position.DirectionalOffset(d));
-                        var nnCell = Map.At(ship.position.DirectionalOffset(d).DirectionalOffset(d));
-                        var nnnCell = Map.At(ship.position.DirectionalOffset(d).DirectionalOffset(d).DirectionalOffset(d));
-                        bool couldMove = nCell.halite < 10;
-                        bool nnOccupiedAndReturning = nnCell.IsOccupied() && nnCell.ship.halite > 500; //todo weird logic
-                        bool nnnOccupiedAndReturning = nnnCell.IsOccupied() && nnnCell.ship.halite > 500; //todo weird logic
-                        if(IsSafeMove(ship, d) && !nnOccupiedAndReturning && (couldMove || !nnnOccupiedAndReturning) && !(nCell.IsOccupied() && nCell.ship.IsMine && returningNeighbors.Count > 1)) {
-                            cont = true;
-                            MakeMove(ship.Move(d), "ship on dropoff best move");
-                            break;
-                        }
-                    }
-                }
-
-                if(cont)
-                    continue;
-
-                /* for(int i=0; i< directions.Count && directions[i] != Direction.STILL; i++) {
-                    if(IsSafeMove(ship, directions[i])) {
-                        MakeMove(ship.Move(directions[i]));
-                        cont = true;
-                        break;
-                    }
-                }
-
-                if(cont)
-                    continue;*/
-
-                if(directions.Any(m => IsSafeMove(ship, m))) {
-                    Direction first = directions.First(m => IsSafeMove(ship, m));
-                    MakeMove(ship.Move(first), "move from collect logic safest best move");
-                    continue;
-                } else {
-                    Log.LogMessage($"Critical Failure for ship {ship.Id}");
-                    CollisionCells.ToList().ForEach(c => Log.LogMessage($"{c.position.x},{c.position.y}"));
-                }
-            }
-        }
-
-        private List<Direction> GetDirections(Position target, Ship ship) {
-            if(ship.CurrentMapCell.position.Equals(target)) {
-                var directions = DirectionExtensions.ALL_CARDINALS.ToList();
-                directions = directions.OrderByDescending(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
-                directions.Insert(0, Direction.STILL);
-                return directions;
-            } else {
-                List<Direction> directions = target.GetAllDirectionsTo(ship.position);
-                directions = directions.OrderByDescending(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
-                if(directions.Count == 1) {
-                    List<Direction> extraDirections = null;
-                    if(directions[0] == Direction.NORTH)
-                        extraDirections = new List<Direction>{ Direction.EAST, Direction.WEST};
-                    if(directions[0] == Direction.SOUTH)
-                        extraDirections = new List<Direction>{ Direction.EAST, Direction.WEST};
-                    if(directions[0] == Direction.EAST)
-                        extraDirections = new List<Direction>{ Direction.NORTH, Direction.SOUTH};
-                    if(directions[0] == Direction.WEST)
-                        extraDirections = new List<Direction>{ Direction.NORTH, Direction.SOUTH};
-                    extraDirections = extraDirections.OrderByDescending(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
-                    directions.Add(extraDirections[0]);
-                    directions.Add(extraDirections[1]);
-                }
-
-                foreach(var d in directions.ToList()) {
-                    if(Map.At(ship.position.DirectionalOffset(d)).IsStructure) {
-                        directions.Remove(d);
-                    }
-                }
-
-                // todo reassign the cell
-                if(!directions.Contains(Direction.STILL) && ship.CurrentMapCell.halite >= NumToIgnore) {
-                    directions.Insert(0, Direction.STILL);
-                }
-                directions = AddRemaining(directions, !ship.OnDropoff);
-                return directions;
+            while(Scores.Moves.Count > 0) {
+                ScoredMove move = Scores.GetBestAvailableMove();
+                MakeMove(move.Ship.Move(move.Direction), $" command from new thing with a value of {move.MoveValue}");
             }
         }
 
         /// This method will unassign any ships not available in the list
         private void UnassignUnavailableShips() {
-            var accountedFor = new HashSet<int>();
-            UnusedShips.ForEach(s => accountedFor.Add(s.Id));
             foreach(var key in Assignments.Keys.ToList()) {
-                if(!accountedFor.Contains(key)) {
+                if(UsedShips.Contains(key)) {
                     Unassign(key);
                 }
             }
         }
 
-        private List<Direction> AddRemaining(List<Direction> directions, bool stillFirst = true) {
-            if(stillFirst) {
-                if(!directions.Contains(Direction.STILL))
-                    directions.Add(Direction.STILL);
-            }
-            if(directions.Contains(Direction.NORTH)) {
-                if(!directions.Contains(Direction.EAST))
-                    directions.Add(Direction.EAST);
-                if(!directions.Contains(Direction.WEST))
-                    directions.Add(Direction.WEST);
-            }
-            if(directions.Contains(Direction.EAST)) {
-                if(!directions.Contains(Direction.NORTH))
-                    directions.Add(Direction.NORTH);
-                if(!directions.Contains(Direction.SOUTH))
-                    directions.Add(Direction.SOUTH);
-            }
-            if(directions.Contains(Direction.SOUTH)) {
-                if(!directions.Contains(Direction.EAST))
-                    directions.Add(Direction.EAST);
-                if(!directions.Contains(Direction.WEST))
-                    directions.Add(Direction.WEST);
-            }
-            if(directions.Contains(Direction.WEST)) {
-                if(!directions.Contains(Direction.NORTH))
-                    directions.Add(Direction.NORTH);
-                if(!directions.Contains(Direction.SOUTH))
-                    directions.Add(Direction.SOUTH);
-            }
-            if(!directions.Contains(Direction.NORTH))
-                directions.Add(Direction.NORTH);
-            if(!directions.Contains(Direction.SOUTH))
-                directions.Add(Direction.SOUTH);
-            if(!directions.Contains(Direction.EAST))
-                directions.Add(Direction.EAST);
-            if(!directions.Contains(Direction.WEST))
-                directions.Add(Direction.WEST);
-            if(!stillFirst) {
-                if(!directions.Contains(Direction.STILL))
-                    directions.Add(Direction.STILL);
-            }
-            return directions;
-        }
-
-        private double CellValue(Ship ship, MapCell cell) {
-            int dist = Map.CalculateDistance(ship.position, cell.position);
+        private double CellValue(Position pos, MapCell cell) {
+            int dist = Map.CalculateDistance(pos, cell.position);
             var neighbors = Map.GetXLayers(cell.position, 3); // todo magic number
             var vals = neighbors.Select(n => n.halite / (Map.CalculateDistance(n.position, cell.position) + 1));
             var sum = vals.OrderByDescending(v => v).Take(neighbors.Count/2).Sum(v => v);
             return sum * Math.Pow(Degradation, dist);
+        }
+
+        private double CellValueForScore(Position pos, MapCell cell) {
+            var val = CellValue(pos, cell);
+            return val / 12;
         }
 
         private Position GetBestMoveTarget(Ship ship) {
@@ -223,13 +85,13 @@ namespace Halite3.Logic {
             if(!Assignments.ContainsKey(ship.Id) || Assignments[ship.Id] == null) {
                 Point? best = null;
                 if(Wall.Count > 0) {
-                    best = Wall.OrderByDescending(cell => CellValue(ship, Map.At(new Position(cell.x,cell.y)))).First();
+                    best = Wall.OrderByDescending(cell => CellValue(ship.position, Map.At(new Position(cell.x,cell.y)))).First();
                     Wall.Remove(best.Value);
                 }
                 Assign(ship, best);
             }
 
-            // from assignment, move to position (which can be still be null).....
+            // from assignment, move to position
             if(Assignments[ship.Id] != null) {
                 var p = Assignments[ship.Id];
                 return new Position(p.Value.x, p.Value.y);
@@ -246,7 +108,6 @@ namespace Halite3.Logic {
                         Wall.Add(cell.position.AsPoint);
                     }
                 } else {
-                    IgnoredCells.Add(cell.position.AsPoint);
                     if(assigned) {
                         var element = Assignments.First(a => a.Value.HasValue && a.Value.Value.Equals(cell.position.AsPoint));
                         Unassign(element.Key);
@@ -260,6 +121,78 @@ namespace Halite3.Logic {
         }
         private void Unassign(int shipId) {
             Assignments[shipId] = null;
+        }
+
+        // Make some magic happen
+        public override void ScoreMoves() {
+            foreach(var ship in UnusedShips) {
+                Log.LogMessage($"Scoring {ship.Id}");
+                var bestTarget = GetBestMoveTarget(ship);
+                var directionsToBestTarget = bestTarget.GetAllDirectionsTo(ship.position);
+                var costToMove = ship.CurrentMapCell.halite / 10 * .35;
+                double value = 0.0;
+                int curDistToTarget = MyBot.GameMap.CalculateDistance(bestTarget, ship.CurrentMapCell.position);
+                foreach(var d in DirectionExtensions.ALL_DIRECTIONS) {
+                    // some important varibales
+                    var target = Map.At(ship.position.DirectionalOffset(d));
+
+                    // Case one, ship cannot sit on a drop
+                    if(d == Direction.STILL && ship.OnDropoff) {
+                        Scores.RemoveValue(ship, d);
+                        continue;
+                    }
+                    // todo wont work for 4 players
+                    if(target.IsOccupiedByOpponent() && target.ship.halite < ship.halite) {
+                        Scores.RemoveValue(ship, d);
+                        continue;
+                    }
+
+                    if(d == Direction.STILL) {
+                        value = .25 * target.halite;
+                        value *= (value > NumToIgnore ? 30 : .5);
+                        
+                    } else {
+                        value = (.1 * target.halite) - costToMove;
+                    }
+                    value = Math.Max(value, 1.0);
+                    value += CellValueForScore(target.position, Map.At(bestTarget));
+
+                    if(d == Direction.STILL && curDistToTarget == 0) {
+                        value += 10;
+                        value *= 5;
+                    }
+                    int newDistToTarget = MyBot.GameMap.CalculateDistance(target.position, bestTarget);
+                    if(newDistToTarget < curDistToTarget) {
+                        value *= 2;
+                    } else if(newDistToTarget > curDistToTarget) {
+                        value *= .5;
+                    }
+
+                    if(target.IsInspired) {
+                        value *= 3;
+                    }
+
+                    if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.Any(threat => threat.halite < ship.halite)) {
+                        value *= .5;
+                    }
+
+                    if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.All(threat => threat.halite > ship.halite)) {
+                        value *= .5;
+                    }
+
+                    /* if(MyBot.game.Opponents.Count() == 1) {
+                        var opponent = MyBot.game.Opponents[0];
+                        if((Me.halite - opponent.halite) / 1000 + (Me.ShipsSorted.Count - opponent.ships.Values.Count()) > 0) {
+                            value *= 2;
+                        } else  {
+                            value *= .5;
+                        }
+                    }*/
+
+                    Log.LogMessage($"Direction: {d.ToString("g")}   Value: {value} besttarget:{bestTarget.x},{bestTarget.y}");
+                    Scores.AddMove(ship, d, value);
+                }
+            }
         }
     }
 }

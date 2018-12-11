@@ -7,6 +7,7 @@ namespace Halite3.Logic {
     public class DropoffLogic : Logic {
         // TODO Meant for Super optomized dropoff logic
         Dictionary<Point, int[]> DropoffQueue = new Dictionary<Point, int[]>();
+        public override void ScoreMoves() { }
 
         // virtual drop off
         private class VirtualDropoff {
@@ -25,7 +26,7 @@ namespace Halite3.Logic {
         private int Xlayers;
         private int MinDropoffValue;
         private int Spacing;
-        private double HarvestedPercentToDelete = .8;
+        private double HarvestedPercentToDelete = .7;
         HashSet<int> shipsAssignedToNextDropoff = new HashSet<int>();
 
         // Abstractc Logic Implementation

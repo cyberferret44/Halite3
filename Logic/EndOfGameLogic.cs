@@ -7,6 +7,7 @@ namespace Halite3.Logic {
         private HashSet<int> FinalReturnToHome = new HashSet<int>();
 
         public override void Initialize() { /* Nothing to be done */ }
+        public override void ScoreMoves() { }
 
         public override void ProcessTurn() {
             foreach(var ship in Me.ShipsSorted) {

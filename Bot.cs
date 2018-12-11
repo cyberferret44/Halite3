@@ -124,7 +124,7 @@ namespace Halite3
 
         // TODO add a more advanced solution here
         private static bool ShouldSpawnShip() {
-            return GameMap.PercentHaliteCollected < .6 &&
+            return GameMap.PercentHaliteCollected < .65 &&
                     (game.turnNumber <= game.TotalTurns * HParams[Parameters.TURNS_TO_SAVE] || (Me.halite >= 6000 && (GameMap.PercentHaliteCollected < .4 && game.TurnsRemaining > 100))) &&
                     Me.halite >= (ReserveForDropoff ? 6000 : Constants.SHIP_COST) &&
                     !Logic.Logic.CollisionCells.Contains(GameMap.At(Me.shipyard.position));
