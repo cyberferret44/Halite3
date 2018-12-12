@@ -54,13 +54,13 @@ namespace Halite3
             DropoffLogic.Initialize();
             EndOfGameLogic.Initialize();
 
-            string BotName = "MoveScoreBot"; //(Me.id.id == 0 ? "Aggro_" : "NEW_") + specimen.Name();
+            string BotName = "ScoreBot2.0_" + specimen.Name();
             game.Ready(BotName);
             
             if(IsDebug) {
                 Stopwatch s = new Stopwatch();
                 s.Start();
-                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 30000); // max 30 seconds to attach, prevents memory leaks;
+                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 60000); // max 30 seconds to attach, prevents memory leaks;
                 s.Stop();
             }
 
@@ -103,11 +103,11 @@ namespace Halite3
                 // End game, return all ships to nearest dropoff
                 EndOfGameLogic.CommandShips();
 
-                // Combat Logic!!!
-                CombatLogic.CommandShips();
-
                 // Move ships to dropoffs
                 DropoffLogic.CommandShips();
+
+                // Combat Logic!!!
+                CombatLogic.CommandShips();
 
                 // collect halite (move or stay) using Logic interface
                 CollectLogic.CommandShips();
@@ -124,10 +124,31 @@ namespace Halite3
 
         // TODO add a more advanced solution here
         private static bool ShouldSpawnShip() {
-            return GameMap.PercentHaliteCollected < .65 &&
-                    (game.turnNumber <= game.TotalTurns * HParams[Parameters.TURNS_TO_SAVE] || (Me.halite >= 6000 && (GameMap.PercentHaliteCollected < .4 && game.TurnsRemaining > 100))) &&
-                    Me.halite >= (ReserveForDropoff ? 6000 : Constants.SHIP_COST) &&
-                    !Logic.Logic.CollisionCells.Contains(GameMap.At(Me.shipyard.position));
+            if(game.TurnsRemaining < 80 || 
+                Me.halite < (ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
+                Logic.Logic.CollisionCells.Contains(GameMap.At(Me.shipyard.position))) {
+                return false;
+            }
+
+            int numShips = (int)((game.Opponents.Sum(x => x.ships.Count)/2 + Me.ships.Count*1.5) * .66);
+            int numCells = GameMap.width * GameMap.height;
+            int haliteRemaining = game.gameMap.HaliteRemaining;
+            for(int i=0; i<game.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .1 * haliteRemaining / numCells);
+                haliteRemaining -= haliteCollectable;
+            }
+
+            numShips += 1; // if I created another, how much could I get?
+            int haliteRemaining2 = game.gameMap.HaliteRemaining;
+            for(int i=0; i<game.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .1 * haliteRemaining2 / numCells);
+                haliteRemaining2 -= haliteCollectable;
+            }
+
+            if(haliteRemaining - haliteRemaining2 > HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {
+                return true;
+            }
+            return false;
         }
     }
 }

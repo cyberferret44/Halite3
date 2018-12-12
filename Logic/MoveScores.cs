@@ -8,6 +8,7 @@ namespace Halite3.Logic {
         public Ship Ship;
         public Direction Direction;
         public double MoveValue;
+        public MapCell TargetCell => MyBot.GameMap.At(this.Ship, this.Direction);
         public ScoredMove(KeyValuePair<Direction, double> kvp, Ship ship) {
             this.Ship = ship;
             this.Direction = kvp.Key;
@@ -35,7 +36,7 @@ namespace Halite3.Logic {
 
         // Accessor Variables
         public ScoredMove BestMove => Scores.Count == 0 ? null : Scores.Count == 1 ? new ScoredMove(Scores.Keys.First(), double.MaxValue, Ship) : new ScoredMove(Scores.OrderBy(kvp => kvp.Value).Last(), Ship);
-        private Point Target(Direction d) => MyBot.GameMap.At(Ship.position.DirectionalOffset(d)).position.AsPoint;
+        private Point Target(Direction d) => MyBot.GameMap.At(Ship, d).position.AsPoint;
 
         // Logical Methods
         // Logical Methods
@@ -49,7 +50,7 @@ namespace Halite3.Logic {
         // Heavier Methods
         public void TapCell(MapCell target) {
             foreach(var kvp in Scores) {
-                var targetPos = MyBot.GameMap.At(Ship.position.DirectionalOffset(kvp.Key));
+                var targetPos = MyBot.GameMap.At(Ship, kvp.Key);
                 if(targetPos.Equals(target)) {
                     RemovedMoves.Add(kvp);
                     Scores.Remove(kvp.Key);
@@ -94,7 +95,7 @@ namespace Halite3.Logic {
         }
 
         // Get next best command.....
-        public ScoredMove GetBestAvailableMove() {
+        public ScoredMoves GetBestAvailableMove() {
             //todo consider how it would affect the other agent's command
             ScoredMoves best = null;
             double maxValue = double.MinValue;
@@ -104,7 +105,7 @@ namespace Halite3.Logic {
                     best = move;
                 }
             }
-            return best.BestMove;
+            return best;
         }
 
         public void AddCommand(Command command) {
@@ -113,7 +114,7 @@ namespace Halite3.Logic {
             TapCell(command.TargetCell);
         }
 
-        private void TapCell(MapCell cell) {
+        public void TapCell(MapCell cell) {
             Moves.Values.ToList().ForEach(m => m.TapCell(cell));
         }
     }

@@ -17,10 +17,12 @@ namespace Halite3.hlt
         public readonly Dictionary<int, Dropoff> dropoffDictionary = new Dictionary<int, Dropoff>();
         public List<Ship> ShipsSorted = new List<Ship>();
 
+        public int NetValue => ships.Values.Sum(x => x.halite) + halite;
+
         public List<Entity> GetDropoffs()  {
             var dropoffs = dropoffDictionary.Values.Select(v => (Entity)v).ToList();
             dropoffs.Add((Entity)shipyard);
-            return dropoffs;
+            return dropoffs.Where(d => d.owner.id == id.id).ToList();
         }
 
         public Ship GetShipById(int id) => ships.ContainsKey(id) ? ships[id] : null;

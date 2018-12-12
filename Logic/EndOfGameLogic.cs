@@ -20,7 +20,7 @@ namespace Halite3.Logic {
         public override void CommandShips() {
             foreach(var ship in UnusedShips.Where(s => FinalReturnToHome.Contains(s.Id))) {
                 var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
-                directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
+                directions = directions.OrderBy(d => Map.At(ship, d).halite).ToList();
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
                     if(IsSafeMove(ship, d)) {
@@ -32,8 +32,8 @@ namespace Halite3.Logic {
         }
 
         // override methods
-        protected override bool IsSafeMove(Ship ship, Direction move) {
-            MapCell target = Map.At(ship.position.DirectionalOffset(move));
+        protected override bool IsSafeMove(Ship ship, Direction direction, bool IgnoreEnemy = false) {
+            MapCell target = Map.At(ship, direction);
             if(target.structure != null)
                 return true;
             return !CollisionCells.Contains(target);

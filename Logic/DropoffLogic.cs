@@ -33,7 +33,7 @@ namespace Halite3.Logic {
             Xlayers = Map.width / 4;
             MinDropoffValue = (int)(((double)Xlayers + 1.0) / 2.0 * 4.0 * (double)Xlayers * 135.0);
             Spacing = (int)HParams[Parameters.DROPOFF_DISTANCE];
-            Log.LogMessage($"Spacing is {Spacing}");
+            Log.LogMessage($"Actual Dropoff Distance is {Spacing}");
 
             // todo one magic number
             // todo set min to either MinDropoffValue, or like half of the max value so we don't get stuck in too-small of a local minima
@@ -131,7 +131,7 @@ namespace Halite3.Logic {
                 int maxDist = 0;
                 foreach(var ship in bucket.Value) {
                     int thisDist = Map.CalculateDistance(ship.position, drop);
-                    if(thisDist > maxDist || ship.CurrentMapCell.halite < 10 || !IsSafeMove(ship, Direction.STILL)) {
+                    if(thisDist > maxDist || ship.CellHalite < 10 || !IsSafeMove(ship, Direction.STILL)) {
                         NavigateToDropoff(ship, drop);
                     } else {
                         ship.StayStill();
@@ -158,9 +158,10 @@ namespace Halite3.Logic {
         }
 
         private void NavigateToDropoff(Ship ship, Position drop) {
+            // todo if ship is closest to dropoff and cargo plus me.halite isn't enough to bump above 1k, just wait on current cell, no rush
             List<Direction> directions = drop.GetAllDirectionsTo(ship.position);
-            directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
-            if(directions.Count == 1 && Map.At(ship.position.DirectionalOffset(directions[0])).IsOccupiedByOpponent()) {
+            directions = directions.OrderBy(d => Map.At(ship, d).IsOccupiedByMe() ? Map.At(ship, d).halite * .45 : Map.At(ship, d).halite * .1).ToList();
+            if(directions.Count == 1 && Map.At(ship, directions[0]).IsOccupiedByOpponent()) {
                 if(directions[0] == Direction.NORTH)
                     directions.AddRange(new List<Direction>{ Direction.EAST, Direction.WEST});
                 if(directions[0] == Direction.SOUTH)
@@ -169,16 +170,16 @@ namespace Halite3.Logic {
                     directions.AddRange(new List<Direction>{ Direction.NORTH, Direction.SOUTH});
                 if(directions[0] == Direction.WEST)
                     directions.AddRange(new List<Direction>{ Direction.NORTH, Direction.SOUTH});
-            } else if(directions.Count == 2 && directions.Where(d => Map.At(ship.position.DirectionalOffset(d)).IsThreatened).Count() == 1) {
-                if(Map.At(ship.position.DirectionalOffset(directions[0])).IsThreatened) {
+            } else if(directions.Count == 2 && directions.Where(d => Map.At(ship, d).IsThreatened).Count() == 1) {
+                if(Map.At(ship, directions[0]).IsThreatened) {
                     var temp = directions[1];
                     directions[1] = directions[0];
                     directions[0] = temp;
                 }
-            } else if(directions.Count == 2 && directions.All(d => Map.At(ship.position.DirectionalOffset(d)).IsThreatened)) {
+            } else if(directions.Count == 2 && directions.All(d => Map.At(ship, d).IsThreatened || Map.At(ship, d).Neighbors.Any(n => n.IsStructure && n.structure.IsOpponents))) {
                 // someone blocking a corner, keep options open by moving closest to the hypotenouse 
-                var pos0 = Map.At(ship.position.DirectionalOffset(directions[0])).position;
-                var pos1 = Map.At(ship.position.DirectionalOffset(directions[1])).position;
+                var pos0 = Map.At(ship, directions[0]).position;
+                var pos1 = Map.At(ship, directions[1]).position;
                 int delta0 = Math.Abs(  Math.Abs(pos0.x-drop.x) - Math.Abs(pos0.y-drop.y)); // i.e. 7-1 = 6
                 int delta1 = Math.Abs(  Math.Abs(pos1.x-drop.x) - Math.Abs(pos1.y-drop.y)); // i.e. 8-0 = 8
                 if(delta1 < delta0) {
@@ -188,9 +189,12 @@ namespace Halite3.Logic {
                 }
             }
             directions.Add(Direction.STILL);
-            foreach(Direction d in directions) {
-                if(IsSafeMove(ship, d)) {
-                    MakeMove(ship.Move(d),  "moving to dropoff");
+            for(int i=0; i< directions.Count; i++) { //foreach(Direction d in directions) {
+                if(IsSafeMove(ship, directions[i])) {
+                    MakeMove(ship.Move(directions[i]),  "moving to dropoff");
+                    if((ship.position.x == drop.x || ship.position.y == drop.y) && i == 0) {
+                        TwoTurnAvoid.Add(Map.At(ship.position.DirectionalOffset(directions[i]).DirectionalOffset(directions[i])));
+                    }
                     break;
                 }
             }
@@ -220,10 +224,10 @@ namespace Halite3.Logic {
         private bool ShouldCreateDropoff() => Me.ShipsSorted.Count / Me.GetDropoffs().Count > 15 ; // need a minimum of ships per drop
         private bool CanCreateDropoff(Position pos) => Me.halite + Map.At(pos).halite + 500 >= 5000 && MyBot.game.turnNumber >= 40;
 
-        // todo consider opponents
         private bool ShouldMoveShip(Ship ship) {
             return ship.IsFull() ||
-                ship.halite > HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + .4 * ship.CurrentMapCell.halite;
+                ship.halite > HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + (.3 * ship.CellHalite * (ship.CurrentMapCell.IsInspired ? 3 : 1))
+                || ship.halite > 500 && ship.CurrentMapCell.IsThreatened; // todo this should be more robust
         }
 
         private void DeleteNextDropoff() {

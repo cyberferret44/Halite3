@@ -10,39 +10,45 @@ namespace Halite3
     // Genetically tuned parameters
     public enum Parameters {
         CARGO_TO_MOVE,
-        TURNS_TO_SAVE,
+        TARGET_VALUE_TO_CREATE_SHIP,
         CELL_VALUE_DEGRADATION,
         PERCENT_OF_AVERAGE_TO_IGNORE,
-        DROPOFF_DISTANCE
+        DROPOFF_DISTANCE, 
+        COLLECT_STICKINESS
     }
 
     public class HyperParameters {
         // Non tuned parameters.  Keeping here so I can easily find & tune them later
         public static List<Parameters> AllParameters = Enum.GetValues(typeof(Parameters)).Cast<Parameters>().ToList();
 
+        private List<string> unusedLines;
+
         // Dynamic hyper parameters
         private class Bounds {
-            public double Lower, Upper;
-            public Bounds(double lower, double upper) {
+            public double Lower, Upper, Seed;
+            public Bounds(double lower, double upper, double seed) {
                 this.Lower = lower;
                 this.Upper = upper;
+                this.Seed = seed;
             }
         }
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
-            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0) },
-            { Parameters.TURNS_TO_SAVE, new Bounds(0, 1.0) },
-            { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0)},
-            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0)},
-            { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32) }
+            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0, .85) },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 1000.0) },
+            { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0, .8)},
+            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0, .25)},
+            { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
+            { Parameters.COLLECT_STICKINESS, new Bounds(1, 100, 25) }
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
-            { Parameters.CARGO_TO_MOVE, .02 },
-            { Parameters.TURNS_TO_SAVE, .02 },
-            { Parameters.CELL_VALUE_DEGRADATION, .02},
-            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, .02},
-            { Parameters.DROPOFF_DISTANCE, .1 }
+            { Parameters.CARGO_TO_MOVE, .01 },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .05 },
+            { Parameters.CELL_VALUE_DEGRADATION, .02 },
+            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, .01 },
+            { Parameters.DROPOFF_DISTANCE, .05 },
+            { Parameters.COLLECT_STICKINESS, .05 }
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
@@ -77,18 +83,34 @@ namespace Halite3
         }
 
         public HyperParameters(string file) {
+            unusedLines = new List<string>();
             var lines = System.IO.File.ReadAllText(file).Split("\n").ToList();
             foreach(var line in lines) {
                 if(line.Trim().Length == 0)
                     continue;
                 var values = line.Split(",").ToList();
-                Parameters param = (Parameters)Enum.Parse(typeof(Parameters), values[0]);
-                ParametersDictionary.Add(param, double.Parse(values[1]));
+                try {
+                    Parameters param = (Parameters)Enum.Parse(typeof(Parameters), values[0]);
+                    ParametersDictionary.Add(param, double.Parse(values[1]));
+                    Log.LogMessage(param.ToString("g") + ": "+ double.Parse(values[1]));
+                } catch (Exception) {
+                    unusedLines.Add(line);
+                }
+            }
+
+            foreach(var param in AllParameters) {
+                if(!ParametersDictionary.ContainsKey(param)) {
+                    ParametersDictionary.Add(param, BoundDictionary[param].Seed);
+                    Log.LogMessage(param.ToString("g") + ": "+ BoundDictionary[param].Seed);
+                }
             }
         }
 
         public void WriteToFile(string file) {
             string content = "";
+            foreach(var line in unusedLines) {
+                content += line + "\n";
+            }
             foreach(var kvp in ParametersDictionary) {
                 content += ($"{kvp.Key.ToString("g")},{kvp.Value}\n");
             }

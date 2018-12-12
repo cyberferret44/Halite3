@@ -15,16 +15,29 @@ namespace Halite3.hlt
         public int halite;
         public Ship ship;
         public Entity structure;
-
         public bool IsStructure => structure != null;
-
-        // mainly for debugging
         private GameMap Map => MyBot.GameMap;
         public MapCell North => Map.At(position.DirectionalOffset(Direction.NORTH));
         public MapCell South => Map.At(position.DirectionalOffset(Direction.SOUTH));
         public MapCell East => Map.At(position.DirectionalOffset(Direction.EAST));
         public MapCell West => Map.At(position.DirectionalOffset(Direction.WEST));
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
+
+        public List<Ship> ClosestShips(List<Ship> ships) {
+            int minDist = int.MaxValue;
+            var results = new List<Ship>();
+            foreach(var ship in ships) {
+                int thisDist = Map.CalculateDistance(position, ship.position);
+                if(thisDist == minDist) {
+                    results.Add(ship);
+                } else if( thisDist < minDist) {
+                    results.Clear();
+                    results.Add(ship);
+                    minDist = thisDist;
+                }
+            }
+            return results;
+        }
 
         // Other things
         public bool IsInspired => new XLayersInfo(4, position).NumEnemyShips > 1;

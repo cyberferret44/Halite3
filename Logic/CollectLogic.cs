@@ -12,14 +12,14 @@ namespace Halite3.Logic {
         private bool HasChanged = false;
 
         private int TotalWallCells => Assignments.Values.Where(v => v != null).Count() + Wall.Count;
+        private void Assign(Ship ship, Point? point) => Assignments[ship.Id] = point;
+        private void Unassign(int shipId) => Assignments.Remove(shipId);
 
         public override void Initialize() {
             Degradation = HParams[Parameters.CELL_VALUE_DEGRADATION];
             var cellsOrdered = Map.GetAllCells().OrderByDescending(x => x.halite).ToList();
             cellsOrdered = cellsOrdered.Take(cellsOrdered.Count * 2 / 3).ToList();
             NumToIgnore = (int)(cellsOrdered.Average(c => c.halite) * HParams[Parameters.PERCENT_OF_AVERAGE_TO_IGNORE]);
-            Log.LogMessage($"Degradation: {Degradation}");
-            Log.LogMessage($"NumToIgnore: {NumToIgnore}");
         }
 
         public override void ProcessTurn() {
@@ -41,18 +41,42 @@ namespace Halite3.Logic {
         public override void CommandShips() {
             // add accounted for ships
             UnassignUnavailableShips();
+
+            // We want to swap assignments if a ship is already on someone elses target, it's a waste to try to track elsewhere
+            foreach(var id in Assignments.Keys.ToList()) {
+                var ship = Me.GetShipById(id);
+                foreach(var kvp in Assignments.ToList()) {
+                    if(kvp.Value != null && kvp.Value.HasValue && ship.position.AsPoint.Equals(kvp.Value.Value)) {
+                        // swap assignments
+                        var temp = Assignments[id];
+                        Assignments[id] = kvp.Value;
+                        Assignments[kvp.Key] = temp;
+                    }
+                }
+            }
             this.ScoreMoves();
 
+
+            // todo consider the opportunity cost of a move.  if this move was value 100 and it's next best was value 95
+            // but another ship valued this at 90 and it's next best was 50, then the later should get the move
             while(Scores.Moves.Count > 0) {
-                ScoredMove move = Scores.GetBestAvailableMove();
-                MakeMove(move.Ship.Move(move.Direction), $" command from new thing with a value of {move.MoveValue}");
+                ScoredMoves moves = Scores.GetBestAvailableMove();
+                var best = moves.BestMove;
+                var text = $" Collect Command. Value: {best.MoveValue}. Other options were ";
+                moves.Scores.ToList().OrderByDescending(x => x.Value).ToList().ForEach(kvp => text += $"... {kvp.Key.ToString("g")}:{kvp.Value}");
+                if(Assignments[best.Ship.Id] != null)
+                    text += " | target was " + Assignments[best.Ship.Id].Value.x + "," + Assignments[best.Ship.Id].Value.y;
+                else
+                    text += " | target was null";
+
+                MakeMove(best.Ship.Move(best.Direction), text);
             }
         }
 
         /// This method will unassign any ships not available in the list
         private void UnassignUnavailableShips() {
             foreach(var key in Assignments.Keys.ToList()) {
-                if(UsedShips.Contains(key)) {
+                if(!UnusedShips.Any(s => s.Id == key)) {
                     Unassign(key);
                 }
             }
@@ -73,10 +97,10 @@ namespace Halite3.Logic {
 
         private Position GetBestMoveTarget(Ship ship) {
             // if there's a collided cell nearby, target it
-            var info = new XLayersInfo(3, ship.position);
-            foreach(var cell in info.AllCells) {
-                if(cell.halite > Map.AverageHalitePerCell * 20 && info.MyClosestShip().Id == ship.Id) {
-                    Assign(ship, cell.position.AsPoint);
+            var cells = Map.GetXLayers(ship.position, 3);
+            foreach(var c in cells) {
+                if(c.halite > Map.AverageHalitePerCell * 5 && c.halite / 3 > ship.CellHalite && c.ClosestShips(UnusedShips).Contains(ship)) {
+                    Assign(ship, c.position.AsPoint);
                     break;
                 }
             }
@@ -116,25 +140,18 @@ namespace Halite3.Logic {
             }
         }
 
-        private void Assign(Ship ship, Point? point) {
-            Assignments[ship.Id] = point;
-        }
-        private void Unassign(int shipId) {
-            Assignments[shipId] = null;
-        }
-
         // Make some magic happen
         public override void ScoreMoves() {
             foreach(var ship in UnusedShips) {
                 Log.LogMessage($"Scoring {ship.Id}");
                 var bestTarget = GetBestMoveTarget(ship);
                 var directionsToBestTarget = bestTarget.GetAllDirectionsTo(ship.position);
-                var costToMove = ship.CurrentMapCell.halite / 10 * .35;
+                var costToMove = ship.CellHalite / 10 * .35;
                 double value = 0.0;
                 int curDistToTarget = MyBot.GameMap.CalculateDistance(bestTarget, ship.CurrentMapCell.position);
                 foreach(var d in DirectionExtensions.ALL_DIRECTIONS) {
                     // some important varibales
-                    var target = Map.At(ship.position.DirectionalOffset(d));
+                    var target = Map.At(ship, d);
 
                     // Case one, ship cannot sit on a drop
                     if(d == Direction.STILL && ship.OnDropoff) {
@@ -142,17 +159,16 @@ namespace Halite3.Logic {
                         continue;
                     }
                     // todo wont work for 4 players
-                    if(target.IsOccupiedByOpponent() && target.ship.halite < ship.halite) {
+                    if(target.IsOccupiedByOpponent() && (target.ship.halite < ship.halite)) {
                         Scores.RemoveValue(ship, d);
                         continue;
                     }
 
                     if(d == Direction.STILL) {
                         value = .25 * target.halite;
-                        value *= (value > NumToIgnore ? 30 : .5);
-                        
+                        value *= (value > NumToIgnore ? HParams[Parameters.COLLECT_STICKINESS] : .3);
                     } else {
-                        value = (.1 * target.halite) - costToMove;
+                        value = (.125 * target.halite) - costToMove;
                     }
                     value = Math.Max(value, 1.0);
                     value += CellValueForScore(target.position, Map.At(bestTarget));
@@ -164,28 +180,28 @@ namespace Halite3.Logic {
                     int newDistToTarget = MyBot.GameMap.CalculateDistance(target.position, bestTarget);
                     if(newDistToTarget < curDistToTarget) {
                         value *= 2;
-                    } else if(newDistToTarget > curDistToTarget) {
-                        value *= .5;
                     }
 
                     if(target.IsInspired) {
-                        value *= 3;
+                        value *= 5;
                     }
 
                     if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.Any(threat => threat.halite < ship.halite)) {
-                        value *= .5;
+                        value *= .2;
                     }
 
-                    if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.All(threat => threat.halite > ship.halite)) {
-                        value *= .5;
+                    if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.All(threat => threat.halite > ship.halite + ship.CellHalite * .25)) {
+                        value *= 2;
                     }
 
-                    /* if(MyBot.game.Opponents.Count() == 1) {
+                    /*if(MyBot.game.Opponents.Count() == 1 && ship.CurrentMapCell.IsThreatened) {
                         var opponent = MyBot.game.Opponents[0];
-                        if((Me.halite - opponent.halite) / 1000 + (Me.ShipsSorted.Count - opponent.ships.Values.Count()) > 0) {
-                            value *= 2;
-                        } else  {
-                            value *= .5;
+                        var lowestShip = ship.CurrentMapCell.Neighbors.Where(n => n.IsOccupiedByOpponent()).OrderBy(n => n.ship.halite).First();
+                        
+                        if(ship.halite + costToMove < lowestShip.halite) {
+                            value *= 2 * ((1000 + lowestShip.halite) / (1000 + ship.halite + costToMove));
+                        } else {
+                            value *= .5 * ((1000 + lowestShip.halite) / (1000 + ship.halite + costToMove));
                         }
                     }*/
 

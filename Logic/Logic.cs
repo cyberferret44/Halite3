@@ -18,6 +18,7 @@ namespace Halite3.Logic {
         protected static HashSet<int> UsedShips = new HashSet<int>();
         protected static List<Ship> UnusedShips => Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)).ToList();
         public static HashSet<MapCell> CollisionCells = new HashSet<MapCell>();
+        public static HashSet<MapCell> TwoTurnAvoid = new HashSet<MapCell>();
 
         //abstract methods
         public abstract void Initialize();
@@ -31,8 +32,14 @@ namespace Halite3.Logic {
             UsedShips.Clear();
             CommandQueue.Clear();
             CollisionCells.Clear();
+            TwoTurnAvoid.Clear();
             Scores.ScoreMoves(AllShips);
             MakeMandatoryMoves();
+            foreach(var drop in MyBot.game.Opponents.SelectMany(x => x.GetDropoffs())) {
+                if(Map.At(drop.position).Neighbors.Any(x => x.IsOccupiedByOpponent())) {
+                    Scores.TapCell(Map.At(drop.position)); // prevents collisions on opponents drop points...
+                }
+            }
         }
 
         // static methods
@@ -56,12 +63,18 @@ namespace Halite3.Logic {
         }
 
         // concrete methods
-        protected virtual bool IsSafeMove(Ship ship, Direction move) {
-            MapCell target = Map.At(ship.position.DirectionalOffset(move));
+        protected virtual bool IsSafeMove(Ship ship, Direction direction, bool IngoreEnemy = false) {
+            MapCell target = Map.At(ship, direction);
             if(target.IsStructure && target.structure.IsMine && !CollisionCells.Contains(target)) {
                 return true;
             }
-            bool result = !CollisionCells.Contains(target) && !target.IsOccupiedByOpponent();
+            // todo not the right spot for this
+            if(direction != Direction.STILL) {
+                if(TwoTurnAvoid.Contains(target) && (int)(ship.CellHalite * .1) + (int)(target.halite * .1) > ship.halite) {
+                    return false;
+                }
+            }
+            bool result = !CollisionCells.Contains(target) && (IngoreEnemy || !target.IsOccupiedByOpponent());
             return result;
         }
     }
@@ -69,7 +82,7 @@ namespace Halite3.Logic {
     public class EmptyLogic : Logic {
         public override void Initialize() { }
         public override void ProcessTurn() { }
-        public override void CommandShips() { }
-        public override void ScoreMoves() { }
+        public override void CommandShips() { Log.LogMessage("Empty Logic!"); }
+        public override void ScoreMoves() { Log.LogMessage("Empty Logic!"); }
     }
 }

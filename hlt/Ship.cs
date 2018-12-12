@@ -15,11 +15,12 @@ namespace Halite3.hlt
         public readonly int halite;
 
         public static GameMap Map => MyBot.GameMap;
-        public static List<Entity> MyDropoffs => MyBot.Me.GetDropoffs();
+        public static List<Entity> MyDropoffs => MyBot.Me.GetDropoffs().Where(d => d.owner.id == MyBot.Me.id.id).ToList();
         public int Id => this.id.id;
-        public bool CanMove => this.halite >= this.CurrentMapCell.halite / 10;
+        public bool CanMove => this.halite >= CellHalite / 10;
 
         public bool OnDropoff => MyDropoffs.Any(d => d.position.Equals(this.position));
+        public int CellHalite => CurrentMapCell.halite;
 
         public List<MapCell> Neighbors => new List<MapCell> {
             Map.At(position.DirectionalOffset(Direction.NORTH)),
