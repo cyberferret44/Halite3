@@ -54,16 +54,16 @@ namespace Halite3.Logic {
 
         public static void MakeMandatoryMoves() {
             foreach(var v in Scores.Moves.Values) {
-                if(v.BestMove.MoveValue >= 100000000.0) {
-                    Log.LogMessage($"Ship {v.Ship.Id} has only one move, {v.BestMove.Direction.ToString("g")}");
-                    MakeMove(v.Ship.Move(v.BestMove.Direction), "move scores incidental mandatory");
+                if(v.BestMove().MoveValue >= 100000000.0) {
+                    Log.LogMessage($"Ship {v.Ship.Id} has only one move, {v.BestMove().Direction.ToString("g")}");
+                    MakeMove(v.Ship.Move(v.BestMove().Direction), "move scores incidental mandatory");
                     break;
                 }
             }
         }
 
         // concrete methods
-        protected virtual bool IsSafeMove(Ship ship, Direction direction, bool IngoreEnemy = false) {
+        public static bool IsSafeMove(Ship ship, Direction direction, bool IngoreEnemy = false) {
             MapCell target = Map.At(ship, direction);
             if(target.IsStructure && target.structure.IsMine && !CollisionCells.Contains(target)) {
                 return true;

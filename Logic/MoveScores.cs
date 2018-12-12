@@ -35,7 +35,26 @@ namespace Halite3.Logic {
         }
 
         // Accessor Variables
-        public ScoredMove BestMove => Scores.Count == 0 ? null : Scores.Count == 1 ? new ScoredMove(Scores.Keys.First(), double.MaxValue, Ship) : new ScoredMove(Scores.OrderBy(kvp => kvp.Value).Last(), Ship);
+        public ScoredMove BestMove() {
+            var best = Scores.Count == 0 ? null : Scores.Count == 1 ? new ScoredMove(Scores.Keys.First(), double.MaxValue, Ship) : new ScoredMove(Scores.OrderBy(kvp => kvp.Value).Last(), Ship);
+            if(best == null) {
+                var removedMoves = RemovedMoves.Select(x => MyBot.GameMap.At(Ship.position.DirectionalOffset(x.Key)));
+                removedMoves = removedMoves.Where(x => x.IsOccupiedByOpponent()).ToList();
+                removedMoves = removedMoves.OrderByDescending(x => x.ship.halite);
+                if(removedMoves.Count() > 0) {
+                    var move = removedMoves.First();
+                    best = new ScoredMove(move.position.GetDirectionTo(Ship.position), double.MaxValue, Ship);
+                } else if (RemovedMoves.Any(m => Logic.IsSafeMove(Ship, m.Key))) {
+                    var rm = RemovedMoves.First(m => Logic.IsSafeMove(Ship, m.Key));
+                    var move = MyBot.GameMap.At(Ship.position.DirectionalOffset(rm.Key));
+                    best = new ScoredMove(rm.Key, double.MaxValue, Ship);
+                } else {
+                    best = new ScoredMove(Direction.STILL, double.MaxValue, Ship);
+                }
+            }
+            return best;
+        }
+        
         private Point Target(Direction d) => MyBot.GameMap.At(Ship, d).position.AsPoint;
 
         // Logical Methods
@@ -100,8 +119,8 @@ namespace Halite3.Logic {
             ScoredMoves best = null;
             double maxValue = double.MinValue;
             foreach(var move in Moves.Values) {
-                if(move.BestMove.MoveValue >= maxValue) {
-                    maxValue = move.BestMove.MoveValue;
+                if(move.BestMove().MoveValue >= maxValue) {
+                    maxValue = move.BestMove().MoveValue;
                     best = move;
                 }
             }

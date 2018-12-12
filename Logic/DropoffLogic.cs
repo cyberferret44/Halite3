@@ -115,6 +115,7 @@ namespace Halite3.Logic {
         public override void CommandShips() {
             // get the ships to use
             var ships = UnusedShips.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
+            Log.LogMessage($"Drop-off ships are " + string.Join(", ", ships));
 
             // first make dropoffs...
             foreach(var ship in ships.ToList()) {
@@ -127,6 +128,7 @@ namespace Halite3.Logic {
             // go through buckets and move the ships...
             var dropoffBuckets = GetBuckets(ships);
             foreach(var bucket in dropoffBuckets) {
+                Log.LogMessage($"{bucket.Key.x},{bucket.Key.y}: {string.Join(", ", bucket.Value.Select(x => x.Id))}");
                 var drop = bucket.Key;
                 int maxDist = 0;
                 foreach(var ship in bucket.Value) {

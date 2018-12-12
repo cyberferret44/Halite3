@@ -42,15 +42,31 @@ namespace Halite3.Logic {
             // add accounted for ships
             UnassignUnavailableShips();
 
+            foreach(var enemy in MyBot.game.Opponents.SelectMany(o => o.AllShips)) {
+                Scores.TapCell(enemy.CurrentMapCell);
+            }
+
             // We want to swap assignments if a ship is already on someone elses target, it's a waste to try to track elsewhere
             foreach(var id in Assignments.Keys.ToList()) {
                 var ship = Me.GetShipById(id);
+                var pos = Assignments[id].HasValue ? new Position(Assignments[id].Value.x, Assignments[id].Value.y) : null;
                 foreach(var kvp in Assignments.ToList()) {
                     if(kvp.Value != null && kvp.Value.HasValue && ship.position.AsPoint.Equals(kvp.Value.Value)) {
                         // swap assignments
                         var temp = Assignments[id];
                         Assignments[id] = kvp.Value;
                         Assignments[kvp.Key] = temp;
+                    }
+                }
+                if(pos != null && Map.CalculateDistance(pos, ship.position) >= 1) {
+                    var val = CellValue(pos, ship.CurrentMapCell);
+                    foreach(var n in ship.Neighbors) {
+                        if(n.IsEmpty() && IsSafeMove(ship, n.position.GetDirectionTo(ship.position)) && Wall.Contains(n.position.AsPoint) 
+                                    && CellValue(pos, ship.CurrentMapCell) < CellValue(n.position, ship.CurrentMapCell)) {
+                            if(Assignments[ship.Id].HasValue)
+                                Wall.Add(Assignments[ship.Id].Value);
+                            Assignments[ship.Id] = n.position.AsPoint;
+                        }
                     }
                 }
             }
@@ -61,7 +77,7 @@ namespace Halite3.Logic {
             // but another ship valued this at 90 and it's next best was 50, then the later should get the move
             while(Scores.Moves.Count > 0) {
                 ScoredMoves moves = Scores.GetBestAvailableMove();
-                var best = moves.BestMove;
+                var best = moves.BestMove();
                 var text = $" Collect Command. Value: {best.MoveValue}. Other options were ";
                 moves.Scores.ToList().OrderByDescending(x => x.Value).ToList().ForEach(kvp => text += $"... {kvp.Key.ToString("g")}:{kvp.Value}");
                 if(Assignments[best.Ship.Id] != null)

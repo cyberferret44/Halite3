@@ -14,6 +14,7 @@ namespace Halite3.hlt
         public readonly Shipyard shipyard;
         public int halite;
         public readonly Dictionary<int, Ship> ships = new Dictionary<int, Ship>();
+        public List<Ship> AllShips => ships.Values.ToList();
         public readonly Dictionary<int, Dropoff> dropoffDictionary = new Dictionary<int, Dropoff>();
         public List<Ship> ShipsSorted = new List<Ship>();
 

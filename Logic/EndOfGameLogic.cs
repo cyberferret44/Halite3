@@ -23,7 +23,7 @@ namespace Halite3.Logic {
                 directions = directions.OrderBy(d => Map.At(ship, d).halite).ToList();
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
-                    if(IsSafeMove(ship, d)) {
+                    if(IsSafeEndMove(ship, d)) {
                         MakeMove(ship.Move(d), "end of game");
                         break;
                     }
@@ -32,7 +32,7 @@ namespace Halite3.Logic {
         }
 
         // override methods
-        protected override bool IsSafeMove(Ship ship, Direction direction, bool IgnoreEnemy = false) {
+        protected bool IsSafeEndMove(Ship ship, Direction direction, bool IgnoreEnemy = false) {
             MapCell target = Map.At(ship, direction);
             if(target.structure != null)
                 return true;
