@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Halite3.hlt
 {
@@ -14,16 +15,35 @@ namespace Halite3.hlt
         public int halite;
         public Ship ship;
         public Entity structure;
-
         public bool IsStructure => structure != null;
-
-        // mainly for debugging
-        private GameMap Map = MyBot.GameMap;
+        private GameMap Map => MyBot.GameMap;
         public MapCell North => Map.At(position.DirectionalOffset(Direction.NORTH));
         public MapCell South => Map.At(position.DirectionalOffset(Direction.SOUTH));
         public MapCell East => Map.At(position.DirectionalOffset(Direction.EAST));
         public MapCell West => Map.At(position.DirectionalOffset(Direction.WEST));
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
+        public List<MapCell> Corners => new List<MapCell> { North.West, North.East, South.East, South.West };
+
+        public List<Ship> ClosestShips(List<Ship> ships) {
+            int minDist = int.MaxValue;
+            var results = new List<Ship>();
+            foreach(var ship in ships) {
+                int thisDist = Map.CalculateDistance(position, ship.position);
+                if(thisDist == minDist) {
+                    results.Add(ship);
+                } else if( thisDist < minDist) {
+                    results.Clear();
+                    results.Add(ship);
+                    minDist = thisDist;
+                }
+            }
+            return results;
+        }
+
+        // Other things
+        public bool IsInspired => new XLayersInfo(4, position).NumEnemyShips > 1;
+        public bool IsThreatened => Neighbors.Any(n => n.IsOccupiedByOpponent());
+        public List<Ship> ThreatenedBy => new XLayersInfo(1, position).EnemyShips;
 
         public MapCell(Position position, int halite)
         {
@@ -49,6 +69,10 @@ namespace Halite3.hlt
 
         public bool IsOccupiedByOpponent() {
             return ship != null && ship.owner.id != MyBot.Me.id.id;
+        }
+
+        public bool IsOccupiedByMe() {
+            return ship != null && ship.owner.id == MyBot.Me.id.id;
         }
 
         /// <summary>

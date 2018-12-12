@@ -7,6 +7,7 @@ namespace Halite3.Logic {
         private HashSet<int> FinalReturnToHome = new HashSet<int>();
 
         public override void Initialize() { /* Nothing to be done */ }
+        public override void ScoreMoves() { }
 
         public override void ProcessTurn() {
             foreach(var ship in Me.ShipsSorted) {
@@ -16,14 +17,14 @@ namespace Halite3.Logic {
             }
         }
 
-        public override void CommandShips(List<Ship> ships) {
-            foreach(var ship in ships.Where(s => FinalReturnToHome.Contains(s.Id))) {
+        public override void CommandShips() {
+            foreach(var ship in UnusedShips.Where(s => FinalReturnToHome.Contains(s.Id))) {
                 var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
-                directions = directions.OrderBy(d => Map.At(ship.position.DirectionalOffset(d)).halite).ToList();
+                directions = directions.OrderBy(d => Map.At(ship, d).halite).ToList();
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
-                    if(IsSafeMove(ship, d)) {
-                        MyBot.MakeMove(ship.Move(d));
+                    if(IsSafeEndMove(ship, d)) {
+                        MakeMove(ship.Move(d), "end of game");
                         break;
                     }
                 }
@@ -31,8 +32,8 @@ namespace Halite3.Logic {
         }
 
         // override methods
-        protected override bool IsSafeMove(Ship ship, Direction move) {
-            MapCell target = Map.At(ship.position.DirectionalOffset(move));
+        protected bool IsSafeEndMove(Ship ship, Direction direction, bool IgnoreEnemy = false) {
+            MapCell target = Map.At(ship, direction);
             if(target.structure != null)
                 return true;
             return !CollisionCells.Contains(target);

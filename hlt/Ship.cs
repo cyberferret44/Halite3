@@ -15,11 +15,19 @@ namespace Halite3.hlt
         public readonly int halite;
 
         public static GameMap Map => MyBot.GameMap;
-        public static List<Entity> MyDropoffs => MyBot.Me.GetDropoffs();
+        public static List<Entity> MyDropoffs => MyBot.Me.GetDropoffs().Where(d => d.owner.id == MyBot.Me.id.id).ToList();
         public int Id => this.id.id;
-        public bool CanMove => this.halite >= this.CurrentMapCell.halite / 10;
+        public bool CanMove => this.halite >= CellHalite / 10;
 
         public bool OnDropoff => MyDropoffs.Any(d => d.position.Equals(this.position));
+        public int CellHalite => CurrentMapCell.halite;
+
+        public List<MapCell> Neighbors => new List<MapCell> {
+            Map.At(position.DirectionalOffset(Direction.NORTH)),
+            Map.At(position.DirectionalOffset(Direction.SOUTH)),
+            Map.At(position.DirectionalOffset(Direction.EAST)),
+            Map.At(position.DirectionalOffset(Direction.WEST))
+        };
 
         public Ship(PlayerId owner, EntityId id, Position position, int halite) : base(owner, id, position)
         {
@@ -29,6 +37,7 @@ namespace Halite3.hlt
         public MapCell CurrentMapCell => Map.At(this.position);
         public int DistanceToDropoff => Map.CalculateDistance(this.position, ClosestDropoff.position);
         public Entity ClosestDropoff => MyDropoffs.OrderBy(d => Map.CalculateDistance(this.position, d.position)).ToList()[0];
+        public Entity ClosestEnemyDropoff(int playerId) => MyBot.game.GetOpponent(playerId).GetDropoffs().OrderBy(d => Map.CalculateDistance(this.position, d.position)).ToList()[0];
         public MapCell BestNeighbor => Map.NeighborsAt(position).OrderBy(n => n.halite).Last();
 
         /// <summary>

@@ -17,9 +17,10 @@ namespace Halite3.hlt
         public readonly int width;
         public readonly int height;
         public readonly MapCell[][] cells;
-        public int HaliteRemaining = 0;
+        public int HaliteRemaining = 0; // halite left per turn
         public int InitialHalite = 0;
         public double PercentHaliteCollected => 1.0 - (((double)HaliteRemaining)/((double)InitialHalite));
+        public int AverageHalitePerCell => HaliteRemaining / (width * height);
 
         public List<MapCell> GetAllCells() {
             List<MapCell> allCells = new List<MapCell>();
@@ -56,7 +57,12 @@ namespace Halite3.hlt
         {
             Position normalized = Normalize(position);
             return cells[normalized.y][normalized.x];
-        }        
+        }
+
+        public MapCell At(Ship ship, Direction direction)
+        {
+            return At(ship.position.DirectionalOffset(direction));
+        } 
         
         public List<MapCell> NeighborsAt(Position p) {
             List<MapCell> neighbors = new List<MapCell>();
@@ -94,6 +100,30 @@ namespace Halite3.hlt
         public MapCell At(Entity entity)
         {
             return At(entity.position);
+        }
+
+        public int DeltaX(Entity source, Entity target) {
+            if(source.position.x < target.position.x) {
+                return Math.Abs(target.position.x - source.position.x) <= (width / 2) 
+                    ? target.position.x - source.position.x
+                    : target.position.x - source.position.x - width;
+            } else {
+                return Math.Abs(target.position.x - source.position.x) <= (width / 2) 
+                    ? target.position.x - source.position.x
+                    : target.position.x - (width - source.position.x);
+            }
+        }
+
+        public int DeltaY(Entity source, Entity target) {
+            if(source.position.y < target.position.y) {
+                return Math.Abs(target.position.y - source.position.y) <= (height / 2) 
+                    ? target.position.y - source.position.y
+                    : target.position.y - source.position.y - height;
+            } else {
+                return Math.Abs(target.position.y - source.position.y) <= (height / 2) 
+                    ? target.position.y - source.position.y
+                    : target.position.y - (height - source.position.y);
+            }
         }
 
         /// <summary>

@@ -35,5 +35,6 @@ namespace Halite3.hlt
         }
 
         public static Direction[] ALL_CARDINALS = { Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST };
+        public static Direction[] ALL_DIRECTIONS = { Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.STILL};
     }
 }

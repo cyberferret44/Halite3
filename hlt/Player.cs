@@ -14,13 +14,16 @@ namespace Halite3.hlt
         public readonly Shipyard shipyard;
         public int halite;
         public readonly Dictionary<int, Ship> ships = new Dictionary<int, Ship>();
+        public List<Ship> AllShips => ships.Values.ToList();
         public readonly Dictionary<int, Dropoff> dropoffDictionary = new Dictionary<int, Dropoff>();
         public List<Ship> ShipsSorted = new List<Ship>();
+
+        public int NetValue => ships.Values.Sum(x => x.halite) + halite;
 
         public List<Entity> GetDropoffs()  {
             var dropoffs = dropoffDictionary.Values.Select(v => (Entity)v).ToList();
             dropoffs.Add((Entity)shipyard);
-            return dropoffs;
+            return dropoffs.Where(d => d.owner.id == id.id).ToList();
         }
 
         public Ship GetShipById(int id) => ships.ContainsKey(id) ? ships[id] : null;
@@ -29,7 +32,7 @@ namespace Halite3.hlt
             var myShips = new List<Ship>();
             foreach(var drop in GetDropoffs()) {
                 var shipOnDrop = MyBot.GameMap.At(drop.position).ship;
-                if(shipOnDrop != null && shipOnDrop.owner == id) {
+                if(shipOnDrop != null && shipOnDrop.owner.Equals(id)) {
                     myShips.Add(shipOnDrop);
                 }
             }
@@ -69,8 +72,8 @@ namespace Halite3.hlt
 
         private double SpecialDistance(Ship ship, Position target) {
             double dist = (double)ship.DistanceToDropoff;
-            double Xcomponent = Math.Pow(ship.position.DeltaX(target), 2);
-            double Ycomponent = Math.Pow(ship.position.DeltaY(target), 2);
+            double Xcomponent = Math.Pow(ship.position.DeltaX(target)+.01, .5);
+            double Ycomponent = Math.Pow(ship.position.DeltaY(target)+.01, .5);
             return dist + (Xcomponent + Ycomponent)/10000.0;
         }
 

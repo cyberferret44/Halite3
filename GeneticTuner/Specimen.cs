@@ -3,6 +3,7 @@ using System.Linq;
 using System;
 using System.IO;
 using Halite3;
+using Halite3.hlt;
 
 namespace GeneticTuner
 {
@@ -13,28 +14,32 @@ namespace GeneticTuner
         void SpawnChildren();
         void Kill();
         HyperParameters GetHyperParameters();
+        string Name();
     }
 
     public class FakeSpecimen : Specimen {
         public void SpawnChildren() {}
         public void Kill() {}
         public HyperParameters GetHyperParameters() { return null; }
+        public string Name() { return "fake"; }
     }
 
     public class GeneticSpecimen : Specimen {
-        public static readonly string SPECIMEN_FOLDER = "Halite3/GeneticTuner/Specimen";
+        public static readonly string SPECIMEN_FOLDER = "Specimen3";
+        public readonly string SpecimenFolder;
         private static Random random = new Random();
         private static int NUM_CHILDREN = 1; // population control level
         private HyperParameters hyperParameters;
         public HyperParameters GetHyperParameters() => hyperParameters;
-        private string Name() => FilePath.Split(".")[0].Split("\\").Last();
+        public string Name() => FilePath.Split(".")[0].Split("/").Last().Substring(0, 15);
         private string FilePath;
 
         private List<GeneticSpecimen> children = new List<GeneticSpecimen>();
 
-        public GeneticSpecimen(string file) {
+        public GeneticSpecimen(string file, string specimenFolder) {
             FilePath = file;
             hyperParameters = new HyperParameters(FilePath);
+            SpecimenFolder = specimenFolder;
             CreateChildren();
         }
         private GeneticSpecimen() {}
@@ -49,12 +54,12 @@ namespace GeneticTuner
                 string name = "Specimen-" + Guid.NewGuid();
                 var child = new GeneticSpecimen() {
                     hyperParameters = new HyperParameters(FilePath),
-                    FilePath = SPECIMEN_FOLDER + "\\" + name + ".txt"
+                    FilePath = SpecimenFolder + "/" + name + ".txt"
                 };
 
                 // tune our hyperparameters
-                foreach(var param in Enum.GetValues(typeof(Parameters)).Cast<Parameters>()) {
-                    double multiplier = 1.0 + ((random.NextDouble() - .5) / 10.0);
+                foreach(var param in HyperParameters.AllParameters) {
+                    double multiplier = 1.0 + ((random.NextDouble() * 2 - 1) * HyperParameters.VarianceDictionary[param]);
                     double curValue = hyperParameters.GetValue(param);
                     child.hyperParameters[param] = curValue * multiplier;
                 }
@@ -62,20 +67,28 @@ namespace GeneticTuner
             }
         }
 
-        public static Specimen RandomSpecimen() {
-            var files = Directory.EnumerateFiles(SPECIMEN_FOLDER).ToArray();
+        public static Specimen RandomSpecimen(string rootFolder, Game game) {
+            string folder = rootFolder + $"GeneticTuner/{SPECIMEN_FOLDER}/";
+            folder += game.NumPlayers.ToString() + "x" + game.gameMap.width + "/";
+            var files = Directory.EnumerateFiles(folder).ToArray();
             int randomOne = random.Next(0, files.Count());
-            return new GeneticSpecimen(files[randomOne]);
+            return new GeneticSpecimen(files[randomOne], folder);
         }
 
         public void SpawnChildren() {
-            foreach(var child in children) {
-                child.hyperParameters.WriteToFile(child.FilePath);
+            if(Directory.EnumerateFiles(SpecimenFolder).Count() < 20) {
+                foreach(var child in children) {
+                    Halite3.hlt.Log.LogMessage("specimen file path " + child.FilePath);
+                    child.hyperParameters.WriteToFile(child.FilePath);
+                }
             }
         }
 
         public void Kill() {
-            File.Delete(this.FilePath);
+            // want a minimum of 10 specimen
+            if(Directory.EnumerateFiles(SpecimenFolder).Count() > 8) {
+                File.Delete(this.FilePath);
+            }
         }
     }
 }
