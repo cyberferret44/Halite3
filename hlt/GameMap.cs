@@ -102,6 +102,30 @@ namespace Halite3.hlt
             return At(entity.position);
         }
 
+        public int DeltaX(Entity source, Entity target) {
+            if(source.position.x < target.position.x) {
+                return Math.Abs(target.position.x - source.position.x) <= (width / 2) 
+                    ? target.position.x - source.position.x
+                    : target.position.x - source.position.x - width;
+            } else {
+                return Math.Abs(target.position.x - source.position.x) <= (width / 2) 
+                    ? target.position.x - source.position.x
+                    : target.position.x - (width - source.position.x);
+            }
+        }
+
+        public int DeltaY(Entity source, Entity target) {
+            if(source.position.y < target.position.y) {
+                return Math.Abs(target.position.y - source.position.y) <= (height / 2) 
+                    ? target.position.y - source.position.y
+                    : target.position.y - source.position.y - height;
+            } else {
+                return Math.Abs(target.position.y - source.position.y) <= (height / 2) 
+                    ? target.position.y - source.position.y
+                    : target.position.y - (height - source.position.y);
+            }
+        }
+
         /// <summary>
         /// A method that computes the Manhattan distance between two locations, and accounts for the toroidal wraparound.
         /// </summary>

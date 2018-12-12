@@ -22,6 +22,7 @@ namespace Halite3.hlt
         public MapCell East => Map.At(position.DirectionalOffset(Direction.EAST));
         public MapCell West => Map.At(position.DirectionalOffset(Direction.WEST));
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
+        public List<MapCell> Corners => new List<MapCell> { North.West, North.East, South.East, South.West };
 
         public List<Ship> ClosestShips(List<Ship> ships) {
             int minDist = int.MaxValue;

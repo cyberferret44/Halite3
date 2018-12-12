@@ -35,7 +35,7 @@ namespace Halite3
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
             { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0, .85) },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 1000.0) },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 550.0) },
             { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0, .8)},
             { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0, .25)},
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },

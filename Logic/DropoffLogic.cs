@@ -115,7 +115,7 @@ namespace Halite3.Logic {
         public override void CommandShips() {
             // get the ships to use
             var ships = UnusedShips.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
-            Log.LogMessage($"Drop-off ships are " + string.Join(", ", ships));
+            Log.LogMessage($"Drop-off ships are " + string.Join(", ", ships.Select(s => s.Id)));
 
             // first make dropoffs...
             foreach(var ship in ships.ToList()) {
@@ -130,7 +130,7 @@ namespace Halite3.Logic {
             foreach(var bucket in dropoffBuckets) {
                 Log.LogMessage($"{bucket.Key.x},{bucket.Key.y}: {string.Join(", ", bucket.Value.Select(x => x.Id))}");
                 var drop = bucket.Key;
-                int maxDist = 0;
+                int maxDist = 0; // the bucket values are sorted by dist from bucket key.  this lets know if we have dups on distance.
                 foreach(var ship in bucket.Value) {
                     int thisDist = Map.CalculateDistance(ship.position, drop);
                     if(thisDist > maxDist || ship.CellHalite < 10 || !IsSafeMove(ship, Direction.STILL)) {

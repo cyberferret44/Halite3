@@ -37,6 +37,7 @@ namespace Halite3.hlt
         public MapCell CurrentMapCell => Map.At(this.position);
         public int DistanceToDropoff => Map.CalculateDistance(this.position, ClosestDropoff.position);
         public Entity ClosestDropoff => MyDropoffs.OrderBy(d => Map.CalculateDistance(this.position, d.position)).ToList()[0];
+        public Entity ClosestEnemyDropoff(int playerId) => MyBot.game.GetOpponent(playerId).GetDropoffs().OrderBy(d => Map.CalculateDistance(this.position, d.position)).ToList()[0];
         public MapCell BestNeighbor => Map.NeighborsAt(position).OrderBy(n => n.halite).Last();
 
         /// <summary>

@@ -12,8 +12,22 @@ namespace Halite3.Logic {
         private bool HasChanged = false;
 
         private int TotalWallCells => Assignments.Values.Where(v => v != null).Count() + Wall.Count;
-        private void Assign(Ship ship, Point? point) => Assignments[ship.Id] = point;
+        private void Assign(Ship ship, Point? point)  {
+            if(point.HasValue && IsAssigned(point.Value)) {
+                throw new Exception();
+            }
+            Assignments[ship.Id] = point;
+            if(point.HasValue && Wall.Contains(point.Value)) {
+                Wall.Remove(point.Value);
+            }
+        }
         private void Unassign(int shipId) => Assignments.Remove(shipId);
+        private bool IsAssigned(Point p) => Assignments.Values.Any(v => v.HasValue && v.Value.Equals(p));
+        private void Swap(int one, int two) {
+            var temp = Assignments[one];
+            Assignments[one] = Assignments[two];
+            Assignments[two] = temp;
+        }
 
         public override void Initialize() {
             Degradation = HParams[Parameters.CELL_VALUE_DEGRADATION];
@@ -49,23 +63,31 @@ namespace Halite3.Logic {
             // We want to swap assignments if a ship is already on someone elses target, it's a waste to try to track elsewhere
             foreach(var id in Assignments.Keys.ToList()) {
                 var ship = Me.GetShipById(id);
-                var pos = Assignments[id].HasValue ? new Position(Assignments[id].Value.x, Assignments[id].Value.y) : null;
+                var targetPos = Assignments[id].HasValue ? new Position(Assignments[id].Value.x, Assignments[id].Value.y) : null;
+
+                // if the current cell is more valuable than our target cell, reassign
+                if((targetPos == null || ship.CellHalite * 1.1 > Map.At(targetPos).halite) && Wall.Contains(ship.position.AsPoint)) {
+                    targetPos = ship.position;
+                    Assign(ship, targetPos.AsPoint);
+                }
+
+                // if on someone elses assignment, swap the assignments
                 foreach(var kvp in Assignments.ToList()) {
                     if(kvp.Value != null && kvp.Value.HasValue && ship.position.AsPoint.Equals(kvp.Value.Value)) {
                         // swap assignments
-                        var temp = Assignments[id];
-                        Assignments[id] = kvp.Value;
-                        Assignments[kvp.Key] = temp;
+                        Swap(ship.Id, kvp.Key);
+                        break;
                     }
                 }
-                if(pos != null && Map.CalculateDistance(pos, ship.position) >= 1) {
-                    var val = CellValue(pos, ship.CurrentMapCell);
+
+                if(targetPos != null && Map.CalculateDistance(targetPos, ship.position) >= 1) {
+                    var val = CellValue(targetPos, ship.CurrentMapCell);
                     foreach(var n in ship.Neighbors) {
                         if(n.IsEmpty() && IsSafeMove(ship, n.position.GetDirectionTo(ship.position)) && Wall.Contains(n.position.AsPoint) 
-                                    && CellValue(pos, ship.CurrentMapCell) < CellValue(n.position, ship.CurrentMapCell)) {
+                                    && CellValue(targetPos, ship.CurrentMapCell) < CellValue(n.position, ship.CurrentMapCell)) {
                             if(Assignments[ship.Id].HasValue)
                                 Wall.Add(Assignments[ship.Id].Value);
-                            Assignments[ship.Id] = n.position.AsPoint;
+                            Assign(ship, n.position.AsPoint);
                         }
                     }
                 }
@@ -115,7 +137,7 @@ namespace Halite3.Logic {
             // if there's a collided cell nearby, target it
             var cells = Map.GetXLayers(ship.position, 3);
             foreach(var c in cells) {
-                if(c.halite > Map.AverageHalitePerCell * 5 && c.halite / 3 > ship.CellHalite && c.ClosestShips(UnusedShips).Contains(ship)) {
+                if(c.halite > Map.AverageHalitePerCell * 5 && c.halite / 3 > ship.CellHalite && c.ClosestShips(UnusedShips).Contains(ship) && !IsAssigned(c.position.AsPoint)) {
                     Assign(ship, c.position.AsPoint);
                     break;
                 }
