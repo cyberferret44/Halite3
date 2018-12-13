@@ -8,7 +8,6 @@ namespace Halite3.Logic {
         public Ship Ship;
         public Direction Direction;
         public double MoveValue;
-        public MapCell TargetCell => MyBot.GameMap.At(this.Ship, this.Direction);
         public ScoredMove(KeyValuePair<Direction, double> kvp, Ship ship) {
             this.Ship = ship;
             this.Direction = kvp.Key;
@@ -38,7 +37,7 @@ namespace Halite3.Logic {
         public ScoredMove BestMove() {
             var best = Scores.Count == 0 ? null : Scores.Count == 1 ? new ScoredMove(Scores.Keys.First(), double.MaxValue, Ship) : new ScoredMove(Scores.OrderBy(kvp => kvp.Value).Last(), Ship);
             if(best == null) {
-                var removedMoves = RemovedMoves.Select(x => MyBot.GameMap.At(Ship.position.DirectionalOffset(x.Key)));
+                var removedMoves = RemovedMoves.Select(x => GameInfo.CellAt(Ship, x.Key));
                 removedMoves = removedMoves.Where(x => x.IsOccupiedByOpponent()).ToList();
                 removedMoves = removedMoves.OrderByDescending(x => x.ship.halite);
                 if(removedMoves.Count() > 0) {
@@ -46,7 +45,7 @@ namespace Halite3.Logic {
                     best = new ScoredMove(move.position.GetDirectionTo(Ship.position), double.MaxValue, Ship);
                 } else if (RemovedMoves.Any(m => Logic.IsSafeMove(Ship, m.Key))) {
                     var rm = RemovedMoves.First(m => Logic.IsSafeMove(Ship, m.Key));
-                    var move = MyBot.GameMap.At(Ship.position.DirectionalOffset(rm.Key));
+                    var move = GameInfo.CellAt(Ship, rm.Key);
                     best = new ScoredMove(rm.Key, double.MaxValue, Ship);
                 } else {
                     best = new ScoredMove(Direction.STILL, double.MaxValue, Ship);
@@ -55,7 +54,7 @@ namespace Halite3.Logic {
             return best;
         }
         
-        private Point Target(Direction d) => MyBot.GameMap.At(Ship, d).position.AsPoint;
+        private Point Target(Direction d) => GameInfo.CellAt(Ship, d).position.AsPoint;
 
         // Logical Methods
         // Logical Methods
@@ -69,7 +68,7 @@ namespace Halite3.Logic {
         // Heavier Methods
         public void TapCell(MapCell target) {
             foreach(var kvp in Scores) {
-                var targetPos = MyBot.GameMap.At(Ship, kvp.Key);
+                var targetPos = GameInfo.CellAt(Ship, kvp.Key);
                 if(targetPos.Equals(target)) {
                     RemovedMoves.Add(kvp);
                     Scores.Remove(kvp.Key);

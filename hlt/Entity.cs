@@ -12,7 +12,7 @@ namespace Halite3.hlt
         public readonly PlayerId owner;
         public readonly EntityId id;
         public Position position;
-        public bool IsMine => this.owner.id == MyBot.Me.id.id;
+        public bool IsMine => this.owner.id == GameInfo.MyId;
         public bool IsOpponents => !IsMine;
 
         public Entity(PlayerId owner, EntityId id, Position position)

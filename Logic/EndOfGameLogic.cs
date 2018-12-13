@@ -11,7 +11,7 @@ namespace Halite3.Logic {
 
         public override void ProcessTurn() {
             foreach(var ship in Me.ShipsSorted) {
-                if(ship.DistanceToDropoff * 1.5 > MyBot.game.TurnsRemaining) {
+                if(ship.DistanceToDropoff * 1.5 > GameInfo.TurnsRemaining) {
                     FinalReturnToHome.Add(ship.Id);
                 }
             }

@@ -31,7 +31,7 @@ namespace Halite3.hlt
         public List<Ship> ShipsOnDropoffs() {
             var myShips = new List<Ship>();
             foreach(var drop in GetDropoffs()) {
-                var shipOnDrop = MyBot.GameMap.At(drop.position).ship;
+                var shipOnDrop = GameInfo.CellAt(drop.position).ship;
                 if(shipOnDrop != null && shipOnDrop.owner.Equals(id)) {
                     myShips.Add(shipOnDrop);
                 }

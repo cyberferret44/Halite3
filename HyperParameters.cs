@@ -67,7 +67,7 @@ namespace Halite3
                     while(true) {
                         actualLayers++;
                         var numCells = (((actualLayers * actualLayers / 2) + (actualLayers / 2)) * 4.0) + 1;
-                        if(numCells * (MyBot.GameMap.AverageHalitePerCell + 20) >= haliteCovered) {
+                        if(numCells * (GameInfo.Map.AverageHalitePerCell + 20) >= haliteCovered) {
                             return actualLayers;
                         }
                     }

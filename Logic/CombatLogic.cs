@@ -1,16 +1,37 @@
 using System.Collections.Generic;
 using Halite3.hlt;
 using System.Linq;
+using System;
 
 namespace Halite3.Logic {
     public class CombatLogic : Logic {
-        private bool Is2Player = true;
-        public override void Initialize() { 
-            if(MyBot.game.Opponents.Count() > 1) {
-                Is2Player = false;
+        public override void Initialize() { /* TODO */ }
+
+        public int baseShipValue;
+        public int baseShipValueReducedBy2;
+        public override void ProcessTurn() { 
+            int numShips = GameInfo.TotalShipsCount;
+            numShips = Math.Max(numShips, 1);
+            int numCells = Map.width * Map.height;
+            int haliteRemaining = Map.HaliteRemaining;
+            // crashing a ship makes all remaining ships more valuable
+            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .08 * haliteRemaining / numCells);
+                haliteRemaining -= haliteCollectable;
             }
+            baseShipValue = (Map.HaliteRemaining - haliteRemaining) / numShips;
+            Log.LogMessage("Base Ship value = " + baseShipValue);
+
+            numShips -= 2;
+            numShips = Math.Max(numShips, 1);
+            int haliteRemaining2 = Map.HaliteRemaining;
+            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .08 * haliteRemaining2 / numCells);
+                haliteRemaining2 -= haliteCollectable;
+            }
+            baseShipValueReducedBy2 = (Map.HaliteRemaining - haliteRemaining2) / numShips;
+            Log.LogMessage("baseShipValueReducedBy2 Ship value = " + baseShipValueReducedBy2);
         }
-        public override void ProcessTurn() { /* TODO */ }
         public override void ScoreMoves() { /* TODO */ }
 
         public override void CommandShips() {
@@ -18,13 +39,13 @@ namespace Halite3.Logic {
             bool cont = false;
             foreach(var ship in UnusedShips) {
                 // Logic to defend a good space
-                if(MyBot.game.Opponents.Count == 1 && ship.DistanceToDropoff <= 6 && ship.Neighbors.Any(x => x.halite > Map.AverageHalitePerCell && x.IsOccupiedByOpponent())) {
+                if(GameInfo.Opponents.Count == 1 && ship.DistanceToDropoff <= 6 && ship.Neighbors.Any(x => x.halite > Map.AverageHalitePerCell && x.IsOccupiedByOpponent())) {
                     var info = new XLayersInfo(4, ship.position);
                     foreach(var n in ship.CurrentMapCell.Neighbors.Where(x => x.IsOccupiedByOpponent()).OrderByDescending(x => x.ship.halite + x.halite)) {
                         bool shipIsWorthCrashing = n.ship.halite + n.halite * .25 > ship.halite * ship.CellHalite * .25;
                         bool iHaveMoreShips = info.MyShipMargin >= 0;
                         bool iHaveMoreMoneyAndEnoughShips = info.MyShipRatio >= .8 && (Me.ships.Sum(s => s.Value.halite + 1000) + Me.halite) * 1.1 > 
-                                                            MyBot.game.Opponents[0].ships.Sum(s => s.Value.halite + 1000) + MyBot.game.Opponents[0].halite;
+                                                            GameInfo.Opponents[0].ships.Sum(s => s.Value.halite + 1000) + GameInfo.Opponents[0].halite;
                         if(shipIsWorthCrashing && (iHaveMoreShips || iHaveMoreMoneyAndEnoughShips)) {
                             var d = n.position.GetDirectionTo(ship.position);
                             if(IsSafeMove(ship, d, true)) {
@@ -111,8 +132,25 @@ namespace Halite3.Logic {
             }
         }
 
+        // I don't actually care how much halite each player has
+        // todo, doesn't consider if opponent could get my cargo
         private bool ShouldCrashShip(Ship mine, Ship enemy) {
-            return Is2Player && enemy.halite > 700 && mine.halite/2 < enemy.halite; //
+            //if(mine.halite > 500)
+                //return false;
+            var opponent = GameInfo.GetPlayer(enemy.owner.id);
+            var myValue = Me.ships.Count * baseShipValue;  // net est value of fleet
+            var oppValue = opponent.ships.Count * baseShipValue; // net est value of fleet
+            var myReducedValue = (Me.ships.Count-1) * baseShipValueReducedBy2;
+            var oppReducedValue = (opponent.ships.Count-1) * baseShipValueReducedBy2;
+            var myLoss = (myValue - myReducedValue) + mine.halite; // new value loss for me
+            var oppLoss = (oppValue - oppReducedValue) + enemy.halite; // the net value loss for opponent
+
+            if(oppLoss - myLoss > 500) {
+                Log.LogMessage($"Ship {mine.Id} was told to crash {enemy.Id} with a net loss positive as {oppLoss - myLoss}");
+                return true;
+            }
+
+            return false;
         }
     }
 }
