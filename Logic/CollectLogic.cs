@@ -11,6 +11,8 @@ namespace Halite3.Logic {
         private Dictionary<int, Point?> Assignments = new Dictionary<int, Point?>();
         private bool HasChanged = false;
 
+    // TODO if target cell value < targettoignore, prioritize it for less loss
+    // TODO if moving off of a base, prioritize any square value < 10; but onlu glightly
         private int TotalWallCells => Assignments.Values.Where(v => v != null).Count() + Wall.Count;
         private void Assign(Ship ship, Point? point)  {
             if(point.HasValue && IsAssigned(point.Value)) {
@@ -42,7 +44,7 @@ namespace Halite3.Logic {
             CreateWall();
 
             // if cells run out todo consider opponent ship count instead of just my own
-            if(!HasChanged && TotalWallCells < Me.ShipsSorted.Count * (MyBot.game.Opponents.Count + 1) && MyBot.game.turnNumber > 30) {
+            if(!HasChanged && TotalWallCells < Me.ShipsSorted.Count * (GameInfo.Opponents.Count + 1) && GameInfo.TurnNumber > 30) {
                 HasChanged = true;
                 NumToIgnore /= 5;
             }
@@ -56,7 +58,7 @@ namespace Halite3.Logic {
             // add accounted for ships
             UnassignUnavailableShips();
 
-            foreach(var enemy in MyBot.game.Opponents.SelectMany(o => o.AllShips)) {
+            foreach(var enemy in GameInfo.OpponentShips) {
                 Scores.TapCell(enemy.CurrentMapCell);
             }
 
@@ -186,7 +188,7 @@ namespace Halite3.Logic {
                 var directionsToBestTarget = bestTarget.GetAllDirectionsTo(ship.position);
                 var costToMove = ship.CellHalite / 10 * .35;
                 double value = 0.0;
-                int curDistToTarget = MyBot.GameMap.CalculateDistance(bestTarget, ship.CurrentMapCell.position);
+                int curDistToTarget = GameInfo.Distance(bestTarget, ship);
                 foreach(var d in DirectionExtensions.ALL_DIRECTIONS) {
                     // some important varibales
                     var target = Map.At(ship, d);
@@ -215,7 +217,7 @@ namespace Halite3.Logic {
                         value += 10;
                         value *= 5;
                     }
-                    int newDistToTarget = MyBot.GameMap.CalculateDistance(target.position, bestTarget);
+                    int newDistToTarget = GameInfo.Distance(target.position, bestTarget);
                     if(newDistToTarget < curDistToTarget) {
                         value *= 2;
                     }

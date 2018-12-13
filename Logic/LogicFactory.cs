@@ -14,7 +14,7 @@ namespace Halite3.Logic {
             return new EndOfGameLogic();
         }
 
-        public static Logic GetCombatLogic(int playerId, bool isLocal) {
+        public static Logic GetCombatLogic() {
             //if(!isLocal || playerId == 0)
                 return new CombatLogic();
             //else

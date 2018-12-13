@@ -50,6 +50,12 @@ namespace Halite3.Logic {
                 }
                 if(max < MinDropoffValue || (BestDropoffs.Count > 0 && max < BestDropoffs[0].InitialHalite / 1.75))
                     break;
+                
+                // local logic to make the bots more random for better ML tuning
+                if(GameInfo.IsLocal) {
+                    var cells = Map.GetXLayers(pos, 5);
+                    pos = cells[new Random().Next(0, cells.Count)].position;
+                }
                 BestDropoffs.Add(new VirtualDropoff(pos, max));
                 availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Spacing).ToList();
                 Log.LogMessage($"Best drop-off at ({pos.x},{pos.y}) with a value {max}");
@@ -193,9 +199,13 @@ namespace Halite3.Logic {
             directions.Add(Direction.STILL);
             for(int i=0; i< directions.Count; i++) { //foreach(Direction d in directions) {
                 if(IsSafeMove(ship, directions[i])) {
-                    MakeMove(ship.Move(directions[i]),  "moving to dropoff");
-                    if((ship.position.x == drop.x || ship.position.y == drop.y) && i == 0) {
-                        TwoTurnAvoid.Add(Map.At(ship.position.DirectionalOffset(directions[i]).DirectionalOffset(directions[i])));
+                    var command = ship.Move(directions[i]);
+                    MakeMove(command,  "moving to dropoff");
+                    if(ship.DistanceToDropoff == 3) {
+                        Log.LogMessage($"Ship {ship.Id} was distance three. Adding cells to avoid...");
+                        var newTarget = Map.At(ship.position.DirectionalOffset(directions[i]));
+                        var newDirections = ship.ClosestDropoff.position.GetAllDirectionsTo(newTarget.position);
+                        TwoTurnAvoid.Add(newDirections.Select(d => Map.At(newTarget.position.DirectionalOffset(d))).ToList());
                     }
                     break;
                 }
@@ -224,7 +234,7 @@ namespace Halite3.Logic {
         }
 
         private bool ShouldCreateDropoff() => Me.ShipsSorted.Count / Me.GetDropoffs().Count > 15 ; // need a minimum of ships per drop
-        private bool CanCreateDropoff(Position pos) => Me.halite + Map.At(pos).halite + 500 >= 5000 && MyBot.game.turnNumber >= 40;
+        private bool CanCreateDropoff(Position pos) => Me.halite + Map.At(pos).halite + 500 >= 5000 && GameInfo.TurnNumber >= 40;
 
         private bool ShouldMoveShip(Ship ship) {
             return ship.IsFull() ||

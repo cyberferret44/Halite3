@@ -5,8 +5,8 @@
         public readonly string command;
         public MapCell TargetCell;
         public Ship Ship;
-        private static GameMap gameMap => MyBot.GameMap;
-        private static Player me => MyBot.Me;
+        private static GameMap gameMap => GameInfo.Map;
+        private static Player me => GameInfo.Me;
 
         /// <summary>
         /// Create a new Spawn Ship command

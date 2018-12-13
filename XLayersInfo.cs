@@ -13,9 +13,9 @@ namespace Halite3 {
         private readonly Position position;
         public  XLayersInfo(int layers, Position position) {
             this.position = position;
-            Cells = MyBot.GameMap.GetXLayers(position, layers);
+            Cells = GameInfo.Map.GetXLayers(position, layers);
             foreach(var cell in Cells) {
-                int dist = MyBot.GameMap.CalculateDistance(position, cell.position);
+                int dist = GameInfo.Map.CalculateDistance(position, cell.position);
                 if(!Layers.ContainsKey(dist)) {
                     Layers[dist] = new List<MapCell>();
                 }

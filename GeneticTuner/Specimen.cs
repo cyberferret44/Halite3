@@ -7,9 +7,6 @@ using Halite3.hlt;
 
 namespace GeneticTuner
 {
-    /// This setup allows the game to detect server vs localhost and use
-    /// a real specimen when locally tuning, and a fake one when running on
-    /// the server
     public interface Specimen {
         void SpawnChildren();
         void Kill();
@@ -67,9 +64,9 @@ namespace GeneticTuner
             }
         }
 
-        public static Specimen RandomSpecimen(string rootFolder, Game game) {
+        public static Specimen RandomSpecimen(string rootFolder) {
             string folder = rootFolder + $"GeneticTuner/{SPECIMEN_FOLDER}/";
-            folder += game.NumPlayers.ToString() + "x" + game.gameMap.width + "/";
+            folder += GameInfo.PlayerCount + "x" + GameInfo.Map.width + "/";
             var files = Directory.EnumerateFiles(folder).ToArray();
             int randomOne = random.Next(0, files.Count());
             return new GeneticSpecimen(files[randomOne], folder);

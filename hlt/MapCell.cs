@@ -16,11 +16,10 @@ namespace Halite3.hlt
         public Ship ship;
         public Entity structure;
         public bool IsStructure => structure != null;
-        private GameMap Map => MyBot.GameMap;
-        public MapCell North => Map.At(position.DirectionalOffset(Direction.NORTH));
-        public MapCell South => Map.At(position.DirectionalOffset(Direction.SOUTH));
-        public MapCell East => Map.At(position.DirectionalOffset(Direction.EAST));
-        public MapCell West => Map.At(position.DirectionalOffset(Direction.WEST));
+        public MapCell North => GameInfo.CellAt(position, Direction.NORTH);
+        public MapCell South => GameInfo.CellAt(position, Direction.SOUTH);
+        public MapCell East => GameInfo.CellAt(position, Direction.EAST);
+        public MapCell West => GameInfo.CellAt(position, Direction.WEST);
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
         public List<MapCell> Corners => new List<MapCell> { North.West, North.East, South.East, South.West };
 
@@ -28,7 +27,7 @@ namespace Halite3.hlt
             int minDist = int.MaxValue;
             var results = new List<Ship>();
             foreach(var ship in ships) {
-                int thisDist = Map.CalculateDistance(position, ship.position);
+                int thisDist = GameInfo.Distance(position, ship);
                 if(thisDist == minDist) {
                     results.Add(ship);
                 } else if( thisDist < minDist) {
@@ -68,11 +67,11 @@ namespace Halite3.hlt
         }
 
         public bool IsOccupiedByOpponent() {
-            return ship != null && ship.owner.id != MyBot.Me.id.id;
+            return ship != null && ship.owner.id != GameInfo.MyId;
         }
 
         public bool IsOccupiedByMe() {
-            return ship != null && ship.owner.id == MyBot.Me.id.id;
+            return ship != null && ship.owner.id == GameInfo.MyId;
         }
 
         /// <summary>

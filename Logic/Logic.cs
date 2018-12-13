@@ -5,8 +5,9 @@ using System.Linq;
 namespace Halite3.Logic {
     public abstract class Logic {
         // shortcut accessors
-        protected static GameMap Map => MyBot.GameMap;
-        protected static Player Me => MyBot.Me;
+        protected static GameMap Map => GameInfo.Map;
+        protected static Player Me => GameInfo.Me;
+        protected static Game Game => GameInfo.Game;
         protected HyperParameters HParams => MyBot.HParams;
         protected static List<Ship> AllShips => Me.ShipsSorted;
 
@@ -18,7 +19,7 @@ namespace Halite3.Logic {
         protected static HashSet<int> UsedShips = new HashSet<int>();
         protected static List<Ship> UnusedShips => Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)).ToList();
         public static HashSet<MapCell> CollisionCells = new HashSet<MapCell>();
-        public static HashSet<MapCell> TwoTurnAvoid = new HashSet<MapCell>();
+        public static HashSet<List<MapCell>> TwoTurnAvoid = new HashSet<List<MapCell>>();
 
         //abstract methods
         public abstract void Initialize();
@@ -35,7 +36,7 @@ namespace Halite3.Logic {
             TwoTurnAvoid.Clear();
             Scores.ScoreMoves(AllShips);
             MakeMandatoryMoves();
-            foreach(var drop in MyBot.game.Opponents.SelectMany(x => x.GetDropoffs())) {
+            foreach(var drop in GameInfo.Game.Opponents.SelectMany(x => x.GetDropoffs())) {
                 if(Map.At(drop.position).Neighbors.Any(x => x.IsOccupiedByOpponent())) {
                     Scores.TapCell(Map.At(drop.position)); // prevents collisions on opponents drop points...
                 }
@@ -68,15 +69,17 @@ namespace Halite3.Logic {
             if(target.IsStructure && target.structure.IsMine && !CollisionCells.Contains(target)) {
                 return true;
             }
-            // todo not the right spot for this
-            if(direction != Direction.STILL) {
-                if(TwoTurnAvoid.Contains(target) && (int)(ship.CellHalite * .1) + (int)(target.halite * .1) > ship.halite) {
+            bool shouldMove = !CollisionCells.Contains(target) && (IngoreEnemy || !target.IsOccupiedByOpponent());
+            if(shouldMove && direction != Direction.STILL) {
+                if(TwoTurnAvoid.Any(x => x.Contains(target)) && (int)(ship.CellHalite * .1) + (int)(target.halite * .1) > ship.halite) {
+                    TwoTurnAvoid.First(x => x.Contains(target)).Remove(target);
                     return false;
                 }
             }
-            bool result = !CollisionCells.Contains(target) && (IngoreEnemy || !target.IsOccupiedByOpponent());
-            return result;
+            return shouldMove;
         }
+
+        //todo two turn avoid not just for dist = 3
     }
 
     public class EmptyLogic : Logic {
