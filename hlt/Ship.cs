@@ -13,15 +13,14 @@ namespace Halite3.hlt
     public class Ship : Entity
     {
         public readonly int halite;
-
         public static List<Entity> MyDropoffs => GameInfo.Me.GetDropoffs().Where(d => d.owner.id == GameInfo.MyId).ToList();
         public int Id => this.id.id;
         public bool CanMove => this.halite >= CellHalite / 10;
-
-        public bool OnDropoff => MyDropoffs.Any(d => d.position.Equals(this.position));
+        public bool OnDropoff => CurrentMapCell.IsStructure && CurrentMapCell.structure.owner.Equals(this.owner);
         public int CellHalite => CurrentMapCell.halite;
-
         public List<MapCell> Neighbors => CurrentMapCell.Neighbors;
+        public Position PreviousPosition;
+        public Direction PreviousMove => PreviousPosition == null ? Direction.STILL : position.GetDirectionTo(PreviousPosition);
 
         public Ship(PlayerId owner, EntityId id, Position position, int halite) : base(owner, id, position)
         {
@@ -29,9 +28,11 @@ namespace Halite3.hlt
         }
 
         public MapCell CurrentMapCell => GameInfo.CellAt(this.position);
-        public int DistanceToDropoff => GameInfo.Distance(this, ClosestDropoff);
+        public int DistanceToMyDropoff => GameInfo.Distance(this, ClosestDropoff);
+        public int DistanceToOwnerDropoff => GameInfo.Distance(this, ClosestEnemyDropoff(owner.id));
         public Entity ClosestDropoff => MyDropoffs.OrderBy(d => GameInfo.Distance(this, d)).ToList()[0];
-        public Entity ClosestEnemyDropoff(int playerId) => GameInfo.Game.GetOpponent(playerId).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).ToList()[0];
+        public Entity ClosestEnemyDropoff(int playerId) => GameInfo.GetPlayer(playerId).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
+        public Entity ClosestOwnerDropoff => GameInfo.GetPlayer(owner.id).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
 
         /// <summary>
         /// Returns true if this ship is carrying the max amount of halite possible.
@@ -68,7 +69,7 @@ namespace Halite3.hlt
         /// <summary>
         /// Reads in the details of a new ship from the Halite engine.
         /// </summary>
-        public static Ship _generate(PlayerId playerId)
+        public static Ship _generate(PlayerId playerId, List<Ship> previousShips)
         {
             Input input = Input.ReadInput();
 
@@ -77,7 +78,12 @@ namespace Halite3.hlt
             int y = input.GetInt();
             int halite = input.GetInt();
 
-            return new Ship(playerId, shipId, new Position(x, y), halite);
+            var previous = previousShips.FirstOrDefault(s => s.Id == shipId.id);
+            var newShip = new Ship(playerId, shipId, new Position(x, y), halite);
+            if(previous != null) {
+                newShip.PreviousPosition = previous.position;
+            }
+            return newShip;
         }
 
         public override bool Equals(object obj)

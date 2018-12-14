@@ -46,6 +46,8 @@ namespace Halite3.Logic {
         // static methods
         public static void MakeMove(Command command, string debugMessage) {
             Log.LogMessage($"Ship {command.Ship.id} moved {command.TargetCell.position.GetDirectionTo(command.Ship.position)}. {debugMessage}");
+            if(command.Ship.PreviousPosition != null)
+                Log.LogMessage("The ship's position was " + command.Ship.PreviousPosition.x + "," + command.Ship.PreviousPosition.y + " and the move was " + command.Ship.PreviousMove.ToString("g"));
             CommandQueue.Add(command);
             UsedShips.Add(command.Ship.Id);
             CollisionCells.Add(command.TargetCell);

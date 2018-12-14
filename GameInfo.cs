@@ -26,6 +26,11 @@ namespace Halite3 {
         public static int Distance(Position p1, Entity e2) => Distance(p1, e2.position);
         public static int Distance(Entity e1, Position p2) => Distance(e1.position, p2);
         public static int Distance(Entity e1, Entity e2) => Distance(e1.position, e2.position);
+        public static List<MapCell> GetXLayersExclusive(Position position, int distance) {
+            var xLayers = Map.GetXLayers(position, distance);
+            var subtract = Map.GetXLayers(position, distance-1);
+            return xLayers.Where(x => !subtract.Contains(x)).ToList();
+        }
 
         // Dropoff / Shipyard related
         public static Shipyard MyShipyard => Me.shipyard;

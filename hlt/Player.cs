@@ -53,10 +53,11 @@ namespace Halite3.hlt
         {
             this.halite = halite;
 
+            var previousShips = ships.Values.ToList();
             ships.Clear();
             for (int i = 0; i < numShips; ++i)
             {
-                Ship ship = Ship._generate(id);
+                Ship ship = Ship._generate(id, previousShips);
                 ships[ship.Id] = ship;
             }
             
@@ -71,7 +72,7 @@ namespace Halite3.hlt
         }
 
         private double SpecialDistance(Ship ship, Position target) {
-            double dist = (double)ship.DistanceToDropoff;
+            double dist = (double)ship.DistanceToMyDropoff;
             double Xcomponent = Math.Pow(ship.position.DeltaX(target)+.01, .5);
             double Ycomponent = Math.Pow(ship.position.DeltaY(target)+.01, .5);
             return dist + (Xcomponent + Ycomponent)/10000.0;

@@ -75,7 +75,7 @@ namespace Halite3.Logic {
             if(ShouldCreateDropoff() && !MyBot.ReserveForDropoff && BestDropoffs.Count > 0) {
                 foreach(var ship in Me.ShipsSorted) {
                     var closestVirtual = GetClosestVirtualDropoff(ship.position);
-                    if(Map.CalculateDistance(ship.position, closestVirtual.Position) <= ship.DistanceToDropoff) {
+                    if(Map.CalculateDistance(ship.position, closestVirtual.Position) <= ship.DistanceToMyDropoff) {
                         Log.LogMessage("drop-off bot save for drop has been flagged");
                         MyBot.ReserveForDropoff = true;
                         break;
@@ -102,7 +102,7 @@ namespace Halite3.Logic {
                 foreach(var ship in AllShips) {
                     var closestVirtual = GetClosestVirtualDropoff(ship.position);
                     int dist = Map.CalculateDistance(ship.position, closestVirtual.Position);
-                    if(CanCreateDropoff(closestVirtual.Position) &&  dist <= ship.DistanceToDropoff) {
+                    if(CanCreateDropoff(closestVirtual.Position) &&  dist <= ship.DistanceToMyDropoff) {
                         int halite = Map.GetXLayers(closestVirtual.Position, Xlayers).Sum(x => x.halite);
                         if(max < halite) {
                             max = halite;
@@ -111,7 +111,7 @@ namespace Halite3.Logic {
                     }
                 }
 
-                if(best != null && AllShips.Any(s => Map.CalculateDistance(s.position, best.Position) <= s.DistanceToDropoff && MovingTowardsBase.Contains(s.Id))) {
+                if(best != null && AllShips.Any(s => Map.CalculateDistance(s.position, best.Position) <= s.DistanceToMyDropoff && MovingTowardsBase.Contains(s.Id))) {
                     NextDropoff = best;
                     Log.LogMessage($"best drop-off has been selected at {best.Position.x},{best.Position.y}");
                 }
@@ -121,7 +121,7 @@ namespace Halite3.Logic {
         public override void CommandShips() {
             // get the ships to use
             var ships = UnusedShips.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
-            Log.LogMessage($"Drop-off ships are " + string.Join(", ", ships.Select(s => s.Id)));
+            Log.LogMessage($"Drop-off ships are as follows...");
 
             // first make dropoffs...
             foreach(var ship in ships.ToList()) {
@@ -201,7 +201,7 @@ namespace Halite3.Logic {
                 if(IsSafeMove(ship, directions[i])) {
                     var command = ship.Move(directions[i]);
                     MakeMove(command,  "moving to dropoff");
-                    if(ship.DistanceToDropoff == 3) {
+                    if(ship.DistanceToMyDropoff == 3) {
                         Log.LogMessage($"Ship {ship.Id} was distance three. Adding cells to avoid...");
                         var newTarget = Map.At(ship.position.DirectionalOffset(directions[i]));
                         var newDirections = ship.ClosestDropoff.position.GetAllDirectionsTo(newTarget.position);
@@ -228,7 +228,7 @@ namespace Halite3.Logic {
 
         // Forecasting!!!
         private Position GetClosestDropoff(Ship ship) {
-            if(NextDropoff != null && Map.CalculateDistance(ship.position, NextDropoff.Position) <= ship.DistanceToDropoff)
+            if(NextDropoff != null && Map.CalculateDistance(ship.position, NextDropoff.Position) <= ship.DistanceToMyDropoff)
                 return NextDropoff.Position;
             return ship.ClosestDropoff.position;
         }

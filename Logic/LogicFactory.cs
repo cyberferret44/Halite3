@@ -15,10 +15,10 @@ namespace Halite3.Logic {
         }
 
         public static Logic GetCombatLogic() {
-            //if(!isLocal || playerId == 0)
-                return new CombatLogic();
-            //else
-             //   return new EmptyLogic();
+            if(GameInfo.PlayerCount == 2)
+                return new TwoPlayerCombatLogic();
+            else
+                return new EmptyLogic();
         }
     }
 }
