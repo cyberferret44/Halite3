@@ -139,14 +139,39 @@ namespace Halite3.Logic {
                 int maxDist = 0; // the bucket values are sorted by dist from bucket key.  this lets know if we have dups on distance.
                 foreach(var ship in bucket.Value) {
                     int thisDist = Map.CalculateDistance(ship.position, drop);
+                    // first, check that this ship is closer than any other and its cargo wont go over and it wont make a difference
+                    /* if(ShouldMineInsteadOfDropoff(ship, bucket.Value, dropoffBuckets)) {
+                        MakeMove(ship.StayStill(), $" Mining halite because I can");
+                    } else */
                     if(thisDist > maxDist || ship.CellHalite < 10 || !IsSafeMove(ship, Direction.STILL)) {
                         NavigateToDropoff(ship, drop);
                     } else {
-                        ship.StayStill();
+                        MakeMove(ship.StayStill(), $" staying still to stagger ships");
                     }
                     maxDist = Math.Max(maxDist, thisDist);
                 }
             }
+        }
+
+        public bool ShouldMineInsteadOfDropoff(Ship ship, List<Ship> bucket, Dictionary<Position, List<Ship>> buckets) {
+            if(ship.CellHalite < 10)
+                return false;
+            if(ship.CellHalite * .1 + ship.halite > 1000)
+                return false;
+            if((int)((ship.halite + GameInfo.Me.halite)/1000) > (int)(GameInfo.Me.halite/1000))
+                return false;
+            if(bucket.Count > 1 && bucket[1].DistanceToMyDropoff -1 <= ship.DistanceToMyDropoff) 
+                return false;
+            if(ship.CurrentMapCell.IsThreatened)
+                return false;
+            if(!IsSafeMove(ship, Direction.STILL))
+                return false;
+            foreach(var b in buckets.Where(x => x.Value != bucket)) {
+                if(b.Value.First().DistanceToMyDropoff <= ship.DistanceToMyDropoff) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         Dictionary<Position, List<Ship>> GetBuckets(List<Ship> ships) {
@@ -168,7 +193,7 @@ namespace Halite3.Logic {
         private void NavigateToDropoff(Ship ship, Position drop) {
             // todo if ship is closest to dropoff and cargo plus me.halite isn't enough to bump above 1k, just wait on current cell, no rush
             List<Direction> directions = drop.GetAllDirectionsTo(ship.position);
-            directions = directions.OrderBy(d => Map.At(ship, d).IsOccupiedByMe() ? Map.At(ship, d).halite * .45 : Map.At(ship, d).halite * .1).ToList();
+            directions = directions.OrderBy(d => Map.At(ship, d).IsOccupiedByMe() ? Map.At(ship, d).halite * .45 : Map.At(ship, d).IsStructure && Map.At(ship, d).structure.IsOpponents ? 100 : Map.At(ship, d).halite * .1).ToList();
             if(directions.Count == 1 && Map.At(ship, directions[0]).IsOccupiedByOpponent()) {
                 if(directions[0] == Direction.NORTH)
                     directions.AddRange(new List<Direction>{ Direction.EAST, Direction.WEST});
@@ -188,8 +213,8 @@ namespace Halite3.Logic {
                 // someone blocking a corner, keep options open by moving closest to the hypotenouse 
                 var pos0 = Map.At(ship, directions[0]).position;
                 var pos1 = Map.At(ship, directions[1]).position;
-                int delta0 = Math.Abs(  Math.Abs(pos0.x-drop.x) - Math.Abs(pos0.y-drop.y)); // i.e. 7-1 = 6
-                int delta1 = Math.Abs(  Math.Abs(pos1.x-drop.x) - Math.Abs(pos1.y-drop.y)); // i.e. 8-0 = 8
+                int delta0 = Math.Abs(Math.Abs(pos0.x-drop.x) - Math.Abs(pos0.y-drop.y)); // i.e. 7-1 = 6
+                int delta1 = Math.Abs(Math.Abs(pos1.x-drop.x) - Math.Abs(pos1.y-drop.y)); // i.e. 8-0 = 8
                 if(delta1 < delta0) {
                     var temp = directions[1];
                     directions[1] = directions[0];
@@ -197,11 +222,11 @@ namespace Halite3.Logic {
                 }
             }
             directions.Add(Direction.STILL);
-            for(int i=0; i< directions.Count; i++) { //foreach(Direction d in directions) {
+            for(int i=0; i< directions.Count; i++) {
                 if(IsSafeMove(ship, directions[i])) {
                     var command = ship.Move(directions[i]);
                     MakeMove(command,  "moving to dropoff");
-                    if(ship.DistanceToMyDropoff == 3) {
+                    if(ship.DistanceToMyDropoff == 3) { // todo make this work beyond 3 cells
                         Log.LogMessage($"Ship {ship.Id} was distance three. Adding cells to avoid...");
                         var newTarget = Map.At(ship.position.DirectionalOffset(directions[i]));
                         var newDirections = ship.ClosestDropoff.position.GetAllDirectionsTo(newTarget.position);

@@ -63,6 +63,12 @@ namespace Halite3 {
         public static MapCell CellAt(Position p, Direction direction) => Map.At(p.DirectionalOffset(direction));
         public static MapCell CellAt(Entity e) => Map.At(e.position);
         public static MapCell CellAt(Entity e, Direction direction) => Map.At(e.position.DirectionalOffset(direction));
+        public static MapCell CellAt(Position p, Direction d, int iterations) {
+            for(int i=0; i< iterations; i++) {
+                p = p.DirectionalOffset(d);
+            }
+            return CellAt(p);
+        }
         public static MapCell MyShipyardCell => Map.At(Me.shipyard.position);
         
 

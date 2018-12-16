@@ -16,16 +16,20 @@ namespace Halite3.Logic {
         private int TotalWallCells => Assignments.Values.Where(v => v != null).Count() + Wall.Count;
         private void Assign(Ship ship, Point? point)  {
             if(point.HasValue && IsAssigned(point.Value)) {
-                throw new Exception();
+                throw new Exception("a ship was attempted to be assigned to the same location twice");
             }
             Assignments[ship.Id] = point;
             if(point.HasValue && Wall.Contains(point.Value)) {
                 Wall.Remove(point.Value);
             }
+            if(point.HasValue) {
+                Log.LogMessage($"ship {ship.Id} was assigned to {point.Value.x},{point.Value.y}");
+            }
         }
         private void Unassign(int shipId) => Assignments.Remove(shipId);
         private bool IsAssigned(Point p) => Assignments.Values.Any(v => v.HasValue && v.Value.Equals(p));
         private void Swap(int one, int two) {
+            Log.LogMessage($"Swapping ships {one} and {two}");
             var temp = Assignments[one];
             Assignments[one] = Assignments[two];
             Assignments[two] = temp;
@@ -58,6 +62,10 @@ namespace Halite3.Logic {
             // add accounted for ships
             UnassignUnavailableShips();
 
+            foreach(var ship in UnusedShips) {
+                GetBestMoveTarget(ship);
+            }
+
             foreach(var enemy in GameInfo.OpponentShips) {
                 Scores.TapCell(enemy.CurrentMapCell);
             }
@@ -68,21 +76,22 @@ namespace Halite3.Logic {
                 var targetPos = Assignments[id].HasValue ? new Position(Assignments[id].Value.x, Assignments[id].Value.y) : null;
 
                 // if the current cell is more valuable than our target cell, reassign
-                if((targetPos == null || ship.CellHalite * 1.1 > Map.At(targetPos).halite) && Wall.Contains(ship.position.AsPoint)) {
+                if((targetPos != null && !ship.OnDropoff && ship.CellHalite * 1.1 > Map.At(targetPos).halite) && Wall.Contains(ship.position.AsPoint)) {
                     targetPos = ship.position;
                     Assign(ship, targetPos.AsPoint);
                 }
 
                 // if on someone elses assignment, swap the assignments
                 foreach(var kvp in Assignments.ToList()) {
-                    if(kvp.Value != null && kvp.Value.HasValue && ship.position.AsPoint.Equals(kvp.Value.Value)) {
+                    if(kvp.Value != null && kvp.Key != ship.Id && kvp.Value.HasValue && ship.position.AsPoint.Equals(kvp.Value.Value)) {
                         // swap assignments
-                        Swap(ship.Id, kvp.Key);
+                        Assignments[kvp.Key] = null;
+                        Assign(ship, kvp.Value);
                         break;
                     }
                 }
 
-                if(targetPos != null && Map.CalculateDistance(targetPos, ship.position) >= 1) {
+                /* if(targetPos != null && Map.CalculateDistance(targetPos, ship.position) >= 1) {
                     var val = CellValue(targetPos, ship.CurrentMapCell);
                     foreach(var n in ship.Neighbors) {
                         if(n.IsEmpty() && IsSafeMove(ship, n.position.GetDirectionTo(ship.position)) && Wall.Contains(n.position.AsPoint) 
@@ -92,8 +101,54 @@ namespace Halite3.Logic {
                             Assign(ship, n.position.AsPoint);
                         }
                     }
-                }
+                }*/
             }
+
+            // We also want to swap assignments if a ship is blocking another ship
+            /* foreach(var ship in UnusedShips) {
+                bool cont = false;
+                foreach(var neighbor in ship.Neighbors) {
+                    if(Assignments.Values.Any(v => v.HasValue && v.Value.Equals(neighbor.position.AsPoint))) {
+                        // a ship has been assigned to this cell.
+                        var firstKvp =  Assignments.First(v => v.Value.HasValue && v.Value.Equals(neighbor.position.AsPoint));
+                        var direction = neighbor.position.GetDirectionTo(ship.position);
+                        var oppositeDirection = ship.position.GetDirectionTo(neighbor.position);
+                        Log.LogMessage($"{ship.Id}...  Cell {neighbor.position.x},{neighbor.position.y} is assigned to {firstKvp.Key}");
+
+                        var cell1 = GameInfo.CellAt(ship.position, oppositeDirection);
+                        Log.LogMessage($"cell1 {cell1.position.x},{cell1.position.y}");
+                        if(cell1.IsOccupiedByMe() && firstKvp.Key == cell1.ship.Id) {
+                            Swap(cell1.ship.Id, ship.Id);
+                            if(ship.CanMove && IsSafeMove(ship, direction))
+                                MakeMove(ship.Move(neighbor.position.GetDirectionTo(ship.position)), "1: moving for swap");
+                            cont = true;
+                            break;
+                        }
+
+                        var cell2 = GameInfo.CellAt(ship.position, oppositeDirection, 2);
+                        Log.LogMessage($"cell2 {cell2.position.x},{cell2.position.y}");
+                        if(cell2.IsOccupiedByMe() && firstKvp.Key == cell2.ship.Id) {
+                            Swap(cell2.ship.Id, ship.Id);
+                            if(ship.CanMove && IsSafeMove(ship, direction))
+                                MakeMove(ship.Move(neighbor.position.GetDirectionTo(ship.position)), "2: moving for swap");
+                            cont = true;
+                            break;
+                        }
+
+                        var cell3 = GameInfo.CellAt(ship.position, oppositeDirection, 3);
+                        Log.LogMessage($"cell3 {cell3.position.x},{cell3.position.y}");
+                        if(cell3.IsOccupiedByMe() && firstKvp.Key == cell3.ship.Id) {
+                            Swap(cell3.ship.Id, ship.Id);
+                            if(ship.CanMove && IsSafeMove(ship, direction))
+                                MakeMove(ship.Move(neighbor.position.GetDirectionTo(ship.position)), "3: moving for swap");
+                            cont = true;
+                            break;
+                        }
+                    }
+                }
+                if(cont)
+                    continue;
+            }*/
             this.ScoreMoves();
 
 
@@ -135,7 +190,24 @@ namespace Halite3.Logic {
             return val / 12;
         }
 
+        private bool IsAccessible(Ship ship, Point targetPoint) {
+            if(GameInfo.Distance(ship, new Position(targetPoint.x, targetPoint.y)) <= 1)
+                return true;
+            var target = GameInfo.CellAt(new Position(targetPoint.x, targetPoint.y));
+            var dirsToShip = ship.position.GetAllDirectionsTo(target.position);
+            var neighbors = dirsToShip.Select(d => GameInfo.CellAt(target.position.DirectionalOffset(d)));
+            if(neighbors.All(n => n.IsOccupiedByMe() || Assignments.Values.Any(x => x.HasValue && x.Value.Equals(n.position.AsPoint)))) {
+                return false;
+            }
+            return true;
+        }
+
         private Position GetBestMoveTarget(Ship ship) {
+            if(Assignments.ContainsKey(ship.Id) && Assignments[ship.Id].HasValue && !IsAccessible(ship, Assignments[ship.Id].Value)) {
+                Log.LogMessage(ship.Id + $" was unassigned from new block ({Assignments[ship.Id].Value.x},{Assignments[ship.Id].Value.y})");
+                Unassign(ship.Id);
+            }
+
             // if there's a collided cell nearby, target it
             var cells = Map.GetXLayers(ship.position, 3);
             foreach(var c in cells) {
@@ -149,7 +221,12 @@ namespace Halite3.Logic {
             if(!Assignments.ContainsKey(ship.Id) || Assignments[ship.Id] == null) {
                 Point? best = null;
                 if(Wall.Count > 0) {
-                    best = Wall.OrderByDescending(cell => CellValue(ship.position, Map.At(new Position(cell.x,cell.y)))).First();
+                    var bestCells = Wall.OrderByDescending(cell => CellValue(ship.position, Map.At(new Position(cell.x,cell.y))));
+                    if(bestCells.Any(x => IsAccessible(ship, x))) {
+                        best = bestCells.First(x => IsAccessible(ship, x));
+                    } else {
+                        best = bestCells.First();
+                    }
                     Wall.Remove(best.Value);
                 }
                 Assign(ship, best);
@@ -206,7 +283,7 @@ namespace Halite3.Logic {
 
                     if(d == Direction.STILL) {
                         value = .25 * target.halite;
-                        value *= (value > NumToIgnore ? HParams[Parameters.COLLECT_STICKINESS] : .3);
+                        value *= (value > NumToIgnore ? HParams[Parameters.COLLECT_STICKINESS] : .6);
                     } else {
                         value = (.125 * target.halite) - costToMove;
                     }
@@ -223,7 +300,7 @@ namespace Halite3.Logic {
                     }
 
                     if(target.IsInspired) {
-                        value *= 5;
+                        value *= 15;
                     }
 
                     if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.Any(threat => threat.halite < ship.halite)) {

@@ -127,9 +127,11 @@ namespace Halite3.Logic {
         }
 
         public void AddCommand(Command command) {
-            var move = Moves.Single(m => m.Key == command.Ship.Id);
-            Moves.Remove(move.Key);
-            TapCell(command.TargetCell);
+            if(Moves.Any(m => m.Key == command.Ship.Id)) {
+                var move = Moves.Single(m => m.Key == command.Ship.Id);
+                Moves.Remove(move.Key);
+                TapCell(command.TargetCell);
+            }
         }
 
         public void TapCell(MapCell cell) {

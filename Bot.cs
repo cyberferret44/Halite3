@@ -42,7 +42,7 @@ namespace Halite3
             DropoffLogic.Initialize();
             EndOfGameLogic.Initialize();
 
-            string BotName = "ScoreBot2.0_" + specimen.Name();
+            string BotName = "ScoreBot3.0_" + specimen.Name();
             GameInfo.Game.Ready(BotName);
             
             if(GameInfo.IsDebug) {
@@ -88,7 +88,7 @@ namespace Halite3
 
                 // Combat Logic!!!
                 CombatLogic.CommandShips();
-                
+
                 // End game, return all ships to nearest dropoff
                 EndOfGameLogic.CommandShips();
 
