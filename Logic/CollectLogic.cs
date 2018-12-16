@@ -90,65 +90,7 @@ namespace Halite3.Logic {
                         break;
                     }
                 }
-
-                /* if(targetPos != null && Map.CalculateDistance(targetPos, ship.position) >= 1) {
-                    var val = CellValue(targetPos, ship.CurrentMapCell);
-                    foreach(var n in ship.Neighbors) {
-                        if(n.IsEmpty() && IsSafeMove(ship, n.position.GetDirectionTo(ship.position)) && Wall.Contains(n.position.AsPoint) 
-                                    && CellValue(targetPos, ship.CurrentMapCell) < CellValue(n.position, ship.CurrentMapCell)) {
-                            if(Assignments[ship.Id].HasValue)
-                                Wall.Add(Assignments[ship.Id].Value);
-                            Assign(ship, n.position.AsPoint);
-                        }
-                    }
-                }*/
             }
-
-            // We also want to swap assignments if a ship is blocking another ship
-            /* foreach(var ship in UnusedShips) {
-                bool cont = false;
-                foreach(var neighbor in ship.Neighbors) {
-                    if(Assignments.Values.Any(v => v.HasValue && v.Value.Equals(neighbor.position.AsPoint))) {
-                        // a ship has been assigned to this cell.
-                        var firstKvp =  Assignments.First(v => v.Value.HasValue && v.Value.Equals(neighbor.position.AsPoint));
-                        var direction = neighbor.position.GetDirectionTo(ship.position);
-                        var oppositeDirection = ship.position.GetDirectionTo(neighbor.position);
-                        Log.LogMessage($"{ship.Id}...  Cell {neighbor.position.x},{neighbor.position.y} is assigned to {firstKvp.Key}");
-
-                        var cell1 = GameInfo.CellAt(ship.position, oppositeDirection);
-                        Log.LogMessage($"cell1 {cell1.position.x},{cell1.position.y}");
-                        if(cell1.IsOccupiedByMe() && firstKvp.Key == cell1.ship.Id) {
-                            Swap(cell1.ship.Id, ship.Id);
-                            if(ship.CanMove && IsSafeMove(ship, direction))
-                                MakeMove(ship.Move(neighbor.position.GetDirectionTo(ship.position)), "1: moving for swap");
-                            cont = true;
-                            break;
-                        }
-
-                        var cell2 = GameInfo.CellAt(ship.position, oppositeDirection, 2);
-                        Log.LogMessage($"cell2 {cell2.position.x},{cell2.position.y}");
-                        if(cell2.IsOccupiedByMe() && firstKvp.Key == cell2.ship.Id) {
-                            Swap(cell2.ship.Id, ship.Id);
-                            if(ship.CanMove && IsSafeMove(ship, direction))
-                                MakeMove(ship.Move(neighbor.position.GetDirectionTo(ship.position)), "2: moving for swap");
-                            cont = true;
-                            break;
-                        }
-
-                        var cell3 = GameInfo.CellAt(ship.position, oppositeDirection, 3);
-                        Log.LogMessage($"cell3 {cell3.position.x},{cell3.position.y}");
-                        if(cell3.IsOccupiedByMe() && firstKvp.Key == cell3.ship.Id) {
-                            Swap(cell3.ship.Id, ship.Id);
-                            if(ship.CanMove && IsSafeMove(ship, direction))
-                                MakeMove(ship.Move(neighbor.position.GetDirectionTo(ship.position)), "3: moving for swap");
-                            cont = true;
-                            break;
-                        }
-                    }
-                }
-                if(cont)
-                    continue;
-            }*/
             this.ScoreMoves();
 
 
@@ -179,6 +121,8 @@ namespace Halite3.Logic {
 
         private double CellValue(Position pos, MapCell cell) {
             int dist = Map.CalculateDistance(pos, cell.position);
+            //if(cell.halite > NumToIgnore)
+            //    dist = Math.Min(dist, 1 + GameInfo.Distance(cell.position, GameInfo.MyClosestDrop(cell.position))); // prioritize valuable cells near my dropoffs
             var neighbors = Map.GetXLayers(cell.position, 3); // todo magic number
             var vals = neighbors.Select(n => n.halite / (Map.CalculateDistance(n.position, cell.position) + 1));
             var sum = vals.OrderByDescending(v => v).Take(neighbors.Count/2).Sum(v => v);
@@ -285,6 +229,7 @@ namespace Halite3.Logic {
                         continue;
                     }
 
+                    // set the initial value
                     if(d == Direction.STILL) {
                         value = .25 * target.halite;
                         value *= (value > NumToIgnore ? HParams[Parameters.COLLECT_STICKINESS] : .6);
@@ -294,23 +239,27 @@ namespace Halite3.Logic {
                     value = Math.Max(value, 1.0);
                     value += CellValueForScore(target.position, Map.At(bestTarget));
 
+
                     if(d == Direction.STILL && curDistToTarget == 0) {
                         value += 10;
-                        value *= 5;
+                        value *= 4;
                     }
-                    int newDistToTarget = GameInfo.Distance(target.position, bestTarget);
+                    /* int newDistToTarget = GameInfo.Distance(target.position, bestTarget);
                     if(newDistToTarget < curDistToTarget) {
                         value *= 2;
-                    }
+                    }*/
 
+                    // prioritize inspired cells
                     if(target.IsInspired) {
                         value *= 15;
                     }
 
+                    // avoid a cell if we're more valuable than the worst opponent
                     if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.Any(threat => threat.halite < ship.halite)) {
                         value *= .2;
                     }
 
+                    // prefer a cell if we're less valuable than opponents
                     if(target.ThreatenedBy.Count > 0 && target.ThreatenedBy.All(threat => threat.halite > ship.halite + ship.CellHalite * .25)) {
                         value *= 2;
                     }

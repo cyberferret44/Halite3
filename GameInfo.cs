@@ -34,7 +34,8 @@ namespace Halite3 {
 
         // Dropoff / Shipyard related
         public static Shipyard MyShipyard => Me.shipyard;
-        public static List<Entity> MyDropoffs => Me.GetDropoffs().Where(d => d.owner.id == MyId).ToList();
+        public static List<Position> MyDropoffs => Me.GetDropoffs().ToList();
+        public static Position MyClosestDrop(Position p) => MyDropoffs.OrderBy(x => Distance(p, x)).First();
 
         // Halite related
         public static int HaliteRemaining => Map.HaliteRemaining;
@@ -73,9 +74,19 @@ namespace Halite3 {
         
 
         // Miscellaneous...
-
-
        
+        public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
+        public static VirtualDropoff NextDropoff = null;
         
+    }
+
+    // Virtual Dropoffs
+    public class VirtualDropoff {
+        public Position Position;
+        public int InitialHalite;
+        public VirtualDropoff(Position p, int halite) {
+            Position = p;
+            InitialHalite = halite;
+        }
     }
 }

@@ -42,7 +42,7 @@ namespace Halite3
             DropoffLogic.Initialize();
             EndOfGameLogic.Initialize();
 
-            string BotName = "ScoreBot3.0_" + specimen.Name();
+            string BotName = "ScoreBot4.0_" + specimen.Name();
             GameInfo.Game.Ready(BotName);
             
             if(GameInfo.IsDebug) {

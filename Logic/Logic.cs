@@ -37,8 +37,8 @@ namespace Halite3.Logic {
             Scores.ScoreMoves(AllShips);
             MakeMandatoryMoves();
             foreach(var drop in GameInfo.Game.Opponents.SelectMany(x => x.GetDropoffs())) {
-                if(Map.At(drop.position).Neighbors.Any(x => x.IsOccupiedByOpponent())) {
-                    Scores.TapCell(Map.At(drop.position)); // prevents collisions on opponents drop points...
+                if(Map.At(drop).Neighbors.Any(x => x.IsOccupiedByOpponent())) {
+                    Scores.TapCell(Map.At(drop)); // prevents collisions on opponents drop points...
                 }
             }
         }

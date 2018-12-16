@@ -41,7 +41,7 @@ namespace Halite3.Logic {
                     return Direction.STILL;
                 }
                 if(IsReturningToBase) {
-                    var directionsToBase = enemy.ClosestOwnerDropoff.position.GetAllDirectionsTo(enemy.position).Where(d => !GameInfo.CellAt(ship, d).IsOccupiedByMe());
+                    var directionsToBase = enemy.ClosestOwnerDropoff.GetAllDirectionsTo(enemy.position).Where(d => !GameInfo.CellAt(ship, d).IsOccupiedByMe());
                     directionsToBase = directionsToBase.OrderBy(x => GameInfo.CellAt(enemy, x).halite).ToList();
                     if(directionsToBase.Any())
                         return directionsToBase.First();

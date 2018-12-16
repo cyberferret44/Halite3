@@ -19,7 +19,7 @@ namespace Halite3.Logic {
 
         public override void CommandShips() {
             foreach(var ship in UnusedShips.Where(s => FinalReturnToHome.Contains(s.Id))) {
-                var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
+                var directions = ship.ClosestDropoff.GetAllDirectionsTo(ship.position);
                 directions = directions.OrderBy(d => Map.At(ship, d).halite).ToList();
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
