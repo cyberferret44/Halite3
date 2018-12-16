@@ -248,7 +248,8 @@ namespace Halite3.Logic {
         private VirtualDropoff GetClosestVirtualDropoff(Position position) {
             if(BestDropoffs.Count == 0)
                 return null;
-            return BestDropoffs.OrderBy(d => Map.CalculateDistance(position, d.Position)).First();
+            int closest = BestDropoffs.Min(x => Map.CalculateDistance(position, x.Position));
+            return BestDropoffs.First(d => Map.CalculateDistance(position, d.Position) == closest);
         }
 
         // Forecasting!!!

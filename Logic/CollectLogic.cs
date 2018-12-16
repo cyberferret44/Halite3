@@ -220,14 +220,18 @@ namespace Halite3.Logic {
             // if not assigned, assign
             if(!Assignments.ContainsKey(ship.Id) || Assignments[ship.Id] == null) {
                 Point? best = null;
-                if(Wall.Count > 0) {
-                    var bestCells = Wall.OrderByDescending(cell => CellValue(ship.position, Map.At(new Position(cell.x,cell.y))));
-                    if(bestCells.Any(x => IsAccessible(ship, x))) {
-                        best = bestCells.First(x => IsAccessible(ship, x));
-                    } else {
-                        best = bestCells.First();
+                bool anyAccessible = false;
+                double maxVal = -1;
+                foreach(var point in Wall) {
+                    double value =  CellValue(ship.position, Map.At(new Position(point.x,point.y)));
+                    bool accessible = IsAccessible(ship, point);
+                    if(accessible) {
+                        anyAccessible = true;
                     }
-                    Wall.Remove(best.Value);
+                    if(value > maxVal && (!anyAccessible || accessible)) {
+                        best = point;
+                        maxVal = value;
+                    }
                 }
                 Assign(ship, best);
             }
