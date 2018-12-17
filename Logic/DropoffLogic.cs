@@ -181,6 +181,13 @@ namespace Halite3.Logic {
         }
 
         private void NavigateToDropoff(Ship ship, Position drop) {
+            // new logic, path of least resistance
+            var polr = GameInfo.CalculatePathOfLeastResistance(ship.position, drop);
+            if(IsSafeMove(ship, polr[0].position.GetDirectionTo(ship.position))) {
+                MakeMove(ship.Move(polr[0].position.GetDirectionTo(ship.position)), " moving from path of least resistance");
+                return;
+            }
+
             // todo if ship is closest to dropoff and cargo plus me.halite isn't enough to bump above 1k, just wait on current cell, no rush
             List<Direction> directions = drop.GetAllDirectionsTo(ship.position);
             directions = directions.OrderBy(d => Map.At(ship, d).IsOccupiedByMe() ? Map.At(ship, d).halite * .45 : Map.At(ship, d).IsStructure && Map.At(ship, d).structure.IsOpponents ? 100 : Map.At(ship, d).halite * .1).ToList();

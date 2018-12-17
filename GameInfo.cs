@@ -58,6 +58,7 @@ namespace Halite3 {
         public static List<Ship> OpponentShips => Game.Opponents.SelectMany(x => x.ships.Values).ToList();
         public static int OpponentShipsCount => Game.Opponents.Sum(x => x.ships.Count);
         public static int TotalShipsCount => OpponentShipsCount + MyShipsCount;
+        public static Ship GetMyShip(int shipId) => Me.GetShipById(shipId);
 
         // Position Related
         public static MapCell CellAt(Position p) => Map.At(p);
@@ -74,6 +75,40 @@ namespace Halite3 {
         
 
         // Miscellaneous...
+        struct Path {
+            public int resistance;
+            public List<MapCell> path;
+        }
+
+        public static List<MapCell> CalculatePathOfLeastResistance(Position start, Position end) {
+            HashSet<MapCell> visited = new HashSet<MapCell>();
+            List<Path> Paths = new List<Path>();
+            foreach(var d in end.GetAllDirectionsTo(start)) {
+                var cell = CellAt(start, d);
+                Paths.Add(new Path { resistance = cell.halite/10, path = new List<MapCell> { cell } });
+            }
+            while(true) {
+                int shortest = Paths.Min(x => x.resistance);
+                var shortestPath = Paths.First(x => x.resistance == shortest);
+                var last = shortestPath.path.Last();
+                
+                foreach(var d in end.GetAllDirectionsTo(last.position)) {
+                    var cell = CellAt(last.position, d);
+                    if(cell.position.AsPoint.Equals(end.AsPoint)) {
+                        return shortestPath.path;
+                    }
+                    if(!visited.Contains(cell)) {
+                        var newPath = shortestPath.path.ToList();
+                        newPath.Add(cell);
+                        Paths.Add(new Path { path = newPath, resistance = shortestPath.resistance + (cell.halite/10)});
+                        visited.Add(cell);
+                    }
+                }
+                Paths.Remove(shortestPath);
+            }
+        }
+
+        public static int OpportunityCost => (int)(.08 * Map.AverageHalitePerCell);
        
         public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
         public static VirtualDropoff NextDropoff = null;

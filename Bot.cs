@@ -53,6 +53,10 @@ namespace Halite3
             }
 
             Log.LogMessage("Successfully created bot! My Player ID is " + GameInfo.Game.myId);
+            Stopwatch combatWatch = new Stopwatch();
+            Stopwatch dropoffWatch = new Stopwatch();
+            Stopwatch collectWatch = new Stopwatch();
+
             for (; ; )
             {
                 // Basic processing for the turn start
@@ -84,19 +88,28 @@ namespace Halite3
                             sw.Write(content);
                         }
                     }
+                    Log.LogMessage("total time in combat  logic = " + (combatWatch.ElapsedMilliseconds));
+                    Log.LogMessage("total time in dropoff logic = " + (dropoffWatch.ElapsedMilliseconds));
+                    Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
                 // Combat Logic!!!
+                combatWatch.Start();
                 CombatLogic.CommandShips();
+                combatWatch.Stop();
 
                 // End game, return all ships to nearest dropoff
                 EndOfGameLogic.CommandShips();
 
                 // Move ships to dropoffs
+                dropoffWatch.Start();
                 DropoffLogic.CommandShips();
+                dropoffWatch.Stop();
 
                 // collect halite (move or stay) using Logic interface
+                collectWatch.Start();
                 CollectLogic.CommandShips();
+                collectWatch.Stop();
 
                 // spawn ships
                 if (ShouldSpawnShip())
@@ -117,6 +130,7 @@ namespace Halite3
             }
 
             // todo what if 4p?
+            // todo numships = (int)(GameInfo.OpponentShipCount * (GameInfo.OpponentCount - .5)) + GameInfo.MyShipsCount * 1.5;
             int numShips = (int)(GameInfo.OpponentShipsCount/2 + GameInfo.MyShipsCount*1.5);
             int numCells = GameInfo.TotalCellCount;
             int haliteRemaining = GameInfo.HaliteRemaining;

@@ -128,5 +128,6 @@ namespace Halite3.hlt
         {
             return x.GetHashCode() ^ y.GetHashCode();
         }
+        public Position AsPosition => new Position(x, y);
     }
 }
