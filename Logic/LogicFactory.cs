@@ -3,7 +3,7 @@ namespace Halite3.Logic {
     /// or to use different logic based on map size, available halite, and number of players
     public static class LogicFactory {
         public static Logic GetCollectLogic() {
-            return new CollectLogic();
+            return new CollectLogic2();
         }
 
         public static Logic GetDropoffLogic() {
@@ -18,7 +18,11 @@ namespace Halite3.Logic {
             //if(GameInfo.PlayerCount == 2)
                 return new TwoPlayerCombatLogic();
             //else
-             //   return new EmptyLogic();
+            //   return new EmptyLogic();
+        }
+
+        public static Logic GetAssignmentLogic() {
+            return new ZoneAssignmentLogic();
         }
     }
 }

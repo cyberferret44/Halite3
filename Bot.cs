@@ -14,7 +14,6 @@ namespace Halite3
     {
         // Public Variables
         public static HyperParameters HParams;
-        public static bool ReserveForDropoff = false;
 
         public static void Main(string[] args)
         {
@@ -37,12 +36,9 @@ namespace Halite3
             Logic.Logic CollectLogic = LogicFactory.GetCollectLogic();
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
-            CombatLogic.Initialize();
-            CollectLogic.Initialize();
-            DropoffLogic.Initialize();
-            EndOfGameLogic.Initialize();
+            Logic.Logic ZoneAssignLogic = LogicFactory.GetAssignmentLogic();
 
-            string BotName = "ScoreBot4.0_" + specimen.Name();
+            string BotName = "derp2" + specimen.Name();
             GameInfo.Game.Ready(BotName);
             
             if(GameInfo.IsDebug) {
@@ -56,17 +52,20 @@ namespace Halite3
             Stopwatch combatWatch = new Stopwatch();
             Stopwatch dropoffWatch = new Stopwatch();
             Stopwatch collectWatch = new Stopwatch();
+            Stopwatch zoneAssignmentWatch = new Stopwatch();
 
             for (; ; )
             {
                 // Basic processing for the turn start
                 GameInfo.Game.UpdateFrame();
+                Fleet.UpdateFleet(GameInfo.MyShips);
 
                 // logic turn processing
                 CollectLogic.ProcessTurn();
                 DropoffLogic.ProcessTurn();
                 EndOfGameLogic.ProcessTurn();
                 CombatLogic.ProcessTurn();
+                ZoneAssignLogic.ProcessTurn();
 
                 // Score the ships first 
                 Logic.Logic.InitializeNewTurn();
@@ -90,66 +89,47 @@ namespace Halite3
                     }
                     Log.LogMessage("total time in combat  logic = " + (combatWatch.ElapsedMilliseconds));
                     Log.LogMessage("total time in dropoff logic = " + (dropoffWatch.ElapsedMilliseconds));
+                    Log.LogMessage("total time in zoneassign logic = " + (zoneAssignmentWatch.ElapsedMilliseconds));
                     Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
                 // Combat Logic!!!
+                Log.LogMessage($"*** Combat  Logic ***");
                 combatWatch.Start();
                 CombatLogic.CommandShips();
                 combatWatch.Stop();
 
                 // End game, return all ships to nearest dropoff
+                Log.LogMessage($"*** EndGame Logic ***");
                 EndOfGameLogic.CommandShips();
 
                 // Move ships to dropoffs
+                Log.LogMessage($"*** Dropoff Logic ***");
                 dropoffWatch.Start();
                 DropoffLogic.CommandShips();
                 dropoffWatch.Stop();
 
+                // Move ships to assigned Zones
+                Log.LogMessage($"*** ZoneAsn Logic ***");
+                zoneAssignmentWatch.Start();
+                ZoneAssignLogic.CommandShips();
+                zoneAssignmentWatch.Stop();
+
                 // collect halite (move or stay) using Logic interface
+                Log.LogMessage($"*** Collect Logic ***");
                 collectWatch.Start();
                 CollectLogic.CommandShips();
                 collectWatch.Stop();
 
                 // spawn ships
-                if (ShouldSpawnShip())
+                var cmdQueue = Fleet.GenerateCommandQueue();
+                if (GameInfo.ShouldSpawnShip())
                 {
-                    Logic.Logic.CommandQueue.Add(GameInfo.Me.shipyard.Spawn());
+                    cmdQueue.Add(GameInfo.Me.shipyard.Spawn());
                 }
 
-                GameInfo.Game.EndTurn(Logic.Logic.CommandQueue);
+                GameInfo.Game.EndTurn(cmdQueue);
             }
-        }
-
-        // TODO move the .08 to hyperparameters
-        private static bool ShouldSpawnShip() {
-            if(GameInfo.TurnsRemaining < 80 || 
-                GameInfo.Me.halite < (ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
-                Logic.Logic.CollisionCells.Contains(GameInfo.MyShipyardCell)) {
-                return false;
-            }
-
-            // todo what if 4p?
-            // todo numships = (int)(GameInfo.OpponentShipCount * (GameInfo.OpponentCount - .5)) + GameInfo.MyShipsCount * 1.5;
-            int numShips = (int)(GameInfo.OpponentShipsCount/2 + GameInfo.MyShipsCount*1.5);
-            int numCells = GameInfo.TotalCellCount;
-            int haliteRemaining = GameInfo.HaliteRemaining;
-            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining / numCells);
-                haliteRemaining -= haliteCollectable;
-            }
-
-            numShips += 1; // if I created another, how much could I get?
-            int haliteRemaining2 = GameInfo.HaliteRemaining;
-            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining2 / numCells);
-                haliteRemaining2 -= haliteCollectable;
-            }
-
-            if(haliteRemaining - haliteRemaining2 > HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {
-                return true;
-            }
-            return false;
         }
     }
 }

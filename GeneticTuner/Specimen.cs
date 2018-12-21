@@ -22,7 +22,7 @@ namespace GeneticTuner
     }
 
     public class GeneticSpecimen : Specimen {
-        public static readonly string SPECIMEN_FOLDER = "Specimen3";
+        public static readonly string SPECIMEN_FOLDER = "Specimen4";
         public readonly string SpecimenFolder;
         private static Random random = new Random();
         private static int NUM_CHILDREN = 1; // population control level
@@ -82,7 +82,7 @@ namespace GeneticTuner
         }
 
         public void Kill() {
-            // want a minimum of 10 specimen
+            // minimum number of specimen
             if(Directory.EnumerateFiles(SpecimenFolder).Count() > 8) {
                 File.Delete(this.FilePath);
             }

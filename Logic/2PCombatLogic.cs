@@ -5,7 +5,8 @@ using System;
 
 namespace Halite3.Logic {
     public class TwoPlayerCombatLogic : Logic {
-        public override void Initialize() { /* TODO */ }
+        public TwoPlayerCombatLogic() { /* TODO */ }
+        
         private class EnemyShipInformation {
             int shipId => ship.Id;
             bool wasFull = false;
@@ -58,15 +59,11 @@ namespace Halite3.Logic {
             }
         }
 
-        public int baseShipValue;
-        public int baseShipValueReducedBy2;
         private Dictionary<int, EnemyShipInformation> EnemyShipInfo = new Dictionary<int, EnemyShipInformation>();
         private int CorrectPredictions = 0;
         private int TotalPredictions = 0;
 
         public override void ProcessTurn() { 
-            CalculateProjectedShipValues();
-            
             // process new information for each enemy ship
             foreach(var enemyShip in GameInfo.OpponentShips) {
                 if(!EnemyShipInfo.ContainsKey(enemyShip.Id)) {
@@ -81,17 +78,15 @@ namespace Halite3.Logic {
                 EnemyShipInfo[enemyShip.Id].Process(enemyShip);
             }
         }
-        public override void ScoreMoves() { /* TODO */ }
 
         public override void CommandShips() {
-            Log.LogMessage("combat logic");
             if(TotalPredictions > 0) {
                 Log.LogMessage($"Correct Predictions {CorrectPredictions} out of a total {TotalPredictions} for a percent {((double)CorrectPredictions)/((double)TotalPredictions)}");
             }
-            foreach(var ship in UnusedShips) {
+            foreach(var ship in Fleet.AvailableShips) {
                 var Xcells = GameInfo.Map.GetXLayers(ship.position, 2).Where(c => c.IsOccupiedByOpponent()); // all crashable opponents
                 Xcells = Xcells.Where(x => GetCrashValue(ship, x.ship) > MyBot.HParams[Parameters.SHOULD_CRASH_SHIP]);
-                Xcells = Xcells.Where(x => !CollisionCells.Contains(EnemyShipInfo[x.ship.Id].PredictedTargetCell)); // eliminate collision cells
+                Xcells = Xcells.Where(x => Fleet.CellAvailable(EnemyShipInfo[x.ship.Id].PredictedTargetCell)); // eliminate collision cells
                 Xcells = Xcells.OrderByDescending(x => GetCrashValue(ship, x.ship));
                 Xcells.ToList().ForEach(x => Log.LogMessage($"ship {x.ship.Id} has a crash value of {GetCrashValue(ship, x.ship)} and is predicted to move {EnemyShipInfo[x.ship.Id].PredictedMove.ToString("g")}"));
 
@@ -101,7 +96,8 @@ namespace Halite3.Logic {
 
                 if(best != null) {
                     var info = EnemyShipInfo[best.ship.Id];
-                    MakeMove(ship.Move(EnemyShipInfo[best.ship.Id].PredictedTargetCell.position.GetDirectionTo(ship.position)), $"attempting to crash ship {Xcells.First().ship.Id} whose predicted target is {info.PredictedTargetCell.position.x},{info.PredictedTargetCell.position.y}");
+                    var predPos = info.PredictedTargetCell.position;
+                    MakeMove(ship.Move(predPos, $"attempting to crash ship {best.ship.Id} whose predicted target is {predPos.x},{predPos.y}"));
                 }
             }
         }
@@ -112,40 +108,15 @@ namespace Halite3.Logic {
             //if(mine.halite > 500)
                 //return false;
             var opponent = GameInfo.GetPlayer(enemy.owner.id);
-            var myValue = Me.ships.Count * baseShipValue;  // net est value of fleet
-            var oppValue = opponent.ships.Count * baseShipValue; // net est value of fleet
-            var myReducedValue = (Me.ships.Count-1) * baseShipValueReducedBy2;
-            var oppReducedValue = (opponent.ships.Count-1) * baseShipValueReducedBy2;
+            var myValue = Me.ships.Count * GameInfo.BaseShipValue;  // net est value of fleet
+            var oppValue = opponent.ships.Count * GameInfo.BaseShipValue; // net est value of fleet
+            var myReducedValue = (Me.ships.Count-1) * GameInfo.BaseShipValueReducedBy2;
+            var oppReducedValue = (opponent.ships.Count-1) * GameInfo.BaseShipValueReducedBy2;
             var myLoss = (myValue - myReducedValue) + mine.halite; // new value loss for me
             var oppLoss = (oppValue - oppReducedValue) + enemy.halite; // the net value loss for opponent
             //tood vqlue is also 25% of cell
 
             return oppLoss - myLoss;
-        }
-        
-
-        private void CalculateProjectedShipValues() {
-            int numShips = GameInfo.TotalShipsCount;
-            numShips = Math.Max(numShips, 1);
-            int numCells = Map.width * Map.height;
-            int haliteRemaining = Map.HaliteRemaining;
-            // crashing a ship makes all remaining ships more valuable
-            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining / numCells);
-                haliteRemaining -= haliteCollectable;
-            }
-            baseShipValue = (Map.HaliteRemaining - haliteRemaining) / numShips;
-            Log.LogMessage("Base Ship value = " + baseShipValue);
-
-            numShips -= 2;
-            numShips = Math.Max(numShips, 1);
-            int haliteRemaining2 = Map.HaliteRemaining;
-            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining2 / numCells);
-                haliteRemaining2 -= haliteCollectable;
-            }
-            baseShipValueReducedBy2 = (Map.HaliteRemaining - haliteRemaining2) / numShips;
-            Log.LogMessage("baseShipValueReducedBy2 Ship value = " + baseShipValueReducedBy2);
         }
     }
 }

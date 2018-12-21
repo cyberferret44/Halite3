@@ -15,7 +15,7 @@ namespace Halite3.hlt
         public readonly int halite;
         public static List<Position> MyDropoffs => GameInfo.Me.GetDropoffs().ToList();
         public int Id => this.id.id;
-        public bool CanMove => this.halite >= CellHalite / 10;
+        public bool CanMove => this.halite >= (int)(CellHalite / 10.0);
         public bool OnDropoff => CurrentMapCell.IsStructure && CurrentMapCell.structure.owner.Equals(this.owner);
         public int CellHalite => CurrentMapCell.halite;
         public List<MapCell> Neighbors => CurrentMapCell.Neighbors;
@@ -33,6 +33,10 @@ namespace Halite3.hlt
         public Position ClosestDropoff => MyDropoffs.OrderBy(d => GameInfo.Distance(this, d)).ToList()[0];
         public Position ClosestEnemyDropoff(int playerId) => GameInfo.GetPlayer(playerId).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
         public Position ClosestOwnerDropoff => GameInfo.GetPlayer(owner.id).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
+
+
+        // Visibility...
+        public List<MapCell> Visibility2 => GameInfo.Map.GetXLayers(position, 2);
 
         /// <summary>
         /// Returns true if this ship is carrying the max amount of halite possible.
@@ -53,17 +57,19 @@ namespace Halite3.hlt
         /// <summary>
         /// Returns the command to move this ship in a direction.
         /// </summary>
-        public Command Move(Direction direction)
+        public Command Move(MapCell target, string comment) => Move(target.position, comment);
+        public Command Move(Position target, string comment) => Move(target.GetDirectionTo(position), comment);
+        public Command Move(Direction direction, string comment)
         {
-            return Command.Move(id, direction);
+            return Command.Move(id, direction, comment);
         }
 
         /// <summary>
         /// Returns the command to keep this ship still.
         /// </summary>
-        public Command StayStill()
+        public Command StayStill(string comment)
         {
-            return Command.Move(id, Direction.STILL);
+            return Command.Move(id, Direction.STILL, comment);
         }
 
         /// <summary>

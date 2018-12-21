@@ -2,6 +2,7 @@ using Halite3.hlt;
 using System.Collections.Generic;
 using Halite3;
 using System.Linq;
+using System;
 namespace Halite3.Logic {
     public abstract class Logic {
         // shortcut accessors
@@ -9,85 +10,92 @@ namespace Halite3.Logic {
         protected static Player Me => GameInfo.Me;
         protected static Game Game => GameInfo.Game;
         protected HyperParameters HParams => MyBot.HParams;
-        protected static List<Ship> AllShips => Me.ShipsSorted;
-
-        // Command Queue
-        public static List<Command> CommandQueue = new List<Command>();
 
         // Shared Information
-        protected static MoveScores Scores;
-        protected static HashSet<int> UsedShips = new HashSet<int>();
-        protected static List<Ship> UnusedShips => Me.ShipsSorted.Where(s => !UsedShips.Contains(s.Id)).ToList();
-        public static HashSet<MapCell> CollisionCells = new HashSet<MapCell>();
-        public static HashSet<List<MapCell>> TwoTurnAvoid = new HashSet<List<MapCell>>();
+        protected static TwoTurnAvoid TwoTurnAvoider = new TwoTurnAvoid();
 
         //abstract methods
-        public abstract void Initialize();
         public abstract void ProcessTurn();
         public abstract void CommandShips();
-        public abstract void ScoreMoves();
 
         // New Turn Method
         public static void InitializeNewTurn() {
-            Scores = new MoveScores();
-            UsedShips.Clear();
-            CommandQueue.Clear();
-            CollisionCells.Clear();
-            TwoTurnAvoid.Clear();
-            Scores.ScoreMoves(AllShips);
-            MakeMandatoryMoves();
-            foreach(var drop in GameInfo.Game.Opponents.SelectMany(x => x.GetDropoffs())) {
-                if(Map.At(drop).Neighbors.Any(x => x.IsOccupiedByOpponent())) {
-                    Scores.TapCell(Map.At(drop)); // prevents collisions on opponents drop points...
-                }
-            }
+            TwoTurnAvoider.Clear();
         }
 
-        // static methods
-        public static void MakeMove(Command command, string debugMessage) {
-            Log.LogMessage($"Ship {command.Ship.id} moved {command.TargetCell.position.GetDirectionTo(command.Ship.position)}. {debugMessage}");
-            if(command.Ship.PreviousPosition != null)
-                Log.LogMessage("The ship's position was " + command.Ship.PreviousPosition.x + "," + command.Ship.PreviousPosition.y + " and the move was " + command.Ship.PreviousMove.ToString("g"));
-            CommandQueue.Add(command);
-            UsedShips.Add(command.Ship.Id);
-            CollisionCells.Add(command.TargetCell);
-            Scores.AddCommand(command);
-            MakeMandatoryMoves();
+        // Make move method, and all it's details...
+        public static void MakeMove(Command command) {
+            Fleet.AddMove(command);
+            TwoTurnAvoider.Remove(command.TargetCell);
         }
 
-        public static void MakeMandatoryMoves() {
-            foreach(var v in Scores.Moves.Values) {
-                if(v.BestMove().MoveValue >= 100000000.0) {
-                    Log.LogMessage($"Ship {v.Ship.Id} has only one move, {v.BestMove().Direction.ToString("g")}");
-                    MakeMove(v.Ship.Move(v.BestMove().Direction), "move scores incidental mandatory");
-                    break;
-                }
-            }
-        }
-
-        // concrete methods
+        // Safety based moves
+        public static bool IsSafeMove(Ship ship, MapCell neighbor) => IsSafeMove(ship, neighbor.position.GetDirectionTo(ship.position));
         public static bool IsSafeMove(Ship ship, Direction direction, bool IngoreEnemy = false) {
             MapCell target = Map.At(ship, direction);
-            if(target.IsStructure && target.structure.IsMine && !CollisionCells.Contains(target)) {
-                return true;
-            }
-            bool shouldMove = !CollisionCells.Contains(target) && (IngoreEnemy || !target.IsOccupiedByOpponent());
-            if(shouldMove && direction != Direction.STILL) {
-                if(TwoTurnAvoid.Any(x => x.Contains(target)) && (int)(ship.CellHalite * .1) + (int)(target.halite * .1) > ship.halite) {
-                    TwoTurnAvoid.First(x => x.Contains(target)).Remove(target);
-                    return false;
-                }
-            }
-            return shouldMove;
+            if(target.IsOccupiedByMe() && !target.ship.CanMove)
+                return false;
+            return Fleet.CellAvailable(target) && (IngoreEnemy || !target.IsOccupiedByOpponent());
         }
-
-        //todo two turn avoid not just for dist = 3
+        public static bool IsCompletelySafeMove(Ship s, Direction d) => IsSafeMove(s, d) && !Map.At(s, d).IsThreatened;
+        public static bool IsSafeAndAvoids2Cells(Ship s, Direction d) => IsSafeMove(s, d) && (d == Direction.STILL || 
+                (s.halite - (s.CellHalite * .1) >= GameInfo.CellAt(s, d).halite * .1) || TwoTurnAvoider.IsOkay(s, d));
+        public static bool IsSafeAndAvoids2Cells(Ship s, MapCell m) => IsSafeMove(s, m.position.GetDirectionTo(s.position));
     }
 
     public class EmptyLogic : Logic {
-        public override void Initialize() { }
         public override void ProcessTurn() { }
-        public override void CommandShips() { Log.LogMessage("Empty Logic!"); }
-        public override void ScoreMoves() { Log.LogMessage("Empty Logic!"); }
+        public override void CommandShips() { }
+    }
+
+
+    // This class merely keeps track of moving ships and verifies that no ship interrups their movement
+    // by moving into a space where they would be stuck the following turn
+    public class TwoTurnAvoid {
+        Dictionary<int, int> ShipOptionsCount = new Dictionary<int, int>();
+        Dictionary<Point, List<int>> CellToShipMapping = new Dictionary<Point, List<int>>();
+
+        public void Clear() {
+            ShipOptionsCount.Clear();
+            CellToShipMapping.Clear();
+        }
+
+        // This method expects to be passed the cell that should be avoided
+        public void Add(Ship ship, Position cell) {
+            Log.LogMessage($"Added Position {cell.x},{cell.y} for ship {ship.Id} for 2 turn avoid");
+            if(!ShipOptionsCount.ContainsKey(ship.Id)) {
+                ShipOptionsCount[ship.Id] = 1;
+            } else {
+                ShipOptionsCount[ship.Id] += 1;
+            }
+
+            if(!CellToShipMapping.ContainsKey(cell.AsPoint)) {
+                CellToShipMapping[cell.AsPoint] = new List<int> { ship.Id };
+            } else {
+                CellToShipMapping[cell.AsPoint].Add(ship.Id);
+            }
+        }
+        public void Add(Ship ship, MapCell cell) => Add(ship, cell.position);
+        public void Add(Ship ship, MapCell target, List<Direction> dirs) => dirs.ForEach(d => Add(ship, GameInfo.CellAt(target, d)));
+
+        public void Remove(Position cell) {
+            if(!CellToShipMapping.ContainsKey(cell.AsPoint))
+                return;
+            foreach(var id in CellToShipMapping[cell.AsPoint]) {
+                ShipOptionsCount[id] -= 1;
+            }
+            CellToShipMapping.Remove(cell.AsPoint);
+        }
+        public void Remove(MapCell cell) => Remove(cell.position);
+
+        public bool IsOkay(Position cell) {
+            if(!CellToShipMapping.ContainsKey(cell.AsPoint))
+                return true;
+            if(CellToShipMapping[cell.AsPoint].Any(x => ShipOptionsCount[x] == 0))
+                throw new Exception("this should not happen.;..");
+            return CellToShipMapping[cell.AsPoint].All(shipId => ShipOptionsCount[shipId] > 1);
+        }
+        public bool IsOkay(MapCell cell) => IsOkay(cell.position);
+        public bool IsOkay(Ship s, Direction d) => IsOkay(GameInfo.CellAt(s, d));
     }
 }

@@ -2,21 +2,37 @@ using Halite3.hlt;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace Halite3 {
-    /// I found myself needing a lot of global infomration for pretty much every class, and also found myself repeating
-    /// a number of verious lambda functions.  So I created this class to give a universal simplified interface
-    /// for accessing all of these various pieces of information.
     public static class GameInfo {
         // Determine if we're local
         public static readonly bool IsLocal = Directory.GetCurrentDirectory().StartsWith("/Users/cviolet") ||
                                       Directory.GetCurrentDirectory().StartsWith("C://Users");
         public static bool IsDebug = false;
+        public static int BaseShipValue;
+        public static int BaseShipValueReducedBy2;
 
         // Game
         public static Game Game;
         public static void SetInfo(Game game) {
             GameInfo.Game = game;
+            CalculateProjectedShipValues();
+        }
+
+        // Estimated Ship Values
+        private static void CalculateProjectedShipValues() {
+            // current ship value per ship
+            int numShips = Math.Max(1, GameInfo.TotalShipsCount);
+            double ratio = 1.0 - (GameInfo.AverageHalitePerCell * numShips * .1 / Map.HaliteRemaining); // percent leftover each turn
+            BaseShipValue = (int)(Map.HaliteRemaining * Math.Pow(ratio, GameInfo.TurnsRemaining) / numShips);
+            Log.LogMessage("Base Ship value = " + BaseShipValue);
+
+            // find the ship value if there were 2 less on the board
+            int reducedNumShips = Math.Max(1, GameInfo.TotalShipsCount - 2);
+            ratio = 1.0 - (GameInfo.AverageHalitePerCell * reducedNumShips * .1 / Map.HaliteRemaining); // percent leftover each turn
+            BaseShipValueReducedBy2 = (int)(Map.HaliteRemaining * Math.Pow(ratio, GameInfo.TurnsRemaining) / reducedNumShips);
+            Log.LogMessage("baseShipValueReducedBy2 Ship value = " + BaseShipValueReducedBy2);
         }
 
         // Map Related
@@ -26,6 +42,8 @@ namespace Halite3 {
         public static int Distance(Position p1, Entity e2) => Distance(p1, e2.position);
         public static int Distance(Entity e1, Position p2) => Distance(e1.position, p2);
         public static int Distance(Entity e1, Entity e2) => Distance(e1.position, e2.position);
+        public static int Distance(MapCell m1, MapCell m2) => Distance(m1.position, m2.position);
+        public static int Distance(MapCell m1, Position p2) => Distance(m1.position, p2);
         public static List<MapCell> GetXLayersExclusive(Position position, int distance) {
             var xLayers = Map.GetXLayers(position, distance);
             var subtract = Map.GetXLayers(position, distance-1);
@@ -40,6 +58,13 @@ namespace Halite3 {
         // Halite related
         public static int HaliteRemaining => Map.HaliteRemaining;
         public static int AverageHalitePerCell => HaliteRemaining / TotalCellCount;
+        public static int CellValue(MapCell cell, Ship ship) {
+            var layers = Math.Min(3, Distance(cell, ship.position));
+            double multiplier = 25.0 / ((layers + 1.0)/2.0*4.0*layers + 1.0); // 25 = (3 + 1) / 2 * 4 * 3 + 1
+            var xLayers = Map.GetXLayers(cell.position, Math.Min(3, Distance(cell, ship.position)));
+            return (int)(multiplier * xLayers.Sum(x => x.halite / (Distance(x, cell) + 1)));
+        }
+        public static int NumToIgnore;
 
         // Turn related
         public static int TurnsRemaining => Game.TurnsRemaining;
@@ -62,15 +87,12 @@ namespace Halite3 {
 
         // Position Related
         public static MapCell CellAt(Position p) => Map.At(p);
-        public static MapCell CellAt(Position p, Direction direction) => Map.At(p.DirectionalOffset(direction));
+        public static MapCell CellAt(Position p, Direction d) => Map.At(p.DirectionalOffset(d));
         public static MapCell CellAt(Entity e) => Map.At(e.position);
-        public static MapCell CellAt(Entity e, Direction direction) => Map.At(e.position.DirectionalOffset(direction));
-        public static MapCell CellAt(Position p, Direction d, int iterations) {
-            for(int i=0; i< iterations; i++) {
-                p = p.DirectionalOffset(d);
-            }
-            return CellAt(p);
-        }
+        public static MapCell CellAt(Entity e, Direction d) => Map.At(e.position.DirectionalOffset(d));
+        public static MapCell CellAt(MapCell m, Direction d) => CellAt(m.position, d);
+        public static MapCell CellAt(Point p) => CellAt(new Position(p.x, p.y));
+
         public static MapCell MyShipyardCell => Map.At(Me.shipyard.position);
         
 
@@ -80,14 +102,17 @@ namespace Halite3 {
             public List<MapCell> path;
         }
 
-        public static List<MapCell> CalculatePathOfLeastResistance(Position start, Position end) {
+        public static List<MapCell> CalculatePathOfLeastResistance(Position start, Position end, HashSet<MapCell> CellsToAvoid = null) {
             HashSet<MapCell> visited = new HashSet<MapCell>();
             List<Path> Paths = new List<Path>();
             foreach(var d in end.GetAllDirectionsTo(start)) {
                 var cell = CellAt(start, d);
-                Paths.Add(new Path { resistance = cell.halite/10, path = new List<MapCell> { cell } });
+                if(CellsToAvoid == null || !CellsToAvoid.Contains(cell))
+                    Paths.Add(new Path { resistance = cell.halite/10, path = new List<MapCell> { cell } });
             }
             while(true) {
+                if(Paths.Count == 0)
+                    return null;
                 int shortest = Paths.Min(x => x.resistance);
                 var shortestPath = Paths.First(x => x.resistance == shortest);
                 var last = shortestPath.path.Last();
@@ -95,9 +120,10 @@ namespace Halite3 {
                 foreach(var d in end.GetAllDirectionsTo(last.position)) {
                     var cell = CellAt(last.position, d);
                     if(cell.position.AsPoint.Equals(end.AsPoint)) {
+                        shortestPath.path.Add(cell);
                         return shortestPath.path;
                     }
-                    if(!visited.Contains(cell)) {
+                    if(!visited.Contains(cell) && (CellsToAvoid == null || !CellsToAvoid.Contains(cell))) {
                         var newPath = shortestPath.path.ToList();
                         newPath.Add(cell);
                         Paths.Add(new Path { path = newPath, resistance = shortestPath.resistance + (cell.halite/10)});
@@ -113,6 +139,40 @@ namespace Halite3 {
         public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
         public static VirtualDropoff NextDropoff = null;
         
+
+
+        public static bool ReserveForDropoff = false;
+
+        // TODO move the .08 to hyperparameters
+        public static bool ShouldSpawnShip(int haliteToAdd = 0) {
+            int halite = Me.halite + haliteToAdd;
+            if(GameInfo.TurnsRemaining < 80 || 
+                halite < (ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
+                !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
+                return false;
+            }
+
+            // this logic is special because of the specific treatment of enemy ships here
+            int numShips = (int)(GameInfo.OpponentShipsCount * GameInfo.Opponents.Count * .5 + GameInfo.MyShipsCount * (1 + .5 * GameInfo.Opponents.Count));
+            int numCells = GameInfo.TotalCellCount;
+            int haliteRemaining = GameInfo.HaliteRemaining;
+            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .08 * haliteRemaining / numCells);
+                haliteRemaining -= haliteCollectable;
+            }
+
+            numShips += 1; // if I created another, how much could I get?
+            int haliteRemaining2 = GameInfo.HaliteRemaining;
+            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .08 * haliteRemaining2 / numCells);
+                haliteRemaining2 -= haliteCollectable;
+            }
+
+            if(haliteRemaining - haliteRemaining2 > MyBot.HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {
+                return true;
+            }
+            return false;
+        }
     }
 
     // Virtual Dropoffs
