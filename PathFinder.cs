@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Halite3 {
-    public static class PathFinder {
+    /* public static class PathFinder {
         //public static List<State> GetRankings() {
         //    lists.Clear();
             //return lists.OrderBy(s => s.)
@@ -25,5 +25,5 @@ namespace Halite3 {
                 cell = this.cell
             };
         }
-    }
+    }*/
 }

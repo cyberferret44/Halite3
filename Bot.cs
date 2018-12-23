@@ -59,13 +59,14 @@ namespace Halite3
                 // Basic processing for the turn start
                 GameInfo.Game.UpdateFrame();
                 Fleet.UpdateFleet(GameInfo.MyShips);
+                ValueMapping.ProcessTurn();
 
                 // logic turn processing
                 CollectLogic.ProcessTurn();
                 DropoffLogic.ProcessTurn();
                 EndOfGameLogic.ProcessTurn();
                 CombatLogic.ProcessTurn();
-                ZoneAssignLogic.ProcessTurn();
+                //ZoneAssignLogic.ProcessTurn();
 
                 // Score the ships first 
                 Logic.Logic.InitializeNewTurn();
@@ -110,10 +111,10 @@ namespace Halite3
                 dropoffWatch.Stop();
 
                 // Move ships to assigned Zones
-                Log.LogMessage($"*** ZoneAsn Logic ***");
-                zoneAssignmentWatch.Start();
-                ZoneAssignLogic.CommandShips();
-                zoneAssignmentWatch.Stop();
+                //Log.LogMessage($"*** ZoneAsn Logic ***");
+                //zoneAssignmentWatch.Start();
+                //ZoneAssignLogic.CommandShips();
+                //zoneAssignmentWatch.Stop();
 
                 // collect halite (move or stay) using Logic interface
                 Log.LogMessage($"*** Collect Logic ***");

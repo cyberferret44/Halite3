@@ -18,7 +18,8 @@ namespace Halite3
         PERCENT_OF_AVERAGE_TO_IGNORE,
         DROPOFF_DISTANCE, 
         COLLECT_STICKINESS,
-        SHOULD_CRASH_SHIP
+        SHOULD_CRASH_SHIP,
+        TOUCH_RATIO
     }
 
     public class HyperParameters {
@@ -44,7 +45,8 @@ namespace Halite3
             { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0, .25)},
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
             { Parameters.COLLECT_STICKINESS, new Bounds(1, 100, 25) },
-            { Parameters.SHOULD_CRASH_SHIP, new Bounds(0, 2000, GameInfo.PlayerCount == 2 ? 400 : 900)}
+            { Parameters.SHOULD_CRASH_SHIP, new Bounds(0, 2000, GameInfo.PlayerCount == 2 ? 400 : 900)},
+            { Parameters.TOUCH_RATIO, new Bounds(0, 1.0, .8)}
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
@@ -54,7 +56,8 @@ namespace Halite3
             { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, .01 },
             { Parameters.DROPOFF_DISTANCE, .03 },
             { Parameters.COLLECT_STICKINESS, .03 },
-            { Parameters.SHOULD_CRASH_SHIP, .05 }
+            { Parameters.SHOULD_CRASH_SHIP, .05 },
+            { Parameters.TOUCH_RATIO, .03}
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();

@@ -39,8 +39,13 @@ namespace Halite3 {
         }
 
         public static List<Command> GenerateCommandQueue() {
-            foreach(var ship in availableShipMoves.Keys.ToList()) {
-                AddMove(ship.StayStill($"ship {ship.Id} was leftover, just making it stay still"));
+            foreach(var ship in AvailableShips) {
+                var dirs = DirectionExtensions.ALL_DIRECTIONS;
+                if(dirs.Any(d => Logic.Logic.IsSafeMove(ship, d))) {
+                    AddMove(ship.Move(dirs.First(d => Logic.Logic.IsSafeMove(ship, d)), "Left-over ship, making move from fleet logic."));
+                } else if(dirs.Any(d => Logic.Logic.IsSafeMove(ship, d, true))) {
+                    AddMove(ship.Move(dirs.First(d => Logic.Logic.IsSafeMove(ship, d)), "Left-over ship, Moving towards an enemy instead of crashing myself..."));
+                }
             }
             return usedShips.Values.ToList();
         }
