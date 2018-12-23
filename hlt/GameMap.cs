@@ -79,6 +79,19 @@ namespace Halite3.hlt
             return cells.ToList();
         }
 
+        // does not include this position
+        public List<MapCell> GetXLayersExclusive(Position position, int numLayers) {
+            HashSet<MapCell> cells = new HashSet<MapCell>();
+            for(int x = -numLayers; x<=numLayers; x++) {
+                int yp = position.y + (numLayers - Math.Abs(x));
+                int yn = position.y - (numLayers - Math.Abs(x));
+                int xp = position.x + x;
+                cells.Add(this.At(new Position(xp, yp)));
+                cells.Add(this.At(new Position(xp, yn)));
+            }
+            return cells.ToList();
+        }
+
         /// <summary>
         /// Normalizes the position of an Entity and returns the corresponding MapCell.
         /// </summary>

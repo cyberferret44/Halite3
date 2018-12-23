@@ -17,7 +17,6 @@ namespace Halite3
         CELL_VALUE_DEGRADATION,
         PERCENT_OF_AVERAGE_TO_IGNORE,
         DROPOFF_DISTANCE, 
-        COLLECT_STICKINESS,
         SHOULD_CRASH_SHIP,
         TOUCH_RATIO
     }
@@ -44,19 +43,17 @@ namespace Halite3
             { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0, .8)},
             { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0, .25)},
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
-            { Parameters.COLLECT_STICKINESS, new Bounds(1, 100, 25) },
             { Parameters.SHOULD_CRASH_SHIP, new Bounds(0, 2000, GameInfo.PlayerCount == 2 ? 400 : 900)},
             { Parameters.TOUCH_RATIO, new Bounds(0, 1.0, .8)}
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
-            { Parameters.CARGO_TO_MOVE, .01 },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .03 },
-            { Parameters.CELL_VALUE_DEGRADATION, .02 },
+            { Parameters.CARGO_TO_MOVE, 0.001 },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .01 },
+            { Parameters.CELL_VALUE_DEGRADATION, .01 },
             { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, .01 },
             { Parameters.DROPOFF_DISTANCE, .03 },
-            { Parameters.COLLECT_STICKINESS, .03 },
-            { Parameters.SHOULD_CRASH_SHIP, .05 },
+            { Parameters.SHOULD_CRASH_SHIP, .03 },
             { Parameters.TOUCH_RATIO, .03}
         };
 
@@ -117,9 +114,9 @@ namespace Halite3
 
         public void WriteToFile(string file) {
             string content = "";
-            foreach(var line in unusedLines) {
+            /* foreach(var line in unusedLines) {
                 content += line + "\n";
-            }
+            }*/
             foreach(var kvp in ParametersDictionary) {
                 content += ($"{kvp.Key.ToString("g")},{kvp.Value}\n");
             }

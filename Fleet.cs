@@ -35,16 +35,21 @@ namespace Halite3 {
             availableShipMoves.Remove(command.Ship);
             usedShips.Add(command.Ship, command);
             collisionCells.Add(command.TargetCell);
+            ValueMapping.MoveShip(command.Ship, command.TargetCell);
             Log.LogMessage(command.Comment);
         }
 
         public static List<Command> GenerateCommandQueue() {
             foreach(var ship in AvailableShips) {
-                var dirs = DirectionExtensions.ALL_DIRECTIONS;
+                var dirs = DirectionExtensions.ALL_CARDINALS.ToList();
+                if(ship.CellHalite > 0)
+                    dirs.Insert(0, Direction.STILL);
+                else
+                    dirs.Add(Direction.STILL);
                 if(dirs.Any(d => Logic.Logic.IsSafeMove(ship, d))) {
                     AddMove(ship.Move(dirs.First(d => Logic.Logic.IsSafeMove(ship, d)), "Left-over ship, making move from fleet logic."));
                 } else if(dirs.Any(d => Logic.Logic.IsSafeMove(ship, d, true))) {
-                    AddMove(ship.Move(dirs.First(d => Logic.Logic.IsSafeMove(ship, d)), "Left-over ship, Moving towards an enemy instead of crashing myself..."));
+                    AddMove(ship.Move(dirs.First(d => Logic.Logic.IsSafeMove(ship, d, true)), "Left-over ship, Moving towards an enemy instead of crashing myself..."));
                 }
             }
             return usedShips.Values.ToList();

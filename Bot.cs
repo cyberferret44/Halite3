@@ -38,7 +38,7 @@ namespace Halite3
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
             Logic.Logic ZoneAssignLogic = LogicFactory.GetAssignmentLogic();
 
-            string BotName = "derp2" + specimen.Name();
+            string BotName = "derp3" + specimen.Name();
             GameInfo.Game.Ready(BotName);
             
             if(GameInfo.IsDebug) {
@@ -97,7 +97,7 @@ namespace Halite3
                 // Combat Logic!!!
                 Log.LogMessage($"*** Combat  Logic ***");
                 combatWatch.Start();
-                CombatLogic.CommandShips();
+                //CombatLogic.CommandShips();
                 combatWatch.Stop();
 
                 // End game, return all ships to nearest dropoff

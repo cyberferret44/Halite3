@@ -22,7 +22,7 @@ namespace GeneticTuner
     }
 
     public class GeneticSpecimen : Specimen {
-        public static readonly string SPECIMEN_FOLDER = "Specimen4";
+        public static readonly string SPECIMEN_FOLDER = "Specimen5";
         public readonly string SpecimenFolder;
         private static Random random = new Random();
         private static int NUM_CHILDREN = 1; // population control level
