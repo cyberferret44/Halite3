@@ -20,9 +20,5 @@ namespace Halite3.Logic {
             //else
             //   return new EmptyLogic();
         }
-
-        public static Logic GetAssignmentLogic() {
-            return new ZoneAssignmentLogic();
-        }
     }
 }

@@ -37,7 +37,6 @@ namespace Halite3
             Logic.Logic CollectLogic = LogicFactory.GetCollectLogic();
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
-            Logic.Logic ZoneAssignLogic = LogicFactory.GetAssignmentLogic();
 
             string BotName = "derp3" + specimen.Name();
             GameInfo.Game.Ready(BotName);
@@ -60,7 +59,6 @@ namespace Halite3
                 DropoffLogic.ProcessTurn();
                 EndOfGameLogic.ProcessTurn();
                 CombatLogic.ProcessTurn();
-                //ZoneAssignLogic.ProcessTurn();
 
                 // Score the ships first 
                 Logic.Logic.InitializeNewTurn();
