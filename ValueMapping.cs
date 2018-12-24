@@ -8,11 +8,11 @@ namespace Halite3 {
         public static Dictionary<MapCell,Value> Mapping = new Dictionary<MapCell, Value>();
         public static int numToIgnore = 0;
 
-        public static int NegativeHalite(Ship ship) {
-            var haliteNegative = Math.Max(0, 950 - ship.halite) / 3;
-            var haliteMax = GameInfo.Map.GetXLayers(ship.position, 2).Sum(x => Math.Max(0, x.halite - GameInfo.NumToIgnore));
+        public static double NegativeHalite(Ship ship) {
+            double haliteNegative = Math.Max(0, 950 - ship.halite) / 3;
+            double haliteMax = GameInfo.Map.GetXLayers(ship.position, 2).Sum(x => Math.Max(0, x.halite - GameInfo.NumToIgnore));
             haliteNegative = Math.Min(haliteMax, haliteNegative);
-            haliteNegative = (int)(haliteNegative * Math.Min(1.0, (ship.DistanceToMyDropoff + 1.0) / 5.0));
+            haliteNegative = haliteNegative * Math.Min(1.0, (ship.DistanceToMyDropoff + 1.0) / 5.0);
             return haliteNegative;
         }
 
@@ -53,21 +53,21 @@ namespace Halite3 {
         }
 
         private static void TouchCell(MapCell cell, MapCell toucher) {
-            int newValue = (int)(cell.halite * (1.0 - MyBot.HParams[Parameters.TOUCH_RATIO])) + (int)(Mapping[toucher].ValueOnly * MyBot.HParams[Parameters.TOUCH_RATIO]);
+            double newValue = cell.halite * (1.0 - MyBot.HParams[Parameters.TOUCH_RATIO]) + Mapping[toucher].ValueOnly * MyBot.HParams[Parameters.TOUCH_RATIO];
             if(newValue > Mapping[cell].ValueOnly) {
                 Mapping[cell].SetValue(newValue);
                 cell.Neighbors.ForEach(n => TouchCell(n, cell)); // todo order by desc might be faster...
             }
         }
 
-        public static Dictionary<MapCell, int> GetVMoveValues(MapCell cell, Ship ship) {
-            Dictionary<MapCell, int> vals = new Dictionary<MapCell, int>();
-            int val = (int)Mapping[cell].GetValueForShip(cell, ship);
-            val += cell.halite > GameInfo.NumToIgnore ? cell.halite * 2 : 0;
+        public static Dictionary<MapCell, double> GetMoveValues(MapCell cell, Ship ship) {
+            Dictionary<MapCell, double> vals = new Dictionary<MapCell, double>();
+            double val = Mapping[cell].GetValueForShip(cell, ship);
+            val += cell.halite > GameInfo.NumToIgnore ? cell.halite * 2 : 0; // todo toy with the x2 here
             val += cell.IsInspired ? cell.halite : 0;
             vals.Add(cell, val);
             foreach(var n in cell.Neighbors) {
-                val = (int)Mapping[n].GetValueForShip(n, ship);
+                val = Mapping[n].GetValueForShip(n, ship);
                 val += n.IsInspired ? n.halite : 0;
                 vals.Add(n, val);
             }
@@ -98,19 +98,16 @@ namespace Halite3 {
     }
 
     public class Value {
-        public Value(int val) {
+        public Value(double val) {
             value = val;
         }
-        public void AddValue(int val) {
-            addedValue += val;
-        }
 
-        public void SetValue(int newValue) {
+        public void SetValue(double newValue) {
             value = newValue;
         }
 
-        public int GetValueForShip(MapCell cell, Ship ship) {
-            int val = GetValue();
+        public double GetValueForShip(MapCell cell, Ship ship) {
+            double val = GetValue();
             if(ValueMapping.numToIgnore == GameInfo.NumToIgnore) {
                 var haliteNegative = ValueMapping.NegativeHalite(ship);
                 int dist = GameInfo.Distance(cell, ship.CurrentMapCell);
@@ -119,12 +116,12 @@ namespace Halite3 {
             }
             return val;
         }
-        public int ValueOnly => value;
-        public int GetValue() => value + addedValue - negative;
-        private int value;
-        public int returnValue;
-        public int negative;
+        public double ValueOnly => value;
+        public double GetValue() => value - negative; // + addedValue;
+        private double value;
+        public double negative;
         public MapCell cell;
-        private int addedValue;
+        //public int returnValue;
+        //private int addedValue;
     }
 }

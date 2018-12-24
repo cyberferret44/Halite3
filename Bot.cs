@@ -21,15 +21,16 @@ namespace Halite3
             GameInfo.SetInfo(new Game());
             GameInfo.IsDebug = GameInfo.IsLocal && args.Count() > 0 && args[0] == "debug";
 
-            // Do Genetic Algorithm Specimen implementation
-            Specimen specimen;
-            if(GameInfo.IsLocal) {
-                specimen = GeneticSpecimen.RandomSpecimen("Halite3/");
-                HParams = specimen.GetHyperParameters();
-            } else  {
-                specimen = GeneticSpecimen.RandomSpecimen("");
-                HParams = specimen.GetHyperParameters();
+            if(GameInfo.IsDebug) {
+                Stopwatch s = new Stopwatch();
+                s.Start();
+                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 60000); // max 30 seconds to attach, prevents memory leaks;
+                s.Stop();
             }
+
+            // Do Genetic Algorithm Specimen implementation
+            Specimen specimen = GeneticSpecimen.RandomSpecimen();
+            HParams = specimen.GetHyperParameters();
 
             // Handle Logic
             Logic.Logic CombatLogic = LogicFactory.GetCombatLogic();
@@ -40,13 +41,6 @@ namespace Halite3
 
             string BotName = "derp3" + specimen.Name();
             GameInfo.Game.Ready(BotName);
-            
-            if(GameInfo.IsDebug) {
-                Stopwatch s = new Stopwatch();
-                s.Start();
-                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 60000); // max 30 seconds to attach, prevents memory leaks;
-                s.Stop();
-            }
 
             Log.LogMessage("Successfully created bot! My Player ID is " + GameInfo.Game.myId);
             Stopwatch combatWatch = new Stopwatch();
@@ -73,8 +67,8 @@ namespace Halite3
 
                 // Specimen spawn logic for GeneticTuner
                 if(GameInfo.TurnsRemaining == 0) {
-                    if((GameInfo.Opponents.Count == 1 && GameInfo.Me.halite >= GameInfo.Opponents[0].halite) ||
-                        GameInfo.Opponents.Count == 3 && GameInfo.Me.halite >= GameInfo.Opponents.OrderBy(x => x.halite).ElementAt(1).halite) {
+                    if((GameInfo.Opponents.Count == 1 && GameInfo.Me.halite > GameInfo.Opponents[0].halite) ||
+                        (GameInfo.Opponents.Count == 3 && GameInfo.Me.halite > GameInfo.Opponents.OrderBy(x => x.halite).ElementAt(1).halite)) {
                         specimen.SpawnChildren();
                     } else {
                         specimen.Kill();
@@ -97,7 +91,7 @@ namespace Halite3
                 // Combat Logic!!!
                 Log.LogMessage($"*** Combat  Logic ***");
                 combatWatch.Start();
-                //CombatLogic.CommandShips();
+                CombatLogic.CommandShips();
                 combatWatch.Stop();
 
                 // End game, return all ships to nearest dropoff

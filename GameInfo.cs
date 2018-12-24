@@ -92,11 +92,15 @@ namespace Halite3 {
         public static MapCell CellAt(Entity e, Direction d) => Map.At(e.position.DirectionalOffset(d));
         public static MapCell CellAt(MapCell m, Direction d) => CellAt(m.position, d);
         public static MapCell CellAt(Point p) => CellAt(new Position(p.x, p.y));
-
         public static MapCell MyShipyardCell => Map.At(Me.shipyard.position);
         
 
-        // Miscellaneous...
+        // Hyper Parameters
+        public static string PlayerXSize => PlayerCount + "x" + Map.width;
+        public static string HyperParameterFolder => $"{(IsLocal ? "Halite3/" : "")}GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
+        public static readonly string SPECIMEN_FOLDER = "Specimen5";
+
+
         struct Path {
             public int resistance;
             public List<MapCell> path;

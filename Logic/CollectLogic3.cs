@@ -31,9 +31,9 @@ namespace Halite3.Logic {
             while(Fleet.AvailableShips.Count > 0) {
                 // find best ship...
                 Ship bestShip = null;
-                int bestValue = 0;
+                double bestValue = 0.0;
                 foreach(var ship in Fleet.AvailableShips) {
-                    var list = ValueMapping.GetVMoveValues(ship.CurrentMapCell, ship).Where(d => IsSafeAndAvoids2Cells(ship, d.Key.position.GetDirectionTo(ship.position))).ToArray();
+                    var list = ValueMapping.GetMoveValues(ship.CurrentMapCell, ship).Where(d => IsSafeAndAvoids2Cells(ship, d.Key.position.GetDirectionTo(ship.position))).ToArray();
                     list = list.OrderByDescending(x => x.Value).ToArray();
                     var diff = list.Count() == 0 ? -1 : list.Count() == 1 ? int.MaxValue : list[0].Value - list[1].Value;
                     if(diff > bestValue) {
@@ -46,10 +46,10 @@ namespace Halite3.Logic {
                     break;
                 }
 
-                var vals = ValueMapping.GetVMoveValues(bestShip.CurrentMapCell, bestShip).Where(d => IsSafeAndAvoids2Cells(bestShip, d.Key.position.GetDirectionTo(bestShip.position))).ToList();
+                var vals = ValueMapping.GetMoveValues(bestShip.CurrentMapCell, bestShip).Where(d => IsSafeAndAvoids2Cells(bestShip, d.Key.position.GetDirectionTo(bestShip.position))).ToList();
                 vals = vals.OrderByDescending(x => x.Value).ToList();
                 string msg = $"Moving ship {bestShip.Id} to its best target.  Moves were... ";
-                vals.ForEach(d => msg += $"{d.Key.position.GetDirectionTo(bestShip.position).ToString("g")}: {d.Value} ...");
+                vals.ForEach(d => msg += $"{d.Key.position.GetDirectionTo(bestShip.position).ToString("g")}: {d.Value.ToString("0.##")} ...");
                 
                 MakeMove(bestShip.Move(vals[0].Key.position.GetDirectionTo(bestShip.position), msg));
             }
