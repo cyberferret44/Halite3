@@ -23,6 +23,7 @@ namespace Halite3
     public class HyperParameters {
         // Non tuned parameters.  Keeping here so I can easily find & tune them later
         public static List<Parameters> AllParameters = Enum.GetValues(typeof(Parameters)).Cast<Parameters>().ToList();
+        private static bool HasPrinted = false;
 
         // Dynamic hyper parameters
         private class Bounds {
@@ -84,6 +85,8 @@ namespace Halite3
         }
 
         public HyperParameters(string file, bool initializeDictionary = true) {
+            bool shouldPrint = !HasPrinted;
+            HasPrinted = true;
             var lines = System.IO.File.ReadAllText(file).Split("\n").ToList();
             foreach(var line in lines) {
                 try {
@@ -92,7 +95,7 @@ namespace Halite3
                     var values = line.Split(",").ToList();
                     Parameters param = (Parameters)Enum.Parse(typeof(Parameters), values[0]);
                     ParametersDictionary.Add(param, double.Parse(values[1]));
-                    if(initializeDictionary)
+                    if(shouldPrint)
                         Log.LogMessage(param.ToString("g") + ": "+ double.Parse(values[1]));
                 } catch(ArgumentException) {}
             }
@@ -100,37 +103,36 @@ namespace Halite3
             foreach(var param in AllParameters) {
                 if(!ParametersDictionary.ContainsKey(param)) {
                     ParametersDictionary.Add(param, BoundDictionary[param].Seed);
-                    if(initializeDictionary)
+                    if(shouldPrint)
                         Log.LogMessage(param.ToString("g") + ": "+ BoundDictionary[param].Seed);
                 }
             }
 
-            if(initializeDictionary)
-                BuildVarianceDictionary();
-        }
-
-        public void BuildVarianceDictionary() {
-            VarianceDictionary.Clear();
-            var values = new Dictionary<Parameters, List<double>>();
-            foreach(var param in AllParameters) {
-                values.Add(param, new List<double>());
-            }
-
-            var files = Directory.EnumerateFiles(GameInfo.HyperParameterFolder).ToArray();
-            foreach(var file in files) {
-                var hparams = new HyperParameters(file, false);
+            if(initializeDictionary) {
+                VarianceDictionary.Clear();
+                var values = new Dictionary<Parameters, List<double>>();
                 foreach(var param in AllParameters) {
-                    values[param].Add(hparams[param]);
+                    values.Add(param, new List<double>());
                 }
-            }
 
-            Log.LogMessage("Variance Dictionary......");
-            foreach(var kvp in values) {
-                List<double> vals = kvp.Value.OrderBy(x => x).ToList();
-                double lowerAvg = vals.GetRange(0, vals.Count/2).Average();
-                double upperAvg = vals.GetRange(vals.Count/2, vals.Count/2).Average();
-                VarianceDictionary[kvp.Key] = (upperAvg - lowerAvg) * 2 + (GameInfo.IsLocal ? upperAvg * .05 : 0.005); // enforce a minimum variance
-                Log.LogMessage(kvp.Key.ToString("g") + ": "+ VarianceDictionary[kvp.Key]);
+                var files = Directory.EnumerateFiles(GameInfo.HyperParameterFolder).ToArray();
+                foreach(var f in files) {
+                    var hparams = new HyperParameters(f, false);
+                    foreach(var param in AllParameters) {
+                        values[param].Add(hparams[param]);
+                    }
+                }
+
+                if(shouldPrint)
+                Log.LogMessage("Variance Dictionary......");
+                foreach(var kvp in values) {
+                    List<double> vals = kvp.Value.OrderBy(x => x).ToList();
+                    double lowerAvg = vals.GetRange(0, vals.Count/2).Average();
+                    double upperAvg = vals.GetRange(vals.Count/2, vals.Count/2).Average();
+                    VarianceDictionary[kvp.Key] = (upperAvg - lowerAvg) * 2 + (GameInfo.IsLocal ? upperAvg * .01 : 0.005); // enforce a minimum variance
+                    if(shouldPrint)
+                        Log.LogMessage(kvp.Key.ToString("g") + ": "+ VarianceDictionary[kvp.Key]);
+                }
             }
         }
 

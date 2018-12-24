@@ -51,6 +51,7 @@ namespace Halite3
             {
                 // Basic processing for the turn start
                 GameInfo.Game.UpdateFrame();
+                GameInfo.SetInfo(GameInfo.Game);
                 Fleet.UpdateFleet(GameInfo.MyShips);
                 ValueMapping.ProcessTurn();
 
