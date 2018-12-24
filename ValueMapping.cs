@@ -41,7 +41,7 @@ namespace Halite3 {
                 }
             }
 
-            // enemy ships should be factored in as positives
+            // IF NUM TO IGNORE CHANGED ADD THIS LOGIC..... nemy ships should be factored in as positives
             /* foreach(var ship in GameInfo.OpponentShips) {
                 var val = ship.halite;
                 var layer1 = ship.Neighbors;
