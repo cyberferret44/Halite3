@@ -38,7 +38,7 @@ namespace Halite3
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
 
-            string BotName = "derp3" + specimen.Name();
+            string BotName = "derp4" + specimen.Name();
             GameInfo.Game.Ready(BotName);
 
             Log.LogMessage("Successfully created bot! My Player ID is " + GameInfo.Game.myId);

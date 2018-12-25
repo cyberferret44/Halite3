@@ -5,8 +5,8 @@ using System;
 
 namespace Halite3 {
     public static class ValueMapping {
-        public static Dictionary<MapCell,Value> Mapping = new Dictionary<MapCell, Value>();
-        public static int numToIgnore = 0;
+        public static readonly Dictionary<MapCell,Value> Mapping = new Dictionary<MapCell, Value>();
+        public static readonly HashSet<Ship> NegativeShips = new HashSet<Ship>();
 
         public static double NegativeHalite(Ship ship) {
             double haliteNegative = Math.Max(0, 950 - ship.halite) / 3;
@@ -17,10 +17,9 @@ namespace Halite3 {
         }
 
         public static void ProcessTurn() {
-            numToIgnore = Math.Max(numToIgnore, GameInfo.NumToIgnore);
-
             // clear and seed the map
             Mapping.Clear();
+            NegativeShips.Clear();
             foreach(var c in GameInfo.Map.GetAllCells()) {
                 Mapping.Add(c, new Value(c.halite));
             }
@@ -29,8 +28,7 @@ namespace Halite3 {
                 cell.Neighbors.ForEach(n => TouchCell(n, cell));
             }
 
-            // because they have cargo and they crash my ships partially negating their values;
-            if(numToIgnore == GameInfo.NumToIgnore) {
+            /* if(numToIgnore == GameInfo.NumToIgnore) {
                 foreach(var ship in Fleet.AllShips) {
                     var haliteNegative = NegativeHalite(ship);
                     var layer1 = ship.Neighbors;
@@ -39,9 +37,10 @@ namespace Halite3 {
                     layer1.ForEach(l => Mapping[l].negative += haliteNegative/layer1.Count);
                     layer2.ForEach(l => Mapping[l].negative += haliteNegative/layer2.Count);
                 }
-            }
+            }*/
 
             // IF NUM TO IGNORE CHANGED ADD THIS LOGIC..... nemy ships should be factored in as positives
+            // because they have cargo and they crash my ships partially negating their values;
             /* foreach(var ship in GameInfo.OpponentShips) {
                 var val = ship.halite;
                 var layer1 = ship.Neighbors;
@@ -52,24 +51,47 @@ namespace Halite3 {
             }*/
         }
 
+        public static void AddNegativeShip(Ship ship, MapCell finalTarget) {
+            // Adds ships as negative values... I may not need the if statement after new logic...
+            //if(!GameInfo.NumToIgnoreAltered) {
+            NegativeShips.Add(ship);
+            var haliteNegative = NegativeHalite(ship);
+            var layer1 = finalTarget.Neighbors;
+            var layer2 = GameInfo.Map.GetXLayersExclusive(finalTarget.position, 2);
+            Mapping[finalTarget].negative += haliteNegative;
+            layer1.ForEach(l => Mapping[l].negative += haliteNegative/layer1.Count); //todo add negative values to value period... delete negative variable
+            layer2.ForEach(l => Mapping[l].negative += haliteNegative/layer2.Count);
+            //}
+        }
+
         private static void TouchCell(MapCell cell, MapCell toucher) {
             double newValue = cell.halite * (1.0 - MyBot.HParams[Parameters.TOUCH_RATIO]) + Mapping[toucher].ValueOnly * MyBot.HParams[Parameters.TOUCH_RATIO];
             if(newValue > Mapping[cell].ValueOnly) {
                 Mapping[cell].SetValue(newValue);
-                cell.Neighbors.ForEach(n => TouchCell(n, cell)); // todo order by desc might be faster...
+                cell.Neighbors.ForEach(n => TouchCell(n, cell));
             }
         }
 
-        public static Dictionary<MapCell, double> GetMoveValues(MapCell cell, Ship ship) {
-            Dictionary<MapCell, double> vals = new Dictionary<MapCell, double>();
-            double val = Mapping[cell].GetValueForShip(cell, ship);
-            val += cell.halite > GameInfo.NumToIgnore ? cell.halite * 2 : 0; // todo toy with the x2 here
-            val += cell.IsInspired ? cell.halite : 0;
-            vals.Add(cell, val);
-            foreach(var n in cell.Neighbors) {
-                val = Mapping[n].GetValueForShip(n, ship);
-                val += n.IsInspired ? n.halite : 0;
-                vals.Add(n, val);
+        /* public static Dictionary<MapCell, double> GetMoveValues(MapCell finalTarget, Ship ship, MapCell projectedShipCell = null) {
+            projectedShipCell = projectedShipCell == null ? ship.CurrentMapCell : projectedShipCell; //todo multiply value by 1.0 + .01 * ship.DistanceToMyDropoff * (600 - ship.halite)/1000 
+            Dictionary<MapCell, double> vals = new Dictionary<MapCell, double>(); // self and neighbors...
+            foreach(var c in projectedShipCell.NeighborsAndSelf) {
+                double val = Mapping[c].GetValueForShip(finalTarget, c, ship);
+                val += ship.CurrentMapCell == c && c.halite > GameInfo.NumToIgnore ? c.halite : 0; // todo play with this...
+                val += c.IsInspired ? c.halite : 0;
+                vals.Add(c, val);
+            }
+            return vals;
+        }*/
+
+        public static Dictionary<MapCell, double> GetMoveValues(Ship ship, MapCell projectedShipCell, MapCell finalTarget = null) {
+            //todo multiply value by 1.0 + .01 * ship.DistanceToMyDropoff * (600 - ship.halite)/1000 
+            Dictionary<MapCell, double> vals = new Dictionary<MapCell, double>(); // self and neighbors...
+            foreach(var c in projectedShipCell.NeighborsAndSelf) {
+                double val = Mapping[c].GetValueForShipMovement(ship, projectedShipCell, c.position.GetDirectionTo(projectedShipCell.position),  finalTarget);
+                val += ship.CurrentMapCell == c && c.halite > GameInfo.NumToIgnore ? c.halite : 0; // todo play with this...
+                val += c.IsInspired ? c.halite : 0;
+                vals.Add(c, val);
             }
             return vals;
         }
@@ -106,13 +128,20 @@ namespace Halite3 {
             value = newValue;
         }
 
-        public double GetValueForShip(MapCell cell, Ship ship) {
+        public double GetValueForShipMovement(Ship ship, MapCell shipPosition, Direction move, MapCell finalTarget = null) {
+            var moveTarget = shipPosition.GetNeighbor(move);
+            if(moveTarget == ship.CurrentMapCell && moveTarget.IsMyStructure) {
+                Log.LogMessage("Ship " + ship.Id + " was on a structure");
+                return -100000.0; // highly discourage sitting on a structure
+            }
             double val = GetValue();
-            if(ValueMapping.numToIgnore == GameInfo.NumToIgnore) {
-                var haliteNegative = ValueMapping.NegativeHalite(ship);
-                int dist = GameInfo.Distance(cell, ship.CurrentMapCell);
-                int divisor = dist == 0 ? 1 : dist * 4;
-                val += haliteNegative / divisor;
+            if(finalTarget != null) {
+                int dist = GameInfo.Distance(finalTarget, moveTarget);
+                if(dist <= 2 && ValueMapping.NegativeShips.Contains(ship)) { // todo this is hacky...) {
+                    var haliteNegative = ValueMapping.NegativeHalite(ship);
+                    int divisor = dist == 0 ? 1 : dist * 4;
+                    val += haliteNegative / divisor;
+                }
             }
             return val;
         }
@@ -121,7 +150,5 @@ namespace Halite3 {
         private double value;
         public double negative;
         public MapCell cell;
-        //public int returnValue;
-        //private int addedValue;
     }
 }

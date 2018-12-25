@@ -22,8 +22,10 @@ namespace Halite3.hlt
         public MapCell South => GameInfo.CellAt(position, Direction.SOUTH);
         public MapCell East => GameInfo.CellAt(position, Direction.EAST);
         public MapCell West => GameInfo.CellAt(position, Direction.WEST);
+        public MapCell GetNeighbor(Direction d) => d == Direction.NORTH ? North : d == Direction.SOUTH ? South :
+                                                   d == Direction.EAST ? East : d == Direction.WEST ? West : this;
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
-        public List<MapCell> NeighborsAndThis => new List<MapCell> { this, North, South, East, West };
+        public List<MapCell> NeighborsAndSelf => new List<MapCell> { this, North, South, East, West };
         public List<MapCell> Corners => new List<MapCell> { North.West, North.East, South.East, South.West };
         public int SmallestEnemyValue => Neighbors.Min(x => x.IsOccupiedByOpponent() ? x.ship.halite : int.MaxValue);
 

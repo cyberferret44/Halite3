@@ -12,6 +12,12 @@ namespace Halite3 {
         public static bool IsDebug = false;
         public static int BaseShipValue;
         public static int BaseShipValueReducedBy2;
+        private static int originalNum = -1;
+        private static int getOriginalNum() {
+            originalNum = Math.Max(originalNum, GameInfo.NumToIgnore);
+            return originalNum;
+        }
+        public static bool NumToIgnoreAltered => getOriginalNum() != NumToIgnore;
 
         // Game
         public static Game Game;
@@ -72,7 +78,7 @@ namespace Halite3 {
 
         // Player Related
         public static int MyId => Me.id.id;
-        public static int PlayerCount => Game.players.Count;
+        public static int PlayerCount => Opponents.Count + 1;
         public static Player Me => Game.me;
         public static Player GetPlayer(int id) => Game.players.Single(p => p.id.id == id);
 
@@ -98,7 +104,7 @@ namespace Halite3 {
         // Hyper Parameters
         public static string PlayerXSize => PlayerCount + "x" + Map.width;
         public static string HyperParameterFolder => $"{(IsLocal ? "Halite3/" : "")}GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
-        public static readonly string SPECIMEN_FOLDER = "Specimen5";
+        public static readonly string SPECIMEN_FOLDER = "Specimen6";
 
 
         struct Path {

@@ -129,7 +129,7 @@ namespace Halite3
                     List<double> vals = kvp.Value.OrderBy(x => x).ToList();
                     double lowerAvg = vals.GetRange(0, vals.Count/2).Average();
                     double upperAvg = vals.GetRange(vals.Count/2, vals.Count/2).Average();
-                    VarianceDictionary[kvp.Key] = (upperAvg - lowerAvg) * 2 + (GameInfo.IsLocal ? upperAvg * .01 : 0.005); // enforce a minimum variance
+                    VarianceDictionary[kvp.Key] = (upperAvg - lowerAvg) + upperAvg * 0.005; // enforce a minimum variance
                     if(shouldPrint)
                         Log.LogMessage(kvp.Key.ToString("g") + ": "+ VarianceDictionary[kvp.Key]);
                 }
