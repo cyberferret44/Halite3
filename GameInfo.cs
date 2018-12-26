@@ -94,6 +94,7 @@ namespace Halite3 {
         public static int OpponentShipsCount => Game.Opponents.Sum(x => x.ships.Count);
         public static int TotalShipsCount => OpponentShipsCount + MyShipsCount;
         public static Ship GetMyShip(int shipId) => Me.GetShipById(shipId);
+        public static int LowestNeighboringOpponentHalite(MapCell c) => c.IsThreatened ? c.Neighbors.Where(n => n.IsOccupiedByOpponent()).Min(n => n.ship.halite) : 0;
 
         // Position Related
         public static MapCell CellAt(Position p) => Map.At(p);

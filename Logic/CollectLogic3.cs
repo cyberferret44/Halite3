@@ -35,10 +35,23 @@ namespace Halite3.Logic {
                 double bestValue = -1.0; // must be negative in case a ship has 2 moves of equal value
                 var bestVals = new List<KeyValuePair<MapCell, double>>();
                 foreach(var ship in shipsNearDest) {
+                    // get vals
                     var vals = ValueMapping.GetMoveValues(ship, ship.CurrentMapCell, projectedTargets[ship]).
-                               Where(d => IsSafeAndAvoids2Cells(ship, d.Key.position.GetDirectionTo(ship.position))).
-                               OrderByDescending(x => x.Value).ToList();
-                    var diff = vals.Count() == 0 ? -1 : vals.Count() == 1 ? int.MaxValue : vals[0].Value - vals[1].Value;
+                               Where(d => IsSafeAndAvoids2Cells(ship, d.Key.position.GetDirectionTo(ship.position))).ToList();
+
+                    // find diff
+                    double diff;
+                    if(vals.Count == 0)
+                        diff = -1;
+                    else if (vals.Count == 1) {
+                        diff = int.MaxValue;
+                    } else {
+                        vals = AdjustValues(vals, ship); // adds additional considerations...
+                        vals = vals.OrderByDescending(x => x.Value).ToList();
+                        diff = vals[0].Value - vals[1].Value;
+                    }
+
+                    // set best
                     if(diff > bestValue) {
                         bestValue = diff;
                         bestShip = ship;
@@ -94,6 +107,16 @@ namespace Halite3.Logic {
                 }
             }
             return ship.CurrentMapCell;
+        }
+
+        public List<KeyValuePair<MapCell, double>> AdjustValues(List<KeyValuePair<MapCell, double>> inputVals, Ship ship) {
+            for(int i=0; i<inputVals.Count; i++) {
+                if(inputVals[i].Key.IsThreatened) {
+                    int lowestNeighbor = GameInfo.LowestNeighboringOpponentHalite(inputVals[i].Key);
+                    inputVals[i] = new KeyValuePair<MapCell, double>(inputVals[i].Key, inputVals[i].Value + (Math.Abs(inputVals[i].Value) * (lowestNeighbor - ship.halite)/1000.0));
+                }
+            }
+            return inputVals;
         }
     }
 }
