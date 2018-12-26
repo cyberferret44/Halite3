@@ -6,6 +6,10 @@ using System;
 
 namespace Halite3 {
     public static class GameInfo {
+        // Things to change...
+        public static readonly string SPECIMEN_FOLDER = "Specimen7";
+        public static readonly string BOT_NAME = "derp5";
+
         // Determine if we're local
         public static readonly bool IsLocal = Directory.GetCurrentDirectory().StartsWith("/Users/cviolet") ||
                                       Directory.GetCurrentDirectory().StartsWith("C://Users");
@@ -104,8 +108,6 @@ namespace Halite3 {
         // Hyper Parameters
         public static string PlayerXSize => PlayerCount + "x" + Map.width;
         public static string HyperParameterFolder => $"{(IsLocal ? "Halite3/" : "")}GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
-        public static readonly string SPECIMEN_FOLDER = "Specimen6";
-
 
         struct Path {
             public int resistance;
