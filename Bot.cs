@@ -53,6 +53,8 @@ namespace Halite3
                 GameInfo.Game.UpdateFrame();
                 GameInfo.SetInfo(GameInfo.Game);
                 Fleet.UpdateFleet(GameInfo.MyShips);
+                EnemyFleet.UpdateFleet();
+                Log.LogMessage("value mapping...");
                 ValueMapping.ProcessTurn();
 
                 // logic turn processing
@@ -102,12 +104,6 @@ namespace Halite3
                 dropoffWatch.Start();
                 DropoffLogic.CommandShips();
                 dropoffWatch.Stop();
-
-                // Move ships to assigned Zones
-                //Log.LogMessage($"*** ZoneAsn Logic ***");
-                //zoneAssignmentWatch.Start();
-                //ZoneAssignLogic.CommandShips();
-                //zoneAssignmentWatch.Stop();
 
                 // collect halite (move or stay) using Logic interface
                 Log.LogMessage($"*** Collect Logic ***");

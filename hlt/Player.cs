@@ -23,6 +23,9 @@ namespace Halite3.hlt
         public List<Position> GetDropoffs()  {
             var dropoffs = dropoffDictionary.Values.Select(v => v.position).ToList();
             dropoffs.Add(shipyard.position);
+            if(GameInfo.NextDropoff != null) {
+                dropoffs.Add(GameInfo.NextDropoff.Position);
+            }
             return dropoffs;
         }
 

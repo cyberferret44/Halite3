@@ -29,6 +29,7 @@ namespace Halite3.hlt
         public List<MapCell> Corners => new List<MapCell> { North.West, North.East, South.East, South.West };
         public int SmallestEnemyValue => Neighbors.Min(x => x.IsOccupiedByOpponent() ? x.ship.halite : int.MaxValue);
 
+        public List<Ship> MyClosestShips() => ClosestShips(Fleet.AllShips);
         public List<Ship> ClosestShips(List<Ship> ships) {
             int minDist = int.MaxValue;
             var results = new List<Ship>();

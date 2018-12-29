@@ -107,13 +107,13 @@ namespace Halite3.Logic {
         private int GetCrashValue(Ship mine, Ship enemy) {
             //if(mine.halite > 500)
                 //return false;
-            var opponent = GameInfo.GetPlayer(enemy.owner.id);
-            var myValue = Me.ships.Count * GameInfo.BaseShipValue;  // net est value of fleet
-            var oppValue = opponent.ships.Count * GameInfo.BaseShipValue; // net est value of fleet
-            var myReducedValue = (Me.ships.Count-1) * GameInfo.BaseShipValueReducedBy2;
-            var oppReducedValue = (opponent.ships.Count-1) * GameInfo.BaseShipValueReducedBy2;
-            var myLoss = (myValue - myReducedValue) + mine.halite; // new value loss for me
-            var oppLoss = (oppValue - oppReducedValue) + enemy.halite; // the net value loss for opponent
+            //var opponent = GameInfo.GetPlayer(enemy.owner.id);
+            //var myValue = Me.ships.Count * GameInfo.BaseShipValue;  // net est value of fleet
+            //var oppValue = opponent.ships.Count * GameInfo.BaseShipValue; // net est value of fleet
+            //var myReducedValue = (Me.ships.Count-1) * GameInfo.BaseShipValueReducedBy2;
+            //var oppReducedValue = (opponent.ships.Count-1) * GameInfo.BaseShipValueReducedBy2;
+            var myLoss = /* (myValue - myReducedValue) +*/ mine.halite; // new value loss for me
+            var oppLoss = /* (oppValue - oppReducedValue) +*/ enemy.halite; // the net value loss for opponent
             //tood vqlue is also 25% of cell
 
             return oppLoss - myLoss;

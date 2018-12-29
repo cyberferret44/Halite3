@@ -8,41 +8,32 @@ namespace Halite3.Logic {
         // local parameters
         private HashSet<int> MovingTowardsBase = new HashSet<int>();
         private int Xlayers;
-        private int MinDropoffValue;
         private int Spacing;
         private double HarvestedPercentToDelete = .7;
-
-        // Abstractc Logic Implementation
+        private double CellValue(MapCell cell) => Map.GetXLayers(cell.position, Xlayers).
+                Sum(x => (x.IsOccupiedByOpponent() ? x.ship.halite - 1000 : 0) + x.halite / (1 + GameInfo.Distance(cell, x)));
+        
         public DropoffLogic() {
             // value initialization
             Xlayers = Map.width / 4;
-            MinDropoffValue = (int)(((double)Xlayers + 1.0) / 2.0 * 4.0 * (double)Xlayers * 135.0);
             Spacing = (int)HParams[Parameters.DROPOFF_DISTANCE];
             Log.LogMessage($"Xlayers for dropoff is {Xlayers}");
-            Log.LogMessage($"MinDropoffValue for dropoff is {MinDropoffValue}");
             Log.LogMessage($"Actual Dropoff Distance is {Spacing}");
 
-            // todo one magic number
-            // todo set min to either MinDropoffValue, or like half of the max value so we don't get stuck in too-small of a local minima
             var availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Spacing).ToList();
             while(availableCells.Count > 0) {
                 int max = -1;
                 Position pos = null;
                 foreach(var cell in availableCells) {
-                    int val = Map.GetXLayers(cell.position, Xlayers).Sum(x => x.halite);
+                    int val = (int)CellValue(cell);
                     if(val > max || (val == max && Map.CalculateDistance(cell.position, Me.shipyard.position) < Map.CalculateDistance(pos, Me.shipyard.position))) {
                         pos = cell.position;
                         max = val;
                     }
                 }
-                if(max < MinDropoffValue || (GameInfo.BestDropoffs.Count > 0 && max < GameInfo.BestDropoffs[0].InitialHalite / 1.75))
+                if((GameInfo.BestDropoffs.Count > 0 && max < GameInfo.BestDropoffs[0].InitialHalite / 1.75))
                     break;
-                
-                // local logic to make the bots more random for better ML tuning
-                if(GameInfo.IsLocal) {
-                    var cells = Map.GetXLayers(pos, 5);
-                    pos = cells[new Random().Next(0, cells.Count)].position;
-                }
+
                 GameInfo.BestDropoffs.Add(new VirtualDropoff(pos, max));
                 availableCells = Map.GetAllCells().Where(c => DistanceToClosestVirtualOrRealDropoff(c.position) >= Spacing).ToList();
                 Log.LogMessage($"Best drop-off at ({pos.x},{pos.y}) with a value {max}");
@@ -59,7 +50,7 @@ namespace Halite3.Logic {
             }
 
             // Flag MyBot to save 5000 halite if we're close to a virtual dropoff
-            if(ShouldCreateDropoff() && !GameInfo.ReserveForDropoff && GameInfo.BestDropoffs.Count > 0) {
+            /* if(ShouldCreateDropoff() && !GameInfo.ReserveForDropoff && GameInfo.BestDropoffs.Count > 0) {
                 foreach(var ship in Me.ShipsSorted) {
                     var closestVirtual = GetClosestVirtualDropoff(ship.position);
                     if(Map.CalculateDistance(ship.position, closestVirtual.Position) <= ship.DistanceToMyDropoff) {
@@ -68,11 +59,11 @@ namespace Halite3.Logic {
                         break;
                     }
                 }
-            }
+            }*/
 
             // Delete any dropoffs that have been mostly havested
             foreach(var d in GameInfo.BestDropoffs.ToList()) {
-                int halite = Map.GetXLayers(d.Position, Xlayers).Sum(x => x.halite);
+                int halite = (int)CellValue(d.Cell);
                 if(Map.At(d.Position).IsStructure || halite < d.InitialHalite * HarvestedPercentToDelete) {
                     if(GameInfo.NextDropoff == d) {
                         DeleteNextDropoff();
@@ -82,34 +73,42 @@ namespace Halite3.Logic {
                 }
             }
 
-            // Flag our next dropoff if not defined
-            if(GameInfo.NextDropoff == null && GameInfo.ReserveForDropoff && GameInfo.BestDropoffs.Count > 0) {
-                Dictionary<VirtualDropoff, int> Count = new Dictionary<VirtualDropoff, int>();
-                foreach(var ship in GameInfo.MyShips.OrderBy(s => s.DistanceToMyDropoff)) {
-                    var closestVirtual = GetClosestVirtualDropoff(ship.position);
-                    int dist = Map.CalculateDistance(ship.position, closestVirtual.Position);
-                    if(CanCreateDropoff(closestVirtual.Position) && dist <= ship.DistanceToMyDropoff) {
-                        if(!Count.ContainsKey(closestVirtual)) {
-                            Count[closestVirtual] = 1;
-                        } else {
-                            Count[closestVirtual] += 1;
-                        }
-                    }
+            // iterate bestdropoffs to potentially select next dropoff...
+            if(GameInfo.ReserveForDropoff && !ShouldCreateDropoff()) {
+                GameInfo.ReserveForDropoff = false;
+                GameInfo.NextDropoff = null;
+            }
+
+            if(GameInfo.BestDropoffs.Any()) {
+                GameInfo.BestDropoffs = GameInfo.BestDropoffs.OrderByDescending(d => CellValue(d.Cell) * Math.Pow(.95, GameInfo.MyClosestDropDistance(d.Position))).ToList();
+                var bestDrop = GameInfo.BestDropoffs[0];
+                
+                if(ShouldCreateDropoff() && bestDrop.Cell.MyClosestShips().Any(s => GameInfo.Distance(s.position, bestDrop.Position) <= s.DistanceToMyDropoff)) {
+                    Log.LogMessage("drop-off bot save for drop has been flagged");
+                    GameInfo.ReserveForDropoff = true;
                 }
 
-                VirtualDropoff best = null;
-                int maxValue = -1;
-                foreach(var kvp in Count.Where(kvp => kvp.Value >= 3)) {
-                    int val = Map.GetXLayers(kvp.Key.Position, Xlayers).Sum(x => x.halite) * kvp.Value; // halite * num ships in area
-                    if(val > maxValue) {
-                        val = maxValue;
-                        best = kvp.Key;
+
+                if(GameInfo.ReserveForDropoff && CanCreateDropoff(bestDrop.Position)) {
+                    GameInfo.NextDropoff = GameInfo.BestDropoffs[0];
+                }
+            }
+
+
+            // Move the next dropoff if any neighbors have become more valuable
+            for(int i=0; i<GameInfo.BestDropoffs.Count; i++) {
+                MapCell dropCell = GameInfo.BestDropoffs[i].Cell;
+                var curVal = CellValue(dropCell);
+                foreach(var n in dropCell.Neighbors.Where(n => DistanceToClosestVirtualOrRealDropoff(n.position, dropCell) >= Spacing)) { // todo where closestreal or virtual dropoff
+                    var nVal = CellValue(n);
+                    if(nVal > curVal) {
+                        curVal = nVal;
+                        dropCell = n;
                     }
                 }
-
-                if(best != null && GameInfo.MyShips.Any(s => Map.CalculateDistance(s.position, best.Position) <= s.DistanceToMyDropoff && MovingTowardsBase.Contains(s.Id))) {
-                    GameInfo.NextDropoff = best;
-                    Log.LogMessage($"best drop-off has been selected at {best.Position.x},{best.Position.y}");
+                if(dropCell != GameInfo.BestDropoffs[i].Cell) {
+                    Log.LogMessage($"drop location was changed from {GameInfo.BestDropoffs[i].Position.ToString()} to {dropCell.position.ToString()}");
+                    GameInfo.BestDropoffs[i].Position = dropCell.position;
                 }
             }
         }
@@ -124,11 +123,6 @@ namespace Halite3.Logic {
                     MakeMove(ship.MakeDropoff());
                     ships.Remove(ship);
                 }
-            }
-
-            // iterate ship from furthest away from dropoff
-            foreach(var ship in ships.OrderByDescending(s => s.DistanceToMyDropoff)) {
-                // this is where we want specialized return logic to prioritize valuable cells on the return route to mine
             }
 
             // go through buckets and move the ships...
@@ -222,11 +216,14 @@ namespace Halite3.Logic {
             return null;
         }
 
-        private int DistanceToClosestVirtualOrRealDropoff(Position position) {
+        private int DistanceToClosestVirtualOrRealDropoff(Position position, MapCell exclude = null) {
             if(GameInfo.BestDropoffs.Count == 0)
                 return int.MaxValue;
             int closestReal = Me.GetDropoffs().Min(x => Map.CalculateDistance(position, x));
-            int closestVirtual = GameInfo.BestDropoffs.Min(x => Map.CalculateDistance(x.Position, position));
+            var best = GameInfo.BestDropoffs;
+            if(exclude != null)
+                best = best.Where(d => !d.Cell.position.AsPoint.Equals(exclude.position.AsPoint)).ToList();
+            int closestVirtual = best.Any() ? best.Min(x => Map.CalculateDistance(x.Position, position)) : int.MaxValue;
             return Math.Min(closestReal, closestVirtual);
         }
 
@@ -239,18 +236,17 @@ namespace Halite3.Logic {
 
         // Forecasting!!!
         private Position GetClosestDropoff(Ship ship) {
-            if(GameInfo.NextDropoff != null && Map.CalculateDistance(ship.position, GameInfo.NextDropoff.Position) <= ship.DistanceToMyDropoff)
-                return GameInfo.NextDropoff.Position;
+            //if(GameInfo.NextDropoff != null && Map.CalculateDistance(ship.position, GameInfo.NextDropoff.Position) <= ship.DistanceToMyDropoff)
+            //    return GameInfo.NextDropoff.Position;
             return ship.ClosestDropoff;
         }
 
-        private bool ShouldCreateDropoff() => Me.ShipsSorted.Count / Me.GetDropoffs().Count > 15 ; // need a minimum of ships per drop
-        private bool CanCreateDropoff(Position pos) => Me.halite + Map.At(pos).halite + 500 >= 5000 && GameInfo.TurnNumber >= 40;
+        private bool ShouldCreateDropoff() => Fleet.AllShipIds.Count / Me.GetDropoffs().Count >= 15 ; // need a minimum of ships per drop
+        private bool CanCreateDropoff(Position pos) => Me.halite + Map.At(pos).halite + 500 >= 5000;
 
         private bool ShouldMoveShip(Ship ship) {
             return ship.IsFull() ||
-                ship.halite > HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + (.3 * ship.CellHalite * (ship.CurrentMapCell.IsInspired ? 3 : 1))
-                || ship.halite > 500 && ship.CurrentMapCell.IsThreatened; // todo this should be more robust
+                ship.halite > HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + (.3 * ship.CellHalite * (ship.CurrentMapCell.IsInspired ? 3 : 1));
         }
 
         private void DeleteNextDropoff() {

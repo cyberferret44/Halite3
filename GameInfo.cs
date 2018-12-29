@@ -7,8 +7,8 @@ using System;
 namespace Halite3 {
     public static class GameInfo {
         // Things to change...
-        public static readonly string SPECIMEN_FOLDER = "Specimen7";
-        public static readonly string BOT_NAME = "derp5";
+        public static readonly string SPECIMEN_FOLDER = "Specimen8";
+        public static readonly string BOT_NAME = "derp6";
 
         // Determine if we're local
         public static readonly bool IsLocal = Directory.GetCurrentDirectory().StartsWith("/Users/cviolet") ||
@@ -64,6 +64,7 @@ namespace Halite3 {
         public static Shipyard MyShipyard => Me.shipyard;
         public static List<Position> MyDropoffs => Me.GetDropoffs().ToList();
         public static Position MyClosestDrop(Position p) => MyDropoffs.OrderBy(x => Distance(p, x)).First();
+        public static int MyClosestDropDistance(Position p) => GameInfo.Distance(p, MyClosestDrop(p));
 
         // Halite related
         public static int HaliteRemaining => Map.HaliteRemaining;
@@ -85,6 +86,8 @@ namespace Halite3 {
         public static int PlayerCount => Opponents.Count + 1;
         public static Player Me => Game.me;
         public static Player GetPlayer(int id) => Game.players.Single(p => p.id.id == id);
+        public static bool Is2Player => PlayerCount == 2;
+        public static bool Is4Player => PlayerCount == 4;
 
         // Ships related
         public static List<Ship> MyShips => Me.ShipsSorted;
@@ -94,7 +97,14 @@ namespace Halite3 {
         public static int OpponentShipsCount => Game.Opponents.Sum(x => x.ships.Count);
         public static int TotalShipsCount => OpponentShipsCount + MyShipsCount;
         public static Ship GetMyShip(int shipId) => Me.GetShipById(shipId);
-        public static int LowestNeighboringOpponentHalite(MapCell c) => c.IsThreatened ? c.Neighbors.Where(n => n.IsOccupiedByOpponent()).Min(n => n.ship.halite) : 0;
+        public static int LowestNeighboringOpponentHalite(MapCell c) => c.Neighbors.Where(n => n.IsOccupiedByOpponent()).Min(n => n.ship.halite);
+        public static int? LowestNeighboringOpponentHaliteWhereNotReturning(MapCell c) {
+            var neighbors = c.Neighbors.Where(n => n.IsOccupiedByOpponent() && !EnemyFleet.IsReturningHome(n.ship));
+            if(neighbors.Any())
+                return neighbors.Min(n => n.ship.halite);
+            else
+                return null;
+        }
 
         // Position Related
         public static MapCell CellAt(Position p) => Map.At(p);
@@ -151,7 +161,6 @@ namespace Halite3 {
        
         public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
         public static VirtualDropoff NextDropoff = null;
-        
 
 
         public static bool ReserveForDropoff = false;
@@ -196,5 +205,6 @@ namespace Halite3 {
             Position = p;
             InitialHalite = halite;
         }
+        public MapCell Cell => GameInfo.CellAt(Position);
     }
 }

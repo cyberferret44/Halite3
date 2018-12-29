@@ -2,6 +2,7 @@ using Halite3.hlt;
 using System.Collections.Generic;
 using Halite3;
 using System.Linq;
+using System.Diagnostics;
 using System;
 namespace Halite3.Logic {
     public class CollectLogic3 : Logic
@@ -36,17 +37,18 @@ namespace Halite3.Logic {
                 var bestVals = new List<KeyValuePair<MapCell, double>>();
                 foreach(var ship in shipsNearDest) {
                     // get vals
-                    var vals = ValueMapping.GetMoveValues(ship, ship.CurrentMapCell, projectedTargets[ship]).
-                               Where(d => IsSafeAndAvoids2Cells(ship, d.Key.position.GetDirectionTo(ship.position))).ToList();
+                    var vals = GetAdjustedValues(ship, projectedTargets[ship]); // this isn't working correctly, the values
+                    // it's producing is in contratrary to the values from projection
+                    // this is becasue the value mapping on line 113 is including negative values (post projection) that it #endregion
+                    // didn't include on the original iteration...
 
                     // find diff
                     double diff;
                     if(vals.Count == 0)
-                        diff = -1;
+                        diff = -1.0;
                     else if (vals.Count == 1) {
                         diff = int.MaxValue;
                     } else {
-                        vals = AdjustValues(vals, ship); // adds additional considerations...
                         vals = vals.OrderByDescending(x => x.Value).ToList();
                         diff = vals[0].Value - vals[1].Value;
                     }
@@ -95,28 +97,40 @@ namespace Halite3.Logic {
 
         public MapCell ProjectNextStillCell(Ship ship) {
             var targetCell = ship.CurrentMapCell;
+            Log.LogMessage($"Projecting {ship.Id}...  Available ships {Fleet.AvailableShips.Count}");
             while(true) {
                 var vals = ValueMapping.GetMoveValues(ship, targetCell).OrderByDescending(x => x.Value).ToList();
-                if(!vals.Any()) {
-                    ExceptionHandler.Raise("GetMoveValues didn't return any results, this is unexpected.");
-                }
                 if(vals[0].Key == targetCell) {
                     break;
                 } else {
                     targetCell = vals[0].Key;
                 }
             }
+            Log.LogMessage($"Ship {ship.Id} projects to {targetCell.position.ToString()}");
             return ship.CurrentMapCell;
         }
 
-        public List<KeyValuePair<MapCell, double>> AdjustValues(List<KeyValuePair<MapCell, double>> inputVals, Ship ship) {
-            for(int i=0; i<inputVals.Count; i++) {
-                if(inputVals[i].Key.IsThreatened) {
-                    int lowestNeighbor = GameInfo.LowestNeighboringOpponentHalite(inputVals[i].Key);
-                    inputVals[i] = new KeyValuePair<MapCell, double>(inputVals[i].Key, inputVals[i].Value + (Math.Abs(inputVals[i].Value) * (lowestNeighbor - ship.halite)/1000.0));
+        public List<KeyValuePair<MapCell, double>> GetAdjustedValues(Ship ship, MapCell projectedTarget) {
+            var vals = ValueMapping.GetMoveValues(ship, ship.CurrentMapCell, projectedTarget).
+                        Where(d => IsSafeAndAvoids2Cells(ship, d.Key.position.GetDirectionTo(ship.position))).ToList();
+
+            for(int i=0; i<vals.Count; i++) {
+                int? lowestNeighbor = GameInfo.LowestNeighboringOpponentHaliteWhereNotReturning(vals[i].Key);
+                if(lowestNeighbor.HasValue) {
+                    var diff = lowestNeighbor.Value - ship.halite;
+                    if(GameInfo.Is4Player)
+                        diff -= 300;
+                    else
+                        diff += (GameInfo.MyShipsCount - GameInfo.OpponentShipsCount) * 10;
+                    vals[i] = new KeyValuePair<MapCell, double>(vals[i].Key, vals[i].Value + (Math.Abs(vals[i].Value) * (lowestNeighbor.Value - ship.halite)/1000.0));
                 }
+
+                // this shoudl offset the negative additions from the project logic
+                //if(vals[i].Key == projectedTarget) {
+                  //  vals[1] = new KeyValuePair<MapCell, double>(vals[i].Key, vals[i].Value + Math.Abs(vals[i].Value) * .1);
+                //}
             }
-            return inputVals;
+            return vals;
         }
     }
 }
