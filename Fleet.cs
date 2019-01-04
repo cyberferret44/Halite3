@@ -11,10 +11,11 @@ namespace Halite3 {
         public static List<Ship> AvailableShips => availableShipMoves.Keys.ToList();
         public static List<Ship> UsedShips => usedShips.Keys.ToList();
         public static bool IsDead(int shipId) => !availableIds.Contains(shipId);
-        public static List<int> AllShipIds => availableIds.ToList();
+        public static List<int> AvailableIds => availableIds.ToList();
         public static List<Ship> AllShips => UsedShips.Union(AvailableShips).ToList();
         public static bool CellAvailable(MapCell c) => !collisionCells.Contains(c);
         public static List<MapCell> CollisionCells => collisionCells.ToList();
+        public static int ShipCount => usedShips.Count + availableIds.Count;
 
         public static void UpdateFleet(List<Ship> ships) {
             availableIds.Clear();

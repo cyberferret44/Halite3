@@ -113,13 +113,44 @@ namespace Halite3
 
                 // spawn ships
                 var cmdQueue = Fleet.GenerateCommandQueue();
-                if (GameInfo.ShouldSpawnShip())
+                if (ShouldSpawnShip())
                 {
                     cmdQueue.Add(GameInfo.Me.shipyard.Spawn());
                 }
 
                 GameInfo.Game.EndTurn(cmdQueue);
             }
+        }
+
+        // TODO move the .08 to hyperparameters
+        public static bool ShouldSpawnShip(int haliteToAdd = 0) {
+            int halite = GameInfo.Me.halite + haliteToAdd;
+            if(GameInfo.TurnsRemaining < 80 || 
+                halite < (GameInfo.ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
+                !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
+                return false;
+            }
+
+            // this logic is special because of the specific treatment of enemy ships here
+            int numShips = (int)(GameInfo.OpponentShipsCount * GameInfo.Opponents.Count * .5 + GameInfo.MyShipsCount * (1 + .5 * GameInfo.Opponents.Count));
+            int numCells = GameInfo.TotalCellCount;
+            int haliteRemaining = GameInfo.HaliteRemaining;
+            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .08 * haliteRemaining / numCells);
+                haliteRemaining -= haliteCollectable;
+            }
+
+            numShips += 1; // if I created another, how much could I get?
+            int haliteRemaining2 = GameInfo.HaliteRemaining;
+            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
+                int haliteCollectable = (int)(numShips * .08 * haliteRemaining2 / numCells);
+                haliteRemaining2 -= haliteCollectable;
+            }
+
+            if(haliteRemaining - haliteRemaining2 > MyBot.HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {
+                return true;
+            }
+            return false;
         }
     }
 }

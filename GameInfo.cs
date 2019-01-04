@@ -119,82 +119,10 @@ namespace Halite3 {
         // Hyper Parameters
         public static string PlayerXSize => PlayerCount + "x" + Map.width;
         public static string HyperParameterFolder => $"{(IsLocal ? "Halite3/" : "")}GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
-
-        struct Path {
-            public int resistance;
-            public List<MapCell> path;
-        }
-
-        public static List<MapCell> CalculatePathOfLeastResistance(Position start, Position end, HashSet<MapCell> CellsToAvoid = null) {
-            HashSet<MapCell> visited = new HashSet<MapCell>();
-            List<Path> Paths = new List<Path>();
-            foreach(var d in end.GetAllDirectionsTo(start)) {
-                var cell = CellAt(start, d);
-                if(CellsToAvoid == null || !CellsToAvoid.Contains(cell))
-                    Paths.Add(new Path { resistance = cell.halite/10, path = new List<MapCell> { cell } });
-            }
-            while(true) {
-                if(Paths.Count == 0)
-                    return null;
-                int shortest = Paths.Min(x => x.resistance);
-                var shortestPath = Paths.First(x => x.resistance == shortest);
-                var last = shortestPath.path.Last();
-                
-                foreach(var d in end.GetAllDirectionsTo(last.position)) {
-                    var cell = CellAt(last.position, d);
-                    if(cell.position.AsPoint.Equals(end.AsPoint)) {
-                        shortestPath.path.Add(cell);
-                        return shortestPath.path;
-                    }
-                    if(!visited.Contains(cell) && (CellsToAvoid == null || !CellsToAvoid.Contains(cell))) {
-                        var newPath = shortestPath.path.ToList();
-                        newPath.Add(cell);
-                        Paths.Add(new Path { path = newPath, resistance = shortestPath.resistance + (cell.halite/10)});
-                        visited.Add(cell);
-                    }
-                }
-                Paths.Remove(shortestPath);
-            }
-        }
-
         public static int OpportunityCost => (int)(.08 * Map.AverageHalitePerCell);
-       
         public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
         public static VirtualDropoff NextDropoff = null;
-
-
         public static bool ReserveForDropoff = false;
-
-        // TODO move the .08 to hyperparameters
-        public static bool ShouldSpawnShip(int haliteToAdd = 0) {
-            int halite = Me.halite + haliteToAdd;
-            if(GameInfo.TurnsRemaining < 80 || 
-                halite < (ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
-                !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
-                return false;
-            }
-
-            // this logic is special because of the specific treatment of enemy ships here
-            int numShips = (int)(GameInfo.OpponentShipsCount * GameInfo.Opponents.Count * .5 + GameInfo.MyShipsCount * (1 + .5 * GameInfo.Opponents.Count));
-            int numCells = GameInfo.TotalCellCount;
-            int haliteRemaining = GameInfo.HaliteRemaining;
-            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining / numCells);
-                haliteRemaining -= haliteCollectable;
-            }
-
-            numShips += 1; // if I created another, how much could I get?
-            int haliteRemaining2 = GameInfo.HaliteRemaining;
-            for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining2 / numCells);
-                haliteRemaining2 -= haliteCollectable;
-            }
-
-            if(haliteRemaining - haliteRemaining2 > MyBot.HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {
-                return true;
-            }
-            return false;
-        }
     }
 
     // Virtual Dropoffs

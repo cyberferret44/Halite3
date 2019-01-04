@@ -22,26 +22,25 @@ namespace Halite3 {
             Mapping.Clear();
             NegativeShips.Clear();
             foreach(var c in GameInfo.Map.GetAllCells()) {
-                double value = Math.Max(0, c.halite - GameInfo.NumToIgnore);
+                double value = c.halite;
                 // increase value for things near a dropoff
-                if(GameInfo.MyClosestDropDistance(c.position) < 10) {
-                    var extraVal = (10-GameInfo.MyClosestDropDistance(c.position))/2;
-                    value *= extraVal;
+                if(GameInfo.MyClosestDropDistance(c.position) <= 7) {
+                    value *= 1.0 + (8.0-GameInfo.MyClosestDropDistance(c.position))/2.0;
                 }
                 Mapping.Add(c, new Value(value));
             }
 
             // order the cells by current value, then grab xLayers and add the values
-            foreach(var kvp in Mapping.OrderByDescending(kvp => kvp.Value.ValueOnly)) {
+            foreach(var kvp in Mapping.OrderByDescending(kvp => kvp.Value.GetValue())) {
                 var cell = kvp.Key;
-                var value = kvp.Value.ValueOnly;
-                var xLayers = GameInfo.Map.GetXLayers(cell.position, 6);
+                var value = kvp.Value.GetValue();
+                var xLayers = GameInfo.Map.GetXLayers(cell.position, 20);
                 xLayers.Remove(cell);
                 foreach(var c in xLayers) {
-                    var cVal = Mapping[c].ValueOnly;
-                    var dist = GameInfo.Distance(c, cell);
-                    var ratio = Math.Pow(Exponent, dist);
-                    var newVal = cVal * (1.0 - ratio) + value * ratio;
+                    double cVal = Mapping[c].ValueOnly;
+                    int dist = GameInfo.Distance(c, cell);
+                    double ratio = 1.0/dist;
+                    double newVal = cVal * (1.0 - ratio) + value * ratio;
                     if(cVal < newVal) {
                         Mapping[c].SetValue(newVal);
                     }
@@ -103,7 +102,7 @@ namespace Halite3 {
         }
 
         public void SetValue(double newValue) {
-            value = newValue;
+            addedValue = newValue - value;
         }
 
         public double GetValueForShipMovement(Ship ship, MapCell shipPosition, Direction move, MapCell finalTarget = null) {
@@ -123,11 +122,11 @@ namespace Halite3 {
             }
             return val;
         }
-        public void AddValue(double val) => value += val;
+        //public void AddValue(double val) => value += val;
         public double ValueOnly => value;
-        public double GetValue() => value - negative; // + addedValue;
-        private double value;
+        public double GetValue() => value + addedValue - negative;
+        private double addedValue;
+        private readonly double value;
         public double negative;
-        public MapCell cell;
     }
 }

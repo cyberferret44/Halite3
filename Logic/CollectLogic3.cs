@@ -64,7 +64,7 @@ namespace Halite3.Logic {
                 if(bestShip == null) {
                     break;
                 }
-                string msg = $"Moving ship {bestShip.Id} to its best target {bestVals[0].Key.position.ToString()}.  Moves were... ";
+                string msg = $"Moving ship {bestShip.Id} from {bestShip.position.ToString()}:{bestShip.CellHalite}to its best target {bestVals[0].Key.position.ToString()}:{bestVals[0].Key.halite}.  Moves were... ";
                 bestVals.ForEach(d => msg += $"{d.Key.position.GetDirectionTo(bestShip.position).ToString("g")}: {d.Value.ToString("0.##")} ...");
                 MakeMove(bestShip.Move(bestVals[0].Key.position.GetDirectionTo(bestShip.position), msg));
                 shipsNearDest.Remove(bestShip);
@@ -83,6 +83,9 @@ namespace Halite3.Logic {
         }
 
         public Dictionary<Ship, MapCell> ProjectShipDestinations(List<Ship> ships) {
+            if(GameInfo.TurnNumber >= 100) {
+                var val = GameInfo.TurnNumber;
+            }
             var map = ValueMapping.Mapping; // maps cells to their values
             var list = ships.OrderByDescending(s => map[s.CurrentMapCell].GetValue()); // order them by dist from dropoff as they are probably closest to target locations
 
