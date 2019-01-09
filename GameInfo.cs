@@ -2,13 +2,18 @@ using Halite3.hlt;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using System;
 
 namespace Halite3 {
     public static class GameInfo {
         // Things to change...
         public static readonly string SPECIMEN_FOLDER = "Specimen8";
-        public static readonly string BOT_NAME = "derp6";
+        public static readonly string BOT_NAME = "Derp7";
+
+        // Turn timer, prevent timeouts
+        private static Stopwatch clock = new Stopwatch();
+        public static double percentTimeRemainoing => 1.0 - (clock.ElapsedMilliseconds / 2000);
 
         // Determine if we're local
         public static readonly bool IsLocal = Directory.GetCurrentDirectory().StartsWith("/Users/cviolet") ||
@@ -25,9 +30,11 @@ namespace Halite3 {
 
         // Game
         public static Game Game;
-        public static void SetInfo(Game game) {
+        public static void ProcessTurn(Game game) {
             GameInfo.Game = game;
             CalculateProjectedShipValues();
+            clock.Reset();
+            clock.Start();
         }
 
         // Estimated Ship Values

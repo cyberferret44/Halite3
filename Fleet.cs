@@ -16,6 +16,7 @@ namespace Halite3 {
         public static bool CellAvailable(MapCell c) => !collisionCells.Contains(c);
         public static List<MapCell> CollisionCells => collisionCells.ToList();
         public static int ShipCount => usedShips.Count + availableIds.Count;
+        public static HashSet<MapCell> OccupiedCells => CollisionCells.Union(AvailableShips.Select(s => s.CurrentMapCell)).ToHashSet();
 
         public static void UpdateFleet(List<Ship> ships) {
             availableIds.Clear();
@@ -36,7 +37,7 @@ namespace Halite3 {
             availableShipMoves.Remove(command.Ship);
             usedShips.Add(command.Ship, command);
             collisionCells.Add(command.TargetCell);
-            ValueMapping.MoveShip(command.Ship, command.TargetCell);
+            //ValueMapping.MoveShip(command.Ship, command.TargetCell);
             Log.LogMessage(command.Comment);
         }
 

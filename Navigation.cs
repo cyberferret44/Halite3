@@ -18,6 +18,8 @@ namespace Halite3 {
             return polr.Sum(p => (int)(p.halite/10));
         }
 
+
+        // excludes start and end nodes
         public static List<MapCell> CalculatePathOfLeastResistance(Position start, Position end, HashSet<MapCell> CellsToAvoid = null) {
             HashSet<MapCell> visited = new HashSet<MapCell>();
             List<Path> Paths = new List<Path>();
@@ -47,6 +49,27 @@ namespace Halite3 {
                     }
                 }
                 Paths.Remove(shortestPath);
+            }
+        }
+
+        // excludes start and end nodes
+        public static List<MapCell> CalculateGreedyPathOfLeastResistance(Position start, Position end, HashSet<MapCell> CellsToAvoid = null) {
+            List<MapCell> path = new List<MapCell>();
+            Position next = start;
+            while(true) {
+                var cells = end.GetAllDirectionsTo(next).Select(d => GameInfo.CellAt(next, d));
+                cells = cells.OrderBy(c => c.halite);
+                var cell = cells.ElementAt(0);
+                if(cell.position.Equals(end)) {
+                    return path;
+                }
+                if(CellsToAvoid != null)
+                    cells = cells.Where(c => !CellsToAvoid.Contains(c));
+                if(cells.Count() == 0) {
+                    return null;
+                }
+                next = cell.position;
+                path.Add(cell);
             }
         }
     }
