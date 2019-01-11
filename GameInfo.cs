@@ -13,7 +13,7 @@ namespace Halite3 {
 
         // Turn timer, prevent timeouts
         private static Stopwatch clock = new Stopwatch();
-        public static double percentTimeRemainoing => 1.0 - (clock.ElapsedMilliseconds / 2000);
+        public static double PercentTurnTimeRemaining => 1.0 - (((double)clock.ElapsedMilliseconds) / 2000.0);
 
         // Determine if we're local
         public static readonly bool IsLocal = Directory.GetCurrentDirectory().StartsWith("/Users/cviolet") ||
@@ -72,6 +72,7 @@ namespace Halite3 {
         public static List<Position> MyDropoffs => Me.GetDropoffs().ToList();
         public static Position MyClosestDrop(Position p) => MyDropoffs.OrderBy(x => Distance(p, x)).First();
         public static int MyClosestDropDistance(Position p) => GameInfo.Distance(p, MyClosestDrop(p));
+        public static bool IsMyShipyard(Dropoff d) => d.position.Equals(MyShipyard.position);
 
         // Halite related
         public static int HaliteRemaining => Map.HaliteRemaining;
@@ -111,6 +112,16 @@ namespace Halite3 {
                 return neighbors.Min(n => n.ship.halite);
             else
                 return null;
+        }
+        public static int AvailableMoveCounts(Ship ship, bool includeStill) {
+            var dirs = includeStill ? DirectionExtensions.ALL_DIRECTIONS : DirectionExtensions.ALL_CARDINALS;
+            int count = 0;
+            foreach(var d in dirs) {
+                if(!Fleet.CollisionCells.Contains(GameInfo.CellAt(ship, d))) {
+                    count++;
+                }
+            }
+            return count;
         }
 
         // Position Related

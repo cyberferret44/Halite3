@@ -23,7 +23,7 @@ namespace GeneticTuner
 
     public class GeneticSpecimen : Specimen {
         private static Random random = new Random();
-        private static int NUM_CHILDREN = 1; // population control level
+        private static int NUM_CHILDREN = 5; // population control level
         private HyperParameters hyperParameters;
         public HyperParameters GetHyperParameters() => hyperParameters;
         public string Name() => FilePath.Split(".")[0].Split("/").Last().Substring(0, 15);
@@ -55,7 +55,7 @@ namespace GeneticTuner
                 foreach(var param in HyperParameters.AllParameters) {
                     double val = ((random.NextDouble() * 2 - 1) * HyperParameters.VarianceDictionary[param]);
                     double curValue = hyperParameters.GetValue(param);
-                    child.hyperParameters[param] = curValue + val;
+                    child.hyperParameters[param] = curValue * (1.0 + val);
                 }
                 children.Add(child);
             }
@@ -68,7 +68,7 @@ namespace GeneticTuner
         }
 
         public void SpawnChildren() {
-            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() < 10) {
+            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() < 12) {
                 foreach(var child in children) {
                     Halite3.hlt.Log.LogMessage("specimen file path " + child.FilePath);
                     child.hyperParameters.WriteToFile(child.FilePath);

@@ -18,7 +18,7 @@ namespace Halite3
         public static void Main(string[] args)
         {
             // Get initial game state
-            GameInfo.SetInfo(new Game());
+            GameInfo.ProcessTurn(new Game());
             GameInfo.IsDebug = GameInfo.IsLocal && args.Count() > 0 && args[0] == "debug";
 
             if(GameInfo.IsDebug) {
@@ -51,7 +51,7 @@ namespace Halite3
             {
                 // Basic processing for the turn start
                 GameInfo.Game.UpdateFrame();
-                GameInfo.SetInfo(GameInfo.Game);
+                GameInfo.ProcessTurn(GameInfo.Game);
                 Fleet.UpdateFleet(GameInfo.MyShips);
                 EnemyFleet.UpdateFleet();
                 Log.LogMessage("value mapping...");

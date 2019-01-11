@@ -35,10 +35,19 @@ namespace Halite3 {
         
         public static void AddMove(Command command) {
             availableShipMoves.Remove(command.Ship);
-            usedShips.Add(command.Ship, command);
+            //if(command.Ship.OnDropoff)
+                usedShips[command.Ship] = command; // allows override by collect logic
+            //else
+            //    usedShips.Add(command.Ship, command); // basically error detecting
             collisionCells.Add(command.TargetCell);
-            //ValueMapping.MoveShip(command.Ship, command.TargetCell);
             Log.LogMessage(command.Comment);
+
+            if(availableShipMoves.Any(kvp => GameInfo.AvailableMoveCounts(kvp.Key, !command.Ship.OnDropoff) == 1)) {
+                var shipToMove = availableShipMoves.First(kvp => GameInfo.AvailableMoveCounts(kvp.Key, !command.Ship.OnDropoff) == 1).Key;
+                var dirs = shipToMove.OnDropoff ? DirectionExtensions.ALL_CARDINALS : DirectionExtensions.ALL_DIRECTIONS;
+                var dir = dirs.First(d => !CollisionCells.Contains(GameInfo.CellAt(shipToMove,d)));
+                AddMove(shipToMove.Move(dir, $"Moving ship {shipToMove.Id} because there were no other moves remaining"));
+            }
         }
 
         public static List<Command> GenerateCommandQueue() {

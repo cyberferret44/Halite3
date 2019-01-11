@@ -14,10 +14,9 @@ namespace Halite3
     public enum Parameters {
         CARGO_TO_MOVE,
         TARGET_VALUE_TO_CREATE_SHIP,
-        PERCENT_OF_AVERAGE_TO_IGNORE,
         DROPOFF_DISTANCE, 
         SHOULD_CRASH_SHIP,
-        TOUCH_RATIO
+        STAY_MULTIPLIER
     }
 
     public class HyperParameters {
@@ -38,19 +37,17 @@ namespace Halite3
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
             { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0, .85) },
             { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 550.0) },
-            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0, .25)},
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
             { Parameters.SHOULD_CRASH_SHIP, new Bounds(0, 2000, GameInfo.PlayerCount == 2 ? 400 : 900)},
-            { Parameters.TOUCH_RATIO, new Bounds(0, 1.0, .8)}
+            { Parameters.STAY_MULTIPLIER, new Bounds(0, 10, 3.0)}
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
-            { Parameters.CARGO_TO_MOVE, 0.001 },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .1 },
-            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, .03 },
-            { Parameters.DROPOFF_DISTANCE, .05 },
-            { Parameters.SHOULD_CRASH_SHIP, .05 },
-            { Parameters.TOUCH_RATIO, .05}
+            { Parameters.CARGO_TO_MOVE, 0.01 },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .01 },
+            { Parameters.DROPOFF_DISTANCE, .01 },
+            { Parameters.SHOULD_CRASH_SHIP, .01 },
+            { Parameters.STAY_MULTIPLIER, .01 }
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
@@ -109,8 +106,8 @@ namespace Halite3
             }
 
             if(initializeDictionary) {
-                VarianceDictionary.Clear();
-                var values = new Dictionary<Parameters, List<double>>();
+                //VarianceDictionary.Clear();
+                /* var values = new Dictionary<Parameters, List<double>>();
                 foreach(var param in AllParameters) {
                     values.Add(param, new List<double>());
                 }
@@ -121,10 +118,10 @@ namespace Halite3
                     foreach(var param in AllParameters) {
                         values[param].Add(hparams[param]);
                     }
-                }
+                }*/
 
-                if(shouldPrint)
-                Log.LogMessage("Variance Dictionary......");
+                /* if(shouldPrint)
+                    Log.LogMessage("Variance Dictionary......");
                 foreach(var kvp in values) {
                     List<double> vals = kvp.Value.OrderBy(x => x).ToList();
                     double lowerAvg = vals.GetRange(0, vals.Count/2).Average();
@@ -132,7 +129,7 @@ namespace Halite3
                     VarianceDictionary[kvp.Key] = (upperAvg - lowerAvg) + upperAvg * 0.005; // enforce a minimum variance
                     if(shouldPrint)
                         Log.LogMessage(kvp.Key.ToString("g") + ": "+ VarianceDictionary[kvp.Key]);
-                }
+                }*/
             }
         }
 

@@ -29,15 +29,19 @@ namespace Halite3.Logic {
                     projections.Remove(p);
                 }
             }*/
-            while(projections.Count > 0) {
+            while(projections.Count > 0 && GameInfo.PercentTurnTimeRemaining > .05) {
                 var next = projections[0];
-                if(next.Target == null)
-                    break;
+                //if(next.Target == null)
+                //    break;
                 if(next.Value != ValueMapping2.GetValue(next.Target)) {
                     // recalculate value and resubmit
                     projections[0] = new Projection(next.Ship);
                     projections = projections.OrderBy(p => p.Distance).ToList();
                 } else {
+                    if(projections.Any(p => p.Ship.OnDropoff && GameInfo.AvailableMoveCounts(p.Ship, false) == 1)) {
+                        next = projections.First(p => p.Ship.OnDropoff && GameInfo.AvailableMoveCounts(p.Ship, false) == 1);
+                        Log.LogMessage($"Moved {next.Ship.Id} to front of queue.");
+                    }
                     Command move = next.GetMove();
                     if(move != null) {
                         MakeMove(move);
@@ -53,12 +57,18 @@ namespace Halite3.Logic {
             public Projection(Ship s) {
                 Ship = s;
                 var prevTarget = CollectLogic4.PreviousTurn.ContainsKey(Ship.Id) ? GameInfo.CellAt(CollectLogic4.PreviousTurn[Ship.Id]) : null;
-                Target = ValueMapping2.FindBestTarget(Ship, prevTarget?.position);
+                int layers = GameInfo.PercentTurnTimeRemaining < .7 ? 30 :
+                             GameInfo.PercentTurnTimeRemaining < .5 ? 20 :
+                             GameInfo.PercentTurnTimeRemaining < .3 ? 10 :
+                             GameInfo.PercentTurnTimeRemaining < .15 ? 2 :
+                             40;
+
+                Target = ValueMapping2.FindBestTarget(Ship, prevTarget?.position, layers);
                 Value = Target == null ? -100000 : ValueMapping2.GetValue(Target);
             }
             public Command GetMove() {
                 var dirs = Target.position.GetAllDirectionsTo(Ship.position);
-                dirs = dirs.OrderBy(d => GameInfo.CellAt(Ship.position, d).halite).ToList();
+                dirs = dirs.OrderByDescending(d => GameInfo.CellAt(Ship.position, d).halite).ToList();
                 foreach(var d in dirs) {
                     if(IsSafeAndAvoids2Cells(Ship, d)) {
                         return Ship.Move(d, "moving towards best projection " + Target.position.ToString());
