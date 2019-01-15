@@ -65,9 +65,9 @@ namespace Halite3.hlt
         }
 
         // does not include this position
-        public List<MapCell> GetXLayers(Position position, int numLayers) {
+        public List<MapCell> GetXLayers(Position position, int numLayers, bool exclude0 = false) {
             HashSet<MapCell> cells = new HashSet<MapCell>();
-            for(int i=0; i <= numLayers; i++) {
+            for(int i=(exclude0 ? 1 : 0); i <= numLayers; i++) {
                 for(int x = -i; x<=i; x++) {
                     int yp = position.y + (i - Math.Abs(x));
                     int yn = position.y - (i - Math.Abs(x));

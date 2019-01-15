@@ -16,13 +16,18 @@ namespace Halite3 {
         public static bool CellAvailable(MapCell c) => !collisionCells.Contains(c);
         public static List<MapCell> CollisionCells => collisionCells.ToList();
         public static int ShipCount => usedShips.Count + availableIds.Count;
-        public static HashSet<MapCell> OccupiedCells => CollisionCells.Union(AvailableShips.Select(s => s.CurrentMapCell)).ToHashSet();
-
+        public static HashSet<MapCell> ProbablyOccupiedCells => CollisionCells.Union(AvailableShips.Select(s => s.CurrentMapCell)).ToHashSet();
+        public static bool ShipAvailable(Ship ship) => !usedShips.ContainsKey(ship);
         public static void UpdateFleet(List<Ship> ships) {
             availableIds.Clear();
             availableShipMoves.Clear();
             usedShips.Clear();
             collisionCells.Clear();
+            Log.LogMessage("Ship count: " + ships.Count);
+            Log.LogMessage("Opp  count: " + GameInfo.OpponentShipsCount);
+            Log.LogMessage("My halite: " + GameInfo.Me.halite);
+            Log.LogMessage("Op halite: " + GameInfo.Opponents[0].halite);
+
             foreach(var ship in ships) {
                 if(ship.CanMove) {
                     availableShipMoves.Add(ship, DirectionExtensions.ALL_DIRECTIONS.ToList());
@@ -45,8 +50,10 @@ namespace Halite3 {
             if(availableShipMoves.Any(kvp => GameInfo.AvailableMoveCounts(kvp.Key, !command.Ship.OnDropoff) == 1)) {
                 var shipToMove = availableShipMoves.First(kvp => GameInfo.AvailableMoveCounts(kvp.Key, !command.Ship.OnDropoff) == 1).Key;
                 var dirs = shipToMove.OnDropoff ? DirectionExtensions.ALL_CARDINALS : DirectionExtensions.ALL_DIRECTIONS;
-                var dir = dirs.First(d => !CollisionCells.Contains(GameInfo.CellAt(shipToMove,d)));
-                AddMove(shipToMove.Move(dir, $"Moving ship {shipToMove.Id} because there were no other moves remaining"));
+                if(dirs.Any(d => !CollisionCells.Contains(GameInfo.CellAt(shipToMove,d)))) {
+                    var dir = dirs.First(d => !CollisionCells.Contains(GameInfo.CellAt(shipToMove,d)));
+                    AddMove(shipToMove.Move(dir, $"Moving ship {shipToMove.Id} because there were no other moves remaining"));
+                }
             }
         }
 

@@ -36,6 +36,7 @@ namespace Halite3
             Logic.Logic CombatLogic = LogicFactory.GetCombatLogic();
             Logic.Logic CollectLogic = LogicFactory.GetCollectLogic();
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
+            //Logic.Logic ProximityLogic = LogicFactory.GetProximityLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
 
             string BotName = GameInfo.BOT_NAME + specimen.Name();
@@ -44,8 +45,8 @@ namespace Halite3
             Log.LogMessage("Successfully created bot! My Player ID is " + GameInfo.Game.myId);
             Stopwatch combatWatch = new Stopwatch();
             Stopwatch dropoffWatch = new Stopwatch();
+            Stopwatch proximityWatch = new Stopwatch();
             Stopwatch collectWatch = new Stopwatch();
-            Stopwatch zoneAssignmentWatch = new Stopwatch();
 
             for (; ; )
             {
@@ -55,7 +56,7 @@ namespace Halite3
                 Fleet.UpdateFleet(GameInfo.MyShips);
                 EnemyFleet.UpdateFleet();
                 Log.LogMessage("value mapping...");
-                ValueMapping2.ProcessTurn();
+                ValueMapping3.ProcessTurn();
 
                 // logic turn processing
                 CollectLogic.ProcessTurn();
@@ -85,7 +86,7 @@ namespace Halite3
                     }
                     Log.LogMessage("total time in combat  logic = " + (combatWatch.ElapsedMilliseconds));
                     Log.LogMessage("total time in dropoff logic = " + (dropoffWatch.ElapsedMilliseconds));
-                    Log.LogMessage("total time in zoneassign logic = " + (zoneAssignmentWatch.ElapsedMilliseconds));
+                    Log.LogMessage("total time in proximity logic = " + (proximityWatch.ElapsedMilliseconds));
                     Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
@@ -104,6 +105,12 @@ namespace Halite3
                 dropoffWatch.Start();
                 DropoffLogic.CommandShips();
                 dropoffWatch.Stop();
+
+                /* /// Proxmitiy Logic
+                Log.LogMessage("*** Proximity Logic ***");
+                proximityWatch.Start();
+                ProximityLogic.CommandShips();
+                proximityWatch.Stop();*/
 
                 // collect halite (move or stay) using Logic interface
                 Log.LogMessage($"*** Collect Logic ***");

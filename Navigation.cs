@@ -72,5 +72,22 @@ namespace Halite3 {
                 path.Add(cell);
             }
         }
+
+        public static bool IsAccessible(Position start, Position end) {
+            HashSet<MapCell> occupied = Fleet.ProbablyOccupiedCells;
+            return CanAccess(start, end, occupied);
+        }
+
+        private static bool CanAccess(Position current, Position end, HashSet<MapCell> occupied) {
+            if(end == current)
+                return true;
+            var cells = end.GetAllDirectionsTo(current).Select(d => GameInfo.CellAt(current , d));
+            cells = cells.Where(c => !occupied.Contains(c));
+            foreach(var c in cells) {
+                if(CanAccess(c.position, end, occupied))
+                    return true;
+            }
+            return false;
+        }
     }
 }

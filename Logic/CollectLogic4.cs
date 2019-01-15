@@ -1,4 +1,4 @@
-using Halite3.hlt;
+/* using Halite3.hlt;
 using System.Collections.Generic;
 using Halite3;
 using System.Linq;
@@ -18,17 +18,18 @@ namespace Halite3.Logic {
             var projections = new List<Projection>();
             Fleet.AvailableShips.ForEach(s => projections.Add(new Projection(s)));
             projections = projections.OrderBy(p => p.Distance).ToList();
-            /* foreach(var p in projections.Where(p => PreviousTurn.ContainsKey(p.Ship.Id)).ToList()) {
-                if(p.Target.position.Equals(PreviousTurn[p.Ship.Id].AsPosition)) {
-                    Command move = p.GetMove();
+
+            /* foreach(var p in projections.ToList()) {
+                if(p.Target != null && p.Target.position.Equals(ValueMapping2.GetPreviousTarget(p.Ship))) {
+                    // same as previous target, offer it first dibs
+                    var move = p.GetMove();
                     if(move != null) {
                         MakeMove(move);
                         ValueMapping2.AddNegativeShip(p.Ship, p.Target);
-                        PreviousTurn[p.Ship.Id] = p.Target.position.AsPoint;
                     }
                     projections.Remove(p);
                 }
-            }*/
+            }
             while(projections.Count > 0 && GameInfo.PercentTurnTimeRemaining > .05) {
                 var next = projections[0];
                 //if(next.Target == null)
@@ -46,7 +47,6 @@ namespace Halite3.Logic {
                     if(move != null) {
                         MakeMove(move);
                         ValueMapping2.AddNegativeShip(next.Ship, next.Target);
-                        PreviousTurn[next.Ship.Id] = next.Target.position.AsPoint;
                     }
                     projections.Remove(next);
                 }
@@ -56,14 +56,13 @@ namespace Halite3.Logic {
         private class Projection {
             public Projection(Ship s) {
                 Ship = s;
-                var prevTarget = CollectLogic4.PreviousTurn.ContainsKey(Ship.Id) ? GameInfo.CellAt(CollectLogic4.PreviousTurn[Ship.Id]) : null;
                 int layers = GameInfo.PercentTurnTimeRemaining < .7 ? 30 :
                              GameInfo.PercentTurnTimeRemaining < .5 ? 20 :
                              GameInfo.PercentTurnTimeRemaining < .3 ? 10 :
                              GameInfo.PercentTurnTimeRemaining < .15 ? 2 :
                              40;
 
-                Target = ValueMapping2.FindBestTarget(Ship, prevTarget?.position, layers);
+                Target = ValueMapping2.FindBestTarget(Ship, layers);
                 Value = Target == null ? -100000 : ValueMapping2.GetValue(Target);
             }
             public Command GetMove() {
@@ -82,4 +81,4 @@ namespace Halite3.Logic {
             public Ship Ship;
         }
     }
-}
+}*/

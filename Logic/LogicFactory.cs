@@ -3,7 +3,7 @@ namespace Halite3.Logic {
     /// or to use different logic based on map size, available halite, and number of players
     public static class LogicFactory {
         public static Logic GetCollectLogic() {
-            return new CollectLogic4();
+            return new CollectLogic5();
         }
 
         public static Logic GetDropoffLogic() {
@@ -20,5 +20,9 @@ namespace Halite3.Logic {
             //else
             //   return new EmptyLogic();
         }
+
+        /* /public static Logic GetProximityLogic() {
+            return new FakeLogic();//ProximityLogic();
+        }*/
     }
 }

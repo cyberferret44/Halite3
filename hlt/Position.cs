@@ -108,6 +108,8 @@ namespace Halite3.hlt
 
 
         public bool Equals(Position otherPosition) {
+            if(otherPosition == null)
+                return false;
             return this.x == otherPosition.x && this.y == otherPosition.y;
         }
 
