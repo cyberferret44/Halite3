@@ -37,7 +37,7 @@ namespace Halite3.Logic {
                 return false;
             return Fleet.CellAvailable(target) && (IngoreEnemy || !target.IsOccupiedByOpponent());
         }
-        public static bool IsCompletelySafeMove(Ship s, Direction d) => IsSafeMove(s, d) && !Map.At(s, d).IsThreatened;
+        public static bool IsCompletelySafeMove(Ship s, Direction d) => IsSafeMove(s, d) && (!Map.At(s, d).IsThreatened || s.DistanceToMyDropoff <= 3) ;
         public static bool IsSafeAndAvoids2Cells(Ship s, Direction d) => IsSafeMove(s, d) && (d == Direction.STILL || 
                 (s.halite - (s.CellHalite * .1) >= GameInfo.CellAt(s, d).halite * .1) || TwoTurnAvoider.IsOkay(s, d));
         public static bool IsSafeAndAvoids2Cells(Ship s, MapCell m) => IsSafeMove(s, m.position.GetDirectionTo(s.position));

@@ -7,7 +7,10 @@ namespace Halite3.Logic {
         }
 
         public static Logic GetDropoffLogic() {
-            return new DropoffLogic();
+            if(GameInfo.Me.id.id == 0)
+                return new DropoffLogic();
+            else
+                return new DropoffLogic2();
         }
 
         public static Logic GetEndOfGameLogic() {

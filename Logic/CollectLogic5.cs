@@ -21,7 +21,15 @@ namespace Halite3.Logic {
             list = list.OrderBy(p => p.numTurns).ToList();
             //Log.LogMessage("time to project " + w.ElapsedMilliseconds);
             while(list.Count > 0) {
-                var next = list.Any(l => l.ship.OnDropoff) ? list.First(l => l.ship.OnDropoff) : list[0];
+                var next = list[0];
+
+                // switch this to a dropoff ship if it's surrounded
+                foreach(var proj in list.Where(l => l.ship.OnDropoff)) {
+                    if(proj.ship.Neighbors.All(n => Fleet.CollisionCells.Contains(n) || n.IsOccupied())) {
+                        next = proj;
+                        break;
+                    }
+                }
                 var s = next.ship;
                 if(next.valuer.TurnsToFill(s) != next.numTurns) {
                     list[list.IndexOf(next)] = new Projection(s);
@@ -37,7 +45,6 @@ namespace Halite3.Logic {
                 && s.CellHalite > GameInfo.UpperThirdAverage && !Fleet.CollisionCells.Contains(s.CurrentMapCell)) {
                     move = s.StayStill("Forcing ship to sit still... Target " + next.valuer.Target.position.ToString() + "... Expected Turns: " + next.numTurns);
                 }
-                
                 DoMove(move, next.valuer.Target, next.ship.Id);
                 list.Remove(next);
             }

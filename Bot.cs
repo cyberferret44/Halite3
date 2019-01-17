@@ -29,8 +29,15 @@ namespace Halite3
             }
 
             // Do Genetic Algorithm Specimen implementation
-            Specimen specimen = GeneticSpecimen.RandomSpecimen();
-            HParams = specimen.GetHyperParameters();
+            Specimen specimen;
+            if(GameInfo.IsDebug || (GameInfo.IsLocal && args.Count() > 0 && args[0] == "test")) {
+                specimen = new FakeSpecimen();
+                HParams = specimen.GetHyperParameters();
+                Log.LogMessage("testing...");
+            } else {
+                specimen = GeneticSpecimen.RandomSpecimen();
+                HParams = specimen.GetHyperParameters();
+            }
 
             // Handle Logic
             Logic.Logic CombatLogic = LogicFactory.GetCombatLogic();
@@ -39,6 +46,7 @@ namespace Halite3
             //Logic.Logic ProximityLogic = LogicFactory.GetProximityLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
             Logic.Logic EndCollectLogic = new EndGameCollectLogic();
+            SiteSelection.Initialize();
 
             string BotName = GameInfo.BOT_NAME + specimen.Name();
             GameInfo.Game.Ready(BotName);
@@ -58,6 +66,7 @@ namespace Halite3
                 EnemyFleet.UpdateFleet();
                 Log.LogMessage("value mapping...");
                 ValueMapping3.ProcessTurn();
+                SiteSelection.ProcessTurn();
 
                 // logic turn processing
                 CollectLogic.ProcessTurn();
@@ -137,6 +146,8 @@ namespace Halite3
 
         // TODO move the .08 to hyperparameters
         public static bool ShouldSpawnShip(int haliteToAdd = 0) {
+            //if(GameInfo.Me.id.id == 0) // debugging the collect logic
+            //    return false;
             int halite = GameInfo.Me.halite + haliteToAdd;
             if(GameInfo.TurnsRemaining < 80 || 
                 halite < (GameInfo.ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||

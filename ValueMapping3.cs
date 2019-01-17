@@ -24,8 +24,10 @@ namespace Halite3 {
                 double tempTurnsToFill = tempValuer.TurnsToFill(ship);
                 // todo if equal take further one, also todo hacky fix, use seed 1547656056 on a 64x64
                 if((bestCell.Target == ship.CurrentMapCell && ship.CellHalite < 25) || tempTurnsToFill < turnsToFill) {
-                    turnsToFill = tempTurnsToFill;
-                    bestCell = tempValuer;
+                    if(Navigation.IsAccessible(ship.position, cell.position, true)) {
+                        turnsToFill = tempTurnsToFill;
+                        bestCell = tempValuer;
+                    }
                 }
             }
             return bestCell;

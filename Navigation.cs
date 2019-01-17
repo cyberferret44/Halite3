@@ -73,8 +73,8 @@ namespace Halite3 {
             }
         }
 
-        public static bool IsAccessible(Position start, Position end) {
-            HashSet<MapCell> used = Fleet.ProbablyOccupiedCells;
+        public static bool IsAccessible(Position start, Position end, bool collisionOnly = false) {
+            HashSet<MapCell> used = collisionOnly? Fleet.CollisionCells.ToHashSet() : Fleet.ProbablyOccupiedCells;
             Stack<Position> nexts = new Stack<Position>();
             nexts.Push(start);
             while(nexts.Any()) {

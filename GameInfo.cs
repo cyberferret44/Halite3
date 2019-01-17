@@ -7,6 +7,9 @@ using System;
 
 namespace Halite3 {
     public static class GameInfo {
+        // 
+        private static Queue<int> HaliteCollected = new Queue<int>();
+
         // Things to change...
         public static readonly string SPECIMEN_FOLDER = "Specimen9";
         public static string BOT_NAME => Me.id.id + "-Derp8";
@@ -15,6 +18,8 @@ namespace Halite3 {
         private static Stopwatch clock = new Stopwatch();
         public static double PercentTurnTimeRemaining => 1.0 - (((double)clock.ElapsedMilliseconds) / 2000.0);
         public static int RateLimitXLayers(int preferredXLayers) {
+            if(GameInfo.IsDebug)
+                return preferredXLayers;
             return PercentTurnTimeRemaining > .7 ? preferredXLayers :
                    PercentTurnTimeRemaining > .5 ? Math.Max(1, (int)(preferredXLayers * .75)) :
                    PercentTurnTimeRemaining > .3 ? Math.Max(1, (int)(preferredXLayers * .5)) :

@@ -17,7 +17,7 @@ namespace GeneticTuner
     public class FakeSpecimen : Specimen {
         public void SpawnChildren() {}
         public void Kill() {}
-        public HyperParameters GetHyperParameters() { return null; }
+        public HyperParameters GetHyperParameters() { return HyperParameters.GetDefaults(); }
         public string Name() { return "fake"; }
     }
 

@@ -25,6 +25,15 @@ namespace Halite3
         public static List<Parameters> AllParameters = Enum.GetValues(typeof(Parameters)).Cast<Parameters>().ToList();
         private static bool HasPrinted = false;
 
+        // returns a default set for testing
+        public static HyperParameters GetDefaults() {
+            var hp = new HyperParameters();
+            foreach(var kvp in BoundDictionary) {
+                hp.ParametersDictionary[kvp.Key] = kvp.Value.Seed;
+            }
+            return hp;
+        }
+
         // Dynamic hyper parameters
         private class Bounds {
             public double Lower, Upper, Seed;
@@ -45,11 +54,11 @@ namespace Halite3
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
-            { Parameters.CARGO_TO_MOVE, 0.01 },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .03 },
+            { Parameters.CARGO_TO_MOVE, 0.02 },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .07 },
             { Parameters.DROPOFF_DISTANCE, .05 },
-            { Parameters.SHOULD_CRASH_SHIP, .03 },
-            { Parameters.STAY_MULTIPLIER, .03 },
+            { Parameters.SHOULD_CRASH_SHIP, .04 },
+            { Parameters.STAY_MULTIPLIER, .04 },
             { Parameters.HALITE_TO_SWITCH_COLLECT, .05}
         };
 
@@ -83,6 +92,8 @@ namespace Halite3
                 ParametersDictionary[param] = value;
             }
         }
+
+        private HyperParameters() {}
 
         public HyperParameters(string file, bool initializeDictionary = true) {
             bool shouldPrint = !HasPrinted;
