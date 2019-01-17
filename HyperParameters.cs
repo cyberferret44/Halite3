@@ -16,7 +16,8 @@ namespace Halite3
         TARGET_VALUE_TO_CREATE_SHIP,
         DROPOFF_DISTANCE, 
         SHOULD_CRASH_SHIP,
-        STAY_MULTIPLIER
+        STAY_MULTIPLIER,
+        HALITE_TO_SWITCH_COLLECT
     }
 
     public class HyperParameters {
@@ -39,15 +40,17 @@ namespace Halite3
             { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 550.0) },
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
             { Parameters.SHOULD_CRASH_SHIP, new Bounds(0, 2000, GameInfo.PlayerCount == 2 ? 400 : 900)},
-            { Parameters.STAY_MULTIPLIER, new Bounds(0, 10, 3.0)}
+            { Parameters.STAY_MULTIPLIER, new Bounds(0, 10, 3.0)},
+            { Parameters.HALITE_TO_SWITCH_COLLECT, new Bounds(0, 1000, 70.0)}
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
             { Parameters.CARGO_TO_MOVE, 0.01 },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .01 },
-            { Parameters.DROPOFF_DISTANCE, .1 },
-            { Parameters.SHOULD_CRASH_SHIP, .01 },
-            { Parameters.STAY_MULTIPLIER, .01 }
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .03 },
+            { Parameters.DROPOFF_DISTANCE, .05 },
+            { Parameters.SHOULD_CRASH_SHIP, .03 },
+            { Parameters.STAY_MULTIPLIER, .03 },
+            { Parameters.HALITE_TO_SWITCH_COLLECT, .05}
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();

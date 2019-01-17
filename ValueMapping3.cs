@@ -15,16 +15,16 @@ namespace Halite3 {
 
         public static CellValuer FindBestTarget(Ship ship) {
             CellValuer bestCell = Mapping[ship.CurrentMapCell];
-            int bestTime = bestCell.TurnsToFill(ship);
-            int layers = Math.Min(GameInfo.Map.width, bestTime);
+            double turnsToFill = bestCell.TurnsToFill(ship);
+            int layers = GameInfo.RateLimitXLayers(Math.Min(GameInfo.Map.width, (int)turnsToFill));
             var cells = GameInfo.Map.GetXLayers(ship.position, Math.Min(GameInfo.Map.width, layers));
-            //var cells = GetCellsExcludingShipCurrent(ship);
+            cells = cells.Where(c => c.halite > 10).ToList(); // todo hack fix for 4000 problem.......
             foreach(var cell in cells) {
                 CellValuer tempValuer = Mapping[cell];
-                int tempTurnsToFill = tempValuer.TurnsToFill(ship);
-                // todo if equal take further one
-                if(tempTurnsToFill < bestTime) {
-                    bestTime = tempTurnsToFill;
+                double tempTurnsToFill = tempValuer.TurnsToFill(ship);
+                // todo if equal take further one, also todo hacky fix, use seed 1547656056 on a 64x64
+                if((bestCell.Target == ship.CurrentMapCell && ship.CellHalite < 25) || tempTurnsToFill < turnsToFill) {
+                    turnsToFill = tempTurnsToFill;
                     bestCell = tempValuer;
                 }
             }
@@ -74,7 +74,7 @@ namespace Halite3 {
         private MapCell cell;
         private int value;
         private int closestDropDist;
-        public int TurnsToFill(Ship ship) {
+        public double TurnsToFill(Ship ship) {
             int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping3.Mapping[c].Value);
             int remainingToFill = 900 - ship.halite;
             int totalTurns = (int)(GameInfo.Distance(ship.position, cell.position) / divisor);
@@ -86,10 +86,11 @@ namespace Halite3 {
                 totalTurns++;
             }
             if(remainingToFill > 0) {
-                totalTurns += (int)(remainingToFill / (areaVal * .125 + 1)); // estimate # of turns to fill from nearby, +1 prevents /0
+                totalTurns += 2 + (int)(remainingToFill / (areaVal * .125 + 1)); // estimate # of turns to fill from nearby, +1 prevents /0
             }
             totalTurns += closestDropDist;
-            return totalTurns;
+
+            return (double)totalTurns - (remainingToFill / 1000.0); // differentiate 2 moves of same turns to prevent ships from swapping
         }
     }
 }

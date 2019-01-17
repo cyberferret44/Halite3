@@ -74,18 +74,17 @@ namespace Halite3 {
         }
 
         public static bool IsAccessible(Position start, Position end) {
-            HashSet<MapCell> occupied = Fleet.ProbablyOccupiedCells;
-            return CanAccess(start, end, occupied);
-        }
-
-        private static bool CanAccess(Position current, Position end, HashSet<MapCell> occupied) {
-            if(end == current)
-                return true;
-            var cells = end.GetAllDirectionsTo(current).Select(d => GameInfo.CellAt(current , d));
-            cells = cells.Where(c => !occupied.Contains(c));
-            foreach(var c in cells) {
-                if(CanAccess(c.position, end, occupied))
+            HashSet<MapCell> used = Fleet.ProbablyOccupiedCells;
+            Stack<Position> nexts = new Stack<Position>();
+            nexts.Push(start);
+            while(nexts.Any()) {
+                var n = nexts.Pop();
+                if(end.Equals(n))
                     return true;
+                used.Add(GameInfo.CellAt(n));
+                var cells = end.GetAllDirectionsTo(n).Select(d => GameInfo.CellAt(n , d));
+                cells = cells.Where(c => !used.Contains(c));
+                cells.ToList().ForEach(c => nexts.Push(c.position));
             }
             return false;
         }

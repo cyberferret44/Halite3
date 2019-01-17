@@ -34,6 +34,14 @@ namespace Halite3.hlt
             }
         }
 
+        public static List<Direction> GetLeftRightDirections(Direction d) {
+            if(d == Direction.NORTH || d == Direction.SOUTH)
+                return new List<Direction> { Direction.EAST, Direction.WEST };
+            else if(d == Direction.EAST || d == Direction.WEST)
+                return new List<Direction> { Direction.NORTH, Direction.SOUTH };
+            return new List<Direction>();
+        }
+
         public static Direction[] ALL_CARDINALS = { Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST };
         public static Direction[] ALL_DIRECTIONS = { Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.STILL};
     }

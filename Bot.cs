@@ -38,6 +38,7 @@ namespace Halite3
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
             //Logic.Logic ProximityLogic = LogicFactory.GetProximityLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
+            Logic.Logic EndCollectLogic = new EndGameCollectLogic();
 
             string BotName = GameInfo.BOT_NAME + specimen.Name();
             GameInfo.Game.Ready(BotName);
@@ -114,9 +115,14 @@ namespace Halite3
 
                 // collect halite (move or stay) using Logic interface
                 Log.LogMessage($"*** Collect Logic ***");
+                collectWatch.Reset();
                 collectWatch.Start();
-                CollectLogic.CommandShips();
+                if(GameInfo.Map.AverageHalitePerCell > HParams[Parameters.HALITE_TO_SWITCH_COLLECT] || GameInfo.Map.PercentHaliteCollected < .5) {
+                    CollectLogic.CommandShips();
+                }
+                EndCollectLogic.CommandShips();
                 collectWatch.Stop();
+                Log.LogMessage("collect time was " + collectWatch.ElapsedMilliseconds);
 
                 // spawn ships
                 var cmdQueue = Fleet.GenerateCommandQueue();

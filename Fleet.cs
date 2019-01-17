@@ -30,9 +30,10 @@ namespace Halite3 {
 
             foreach(var ship in ships) {
                 if(ship.CanMove) {
-                    availableShipMoves.Add(ship, DirectionExtensions.ALL_DIRECTIONS.ToList());
+                    availableShipMoves.Add(ship, ship.OnDropoff ? DirectionExtensions.ALL_CARDINALS.ToList() : 
+                                DirectionExtensions.ALL_DIRECTIONS.ToList());
                 } else {
-                    AddMove(ship.StayStill($"ship {ship.Id} can't move, making it stay still from Fleet logic"));
+                    collisionCells.Add(ship.CurrentMapCell); // ship must stay still, so flag it now, but allow other logic to process it
                 }
                 availableIds.Add(ship.Id);
             }

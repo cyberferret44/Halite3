@@ -9,11 +9,19 @@ namespace Halite3 {
     public static class GameInfo {
         // Things to change...
         public static readonly string SPECIMEN_FOLDER = "Specimen9";
-        public static readonly string BOT_NAME = "Derp8";
+        public static string BOT_NAME => Me.id.id + "-Derp8";
 
         // Turn timer, prevent timeouts
         private static Stopwatch clock = new Stopwatch();
         public static double PercentTurnTimeRemaining => 1.0 - (((double)clock.ElapsedMilliseconds) / 2000.0);
+        public static int RateLimitXLayers(int preferredXLayers) {
+            return PercentTurnTimeRemaining > .7 ? preferredXLayers :
+                   PercentTurnTimeRemaining > .5 ? Math.Max(1, (int)(preferredXLayers * .75)) :
+                   PercentTurnTimeRemaining > .3 ? Math.Max(1, (int)(preferredXLayers * .5)) :
+                   PercentTurnTimeRemaining > .2 ? Math.Min((int)(preferredXLayers * .5), 15) :
+                   PercentTurnTimeRemaining > .1 ? Math.Min((int)(preferredXLayers * .5), 10) :
+                   1;
+        }
 
         // Determine if we're local
         public static readonly bool IsLocal = Directory.GetCurrentDirectory().StartsWith("/Users/cviolet") ||
