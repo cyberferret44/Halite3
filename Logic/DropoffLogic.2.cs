@@ -21,7 +21,7 @@ namespace Halite3.Logic {
 
         private bool ShouldMoveShip(Ship ship) {
             return ship.IsFull() ||
-                ship.halite > MyBot.HParams[Parameters.CARGO_TO_MOVE] * Constants.MAX_HALITE + (.3 * ship.CellHalite * (ship.CurrentMapCell.IsInspired ? 3 : 1));
+                ship.halite > MyBot.HParams[Parameters.CARGO_TO_MOVE] + (.3 * ship.CellHalite * (ship.CurrentMapCell.IsInspired ? 3 : 1));
         }
 
         public override void CommandShips() {

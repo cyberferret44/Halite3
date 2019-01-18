@@ -70,6 +70,8 @@ namespace Halite3
         public double this[Parameters param]
         {
             get { 
+                if(param == Parameters.CARGO_TO_MOVE)
+                    return ParametersDictionary[param] * Constants.MAX_HALITE;
                 if(param == Parameters.DROPOFF_DISTANCE) {
                     var value = ParametersDictionary[param];
                     int numCellsCovered = (int) (((value * value / 2) + (value / 2)) * 4.0) + 1;

@@ -13,16 +13,26 @@ namespace Halite3 {
             GameInfo.Map.GetAllCells().ForEach(c => Mapping.Add(c, new CellValuer(c)));
         }
 
+        public static List<MapCell> RemoveBadCells(List<MapCell> cells) {
+            var result = new List<MapCell>();
+            foreach(var cell in cells) {
+                int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping3.Mapping[c].Value);
+                if(ValueMapping3.Mapping[cell].Value > areaVal / 2) {
+                    result.Add(cell);
+                }
+            }
+            return result;
+        }
+
         public static CellValuer FindBestTarget(Ship ship) {
             CellValuer bestCell = Mapping[ship.CurrentMapCell];
             double turnsToFill = bestCell.TurnsToFill(ship);
             int layers = GameInfo.RateLimitXLayers(Math.Min(GameInfo.Map.width, (int)turnsToFill));
             var cells = GameInfo.Map.GetXLayers(ship.position, Math.Min(GameInfo.Map.width, layers));
-            cells = cells.Where(c => c.halite > 10).ToList(); // todo hack fix for 4000 problem.......
+            cells = RemoveBadCells(cells);
             foreach(var cell in cells) {
                 CellValuer tempValuer = Mapping[cell];
                 double tempTurnsToFill = tempValuer.TurnsToFill(ship);
-                // todo if equal take further one, also todo hacky fix, use seed 1547656056 on a 64x64
                 if((bestCell.Target == ship.CurrentMapCell && ship.CellHalite < 25) || tempTurnsToFill < turnsToFill) {
                     if(Navigation.IsAccessible(ship.position, cell.position, true)) {
                         turnsToFill = tempTurnsToFill;
@@ -32,20 +42,6 @@ namespace Halite3 {
             }
             return bestCell;
         }
-
-        /* private static List<MapCell> GetCellsExcludingShipCurrent(Ship ship) {
-            HashSet<MapCell> results = new HashSet<MapCell>{ ship.CurrentMapCell };
-            Stack<MapCell> stack = new Stack<MapCell>(ship.Neighbors.Union(GameInfo.MyDropoffs.Select(c => GameInfo.CellAt(c))));
-            while(stack.Any()) {
-                var n = stack.Pop();
-                if(!ShouldStay(n)) {
-                    var nToAdd = n.Neighbors.Where(neighbor => !results.Contains(neighbor));
-                    nToAdd.ToList().ForEach(x => stack.Push(x));
-                }
-                results.Add(n);
-            }
-            return results.ToList();
-        }*/
 
         // this should be called when the logic has assigned a ship to a particular cell
         public static void AddNegativeShip(Ship ship, MapCell targetCell) {
@@ -78,7 +74,7 @@ namespace Halite3 {
         private int closestDropDist;
         public double TurnsToFill(Ship ship) {
             int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping3.Mapping[c].Value);
-            int remainingToFill = 900 - ship.halite;
+            int remainingToFill = (int)MyBot.HParams[Parameters.CARGO_TO_MOVE] - ship.halite;
             int totalTurns = (int)(GameInfo.Distance(ship.position, cell.position) / divisor);
             int remainingCellValue = Value; // value can/should be modified by reduce function
             while(remainingToFill > 0 && remainingCellValue * .25 >= areaVal * .125) {
@@ -92,7 +88,7 @@ namespace Halite3 {
             }
             totalTurns += closestDropDist;
 
-            return (double)totalTurns - (remainingToFill / 1000.0); // differentiate 2 moves of same turns to prevent ships from swapping
+            return (double)totalTurns + (remainingToFill / 1000.0); // differentiate 2 moves of same turns to prevent ships from swapping
         }
     }
 }
