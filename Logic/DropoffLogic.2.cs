@@ -33,17 +33,17 @@ namespace Halite3.Logic {
                 foreach(var ship in ships) {
                     int thisDist = Map.CalculateDistance(ship.position, drop);
                     if(ShouldMineInsteadOfDropoff(ship, ships, dropoffBuckets)) {
-                        MakeMove(ship.StayStill("Mining halite because I can"));
-                        TwoTurnAvoider.Add(ship, ship.CurrentMapCell, drop.GetAllDirectionsTo(ship.CurrentMapCell));
-                    } else if(thisDist > maxDist || ship.CellHalite < 10 || !IsSafeMove(ship, Direction.STILL)) {
+                        Fleet.AddMove(ship.StayStill("Mining halite because I can"));
+                        Safety.TwoTurnAvoider.Add(ship, ship.CurrentMapCell, drop.GetAllDirectionsTo(ship.CurrentMapCell));
+                    } else if(thisDist > maxDist || ship.CellHalite < 10 || !Safety.IsSafeMove(ship, Direction.STILL)) {
                         var cmd = GetBestNavigateCommand(ship, drop);
                         if(cmd != null) {
-                            MakeMove(cmd);
-                            TwoTurnAvoider.Add(ship, cmd.TargetCell, drop.GetAllDirectionsTo(cmd.TargetCell));
+                            Fleet.AddMove(cmd);
+                            Safety.TwoTurnAvoider.Add(ship, cmd.TargetCell, drop.GetAllDirectionsTo(cmd.TargetCell));
                         }
                     } else {
-                        MakeMove(ship.StayStill($"Staying still to stagger ships"));
-                        TwoTurnAvoider.Add(ship, ship.CurrentMapCell, drop.GetAllDirectionsTo(ship.CurrentMapCell));
+                        Fleet.AddMove(ship.StayStill($"Staying still to stagger ships"));
+                        Safety.TwoTurnAvoider.Add(ship, ship.CurrentMapCell, drop.GetAllDirectionsTo(ship.CurrentMapCell));
                     }
                     maxDist = Math.Max(maxDist, thisDist);
                 }
@@ -58,7 +58,7 @@ namespace Halite3.Logic {
                 return false;
             if(ship.CurrentMapCell.IsThreatened)
                 return false;
-            if(!IsSafeMove(ship, Direction.STILL))
+            if(!Safety.IsSafeMove(ship, Direction.STILL))
                 return false;
 
             // need to handle the shipyard with special care
@@ -96,26 +96,26 @@ namespace Halite3.Logic {
         private Command GetBestNavigateCommand(Ship ship, Position drop) {
             // new logic, path of least resistance
             var polr = Navigation.CalculatePathOfLeastResistance(ship.position, drop);
-            if(IsCompletelySafeMove(ship, polr[0].position.GetDirectionTo(ship.position))) {
+            if(Safety.IsCompletelySafeMove(ship, polr[0].position.GetDirectionTo(ship.position))) {
                 var best = polr[0].position.GetDirectionTo(ship.position);
                 return ship.Move(best, "Moving from path of least resistance2");
             }
 
             // old logic, pick any safe direction
             List<Direction> directions = drop.GetAllDirectionsTo(ship.position);
-            if(directions.All(x => Map.At(ship, x).IsOccupiedByOpponent() || (Map.At(ship, x).IsThreatened) && !Map.At(ship, x).IsMyStructure)) {
+            if(directions.All(x => Map.At(ship, x).IsOccupiedByOpponent || (Map.At(ship, x).IsThreatened) && !Map.At(ship, x).IsMyStructure)) {
                 directions = DirectionExtensions.ALL_DIRECTIONS.ToList(); // add all
             }
             directions = directions.OrderBy(d => Map.At(ship, d).IsOpponentsStructure && Map.At(ship, d).IsThreatened ? ship.halite * 3 :
-                    Map.At(ship, d).IsThreatened || Map.At(ship, d).IsOccupiedByOpponent() ? ship.halite - Map.At(ship, d).SmallestEnemyValue :
-                    Map.At(ship, d).IsOccupiedByMe() ? Map.At(ship, d).halite * .45 :
+                    Map.At(ship, d).IsThreatened || Map.At(ship, d).IsOccupiedByOpponent ? ship.halite - Map.At(ship, d).SmallestEnemyValue :
+                    Map.At(ship, d).IsOccupiedByMe ? Map.At(ship, d).halite * .45 :
                     ship.CellHalite * .1).ToList();
             foreach(var d in directions) {
-                if(IsSafeMove(ship, d)) {
+                if(Safety.IsSafeMove(ship, d)) {
                     return ship.Move(d, "moving to dropoff");
                 }
             }
-            if(IsCompletelySafeMove(ship, Direction.STILL)) {
+            if(Safety.IsCompletelySafeMove(ship, Direction.STILL)) {
                 return ship.StayStill("staying still because nothing else available...");
             }
             return null;

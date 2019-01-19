@@ -125,11 +125,26 @@ namespace Halite3 {
         public static Ship GetMyShip(int shipId) => Me.GetShipById(shipId);
         // not correct, needs nullablepublic static int LowestNeighboringOpponentHalite(MapCell c) => c.Neighbors.Where(n => n.IsOccupiedByOpponent()).Min(n => n.ship.halite);
         public static int? LowestNeighboringOpponentHaliteWhereNotReturning(MapCell c) {
-            var neighbors = c.Neighbors.Where(n => n.IsOccupiedByOpponent() && !EnemyFleet.IsReturningHome(n.ship));
+            var neighbors = c.NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent && !EnemyFleet.IsReturningHome(n.ship));
             if(neighbors.Any())
                 return neighbors.Min(n => n.ship.halite);
             else
                 return null;
+        }
+        public static int? LowestNeighboringOpponentHalite(MapCell c) {
+            var neighbors = c.NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent);
+            if(neighbors.Any())
+                return neighbors.Min(n => n.ship.halite);
+            else
+                return null;
+        }
+        public static Ship LowestNeighboringOpponentShipWhereNotReturning(MapCell c) {
+            var neighbors = c.NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent && !EnemyFleet.IsReturningHome(n.ship));
+            return neighbors.OrderBy(n => n.ship.halite).First().ship;
+        }
+        public static Ship LowestNeighboringOpponentShip(MapCell c) {
+            var neighbors = c.NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent);
+            return neighbors.OrderBy(n => n.ship.halite).First().ship;
         }
         public static int AvailableMoveCounts(Ship ship, bool includeStill) {
             var dirs = includeStill ? DirectionExtensions.ALL_DIRECTIONS : DirectionExtensions.ALL_CARDINALS;
@@ -163,7 +178,7 @@ namespace Halite3 {
         // Combat related...?
         public static double MyStrengthRatio(Position p, int layers) {
             var cells = Map.GetXLayers(p, layers);
-            return (double)(cells.Count(x => x.IsOccupiedByMe())+1) / (cells.Count(x => x.IsOccupiedByOpponent())+1);
+            return (double)(cells.Count(x => x.IsOccupiedByMe)+1) / (cells.Count(x => x.IsOccupiedByOpponent)+1);
         }
     }
 

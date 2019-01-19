@@ -75,7 +75,7 @@ namespace Halite3
                 CombatLogic.ProcessTurn();
 
                 // Score the ships first 
-                Logic.Logic.InitializeNewTurn();
+                Safety.InitializeNewTurn();
 
                 // Specimen spawn logic for GeneticTuner
                 if(GameInfo.TurnsRemaining == 0) {
@@ -146,8 +146,8 @@ namespace Halite3
 
         // TODO move the .08 to hyperparameters
         public static bool ShouldSpawnShip(int haliteToAdd = 0) {
-            //if(GameInfo.Me.id.id == 0) // debugging the collect logic
-            //    return false;
+            if(GameInfo.Me.id.id == 0) // debugging the collect logic
+                return false;
             int halite = GameInfo.Me.halite + haliteToAdd;
             if(GameInfo.TurnsRemaining < 80 || 
                 halite < (GameInfo.ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||

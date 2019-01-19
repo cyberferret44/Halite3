@@ -7,9 +7,6 @@ namespace Halite3.Logic {
         }
 
         public static Logic GetDropoffLogic() {
-            if(GameInfo.Me.id.id == 0)
-                return new DropoffLogic();
-            else
                 return new DropoffLogic2();
         }
 
@@ -18,14 +15,10 @@ namespace Halite3.Logic {
         }
 
         public static Logic GetCombatLogic() {
-            //if(GameInfo.PlayerCount == 2)
+            if(GameInfo.Me.id.id == 1)
+                return new CombatLogic2();
+            else 
                 return new TwoPlayerCombatLogic();
-            //else
-            //   return new EmptyLogic();
         }
-
-        /* /public static Logic GetProximityLogic() {
-            return new FakeLogic();//ProximityLogic();
-        }*/
     }
 }

@@ -7,7 +7,9 @@ using System;
 namespace Halite3.Logic {
     public class EndGameCollectLogic : Logic
     {
-        Dictionary<int, Point> ShipTargets = new Dictionary<int, Point>();
+        List<Assignment> Assignments = new List<Assignment>();
+        //private Dictionary<int, Point> ShipTargets = new Dictionary<int, Point>();
+        //private Dictionary<Point, int> CellTargets = new Dictionary<Point, int>();
         public override void ProcessTurn() {}
 
         public int GetCellValue(Ship ship, MapCell cell) {
@@ -19,24 +21,46 @@ namespace Halite3.Logic {
             return initialVal - resistance;
         }
 
+        public Assignment AssignAndReturnPrevAssignIfAny(Ship ship, MapCell cell) {
+            Assignments.RemoveAll(a => a.Ship.Id == ship.Id);
+            Assignment prevAssign = Assignments.FirstOrDefault(a => a.Target.position.Equals(cell.position));
+            if(prevAssign != null && GameInfo.Distance(ship, cell.position) >= GameInfo.Distance(prevAssign.Ship, cell.position))
+                throw new Exception("this shouldn't happen...");
+            if(prevAssign != null)
+                Assignments.Remove(prevAssign);
+
+            Assignments.Add(new Assignment(ship, cell));
+            return prevAssign;
+        }
+
         public override void CommandShips()
         {
             // purge the ships
             PurgeUnavailableShips();
 
             // select targets
-            foreach(var ship in Fleet.AvailableShips) {
-                var xLayers = GameInfo.RateLimitXLayers(10);
-                var cells = GameInfo.Map.GetXLayers(ship.position, xLayers);
-                MapCell target = ShipTargets.ContainsKey(ship.Id) ? GameInfo.CellAt(ShipTargets[ship.Id]) : null;
-                int maxVal = target == null ? -100000 : GetCellValue(ship, target);
+            Queue<Ship> queue = new Queue<Ship>();
+            Fleet.AvailableShips.ForEach(s => queue.Enqueue(s));
+
+            while(queue.Count > 0) {
+                var s = queue.Dequeue();
+                var xLayers = GameInfo.RateLimitXLayers(20);
+                var cells = GameInfo.Map.GetXLayers(s.position, xLayers);
+                var prevTarget = Assignments.FirstOrDefault(a => a.Ship.Id == s.Id);
+                MapCell target = null; //prevTarget.Target;
+                int maxVal = -1000000; //target == null ? -100000 : GetCellValue(s, target);
                 do {
-                    cells = cells.Where(c => !ShipTargets.Values.Any(v => v.Equals(c.position.AsPoint))).ToList();
                     foreach(var c in cells) {
-                        int val = GetCellValue(ship, c);
+                        var otherAssign = Assignments.FirstOrDefault(a => a.Target.position.Equals(c.position));
+                        if(otherAssign != null && otherAssign.Distance < GameInfo.Distance(s, c.position)) {
+                            continue;
+                        }
+
+                        // value calculation...
+                        int val = GetCellValue(s, c);
                         int oppCost = 0;
                         if(target != null) {
-                            int distDiff = GameInfo.Distance(ship, c.position) - GameInfo.Distance(ship, target.position);
+                            int distDiff = GameInfo.Distance(s, c.position) - GameInfo.Distance(s, target.position);
                             oppCost = distDiff < 0 ? distDiff * (int)(c.halite * .125) : // cell is closet to ship than curTarget
                                 distDiff * (int)(target.halite * .125); // distDiff is 0/positive, cell is further than curTarget
                         }
@@ -46,30 +70,51 @@ namespace Halite3.Logic {
                         }
                     }
                     xLayers++;
-                    cells = GameInfo.GetXLayersExclusive(ship.position, xLayers);
+                    cells = GameInfo.GetXLayersExclusive(s.position, xLayers);
                 } while(target == null && xLayers <= Math.Min(GameInfo.Map.width, GameInfo.RateLimitXLayers(xLayers)));
-                if(target != null)
-                    ShipTargets[ship.Id] = target.position.AsPoint;
+                /* if(target != null) {
+                    Log.LogMessage($"Ship {s.Id} value of sitting still at {s.position.ToString()} is {GetCellValue(s, s.CurrentMapCell)}");
+                    if(prevTarget != null)
+                        Log.LogMessage($"prev target for ship {s.Id} was {prevTarget.position.ToString()} with value of {GetCellValue(s, prevTarget)}");
+                    Log.LogMessage($"New target is {target.position.ToString()} with value {GetCellValue(s, target)}");
+                }*/
+                if(target != null) {
+                    Assignments.Add(new Assignment(s, target));
+                    var otherTarget = AssignAndReturnPrevAssignIfAny(s, target);
+                    if(otherTarget != null) {
+                        Assignments.Remove(otherTarget);
+                        Log.LogMessage($"Ship {otherTarget.Ship.Id} was requeued");
+                        queue.Enqueue(otherTarget.Ship);
+                    }
+                }
             }
 
-            foreach(var ship in Fleet.AvailableShips.Where(s => ShipTargets.ContainsKey(s.Id))) {
-                var targetCell = GameInfo.CellAt(ShipTargets[ship.Id]);
-                if(targetCell.position.GetAllDirectionsTo(ship.position).Any(d => IsSafeMove(ship, d))) {
-                    var dir = targetCell.position.GetAllDirectionsTo(ship.position).First(d => IsSafeMove(ship, d));
-                    MakeMove(ship.Move(dir, $"Moving to best target {targetCell.position.ToString()} End of Game Logic"));
+            foreach(var a in Assignments) {
+                var dirs = a.Target.position.GetAllDirectionsTo(a.Ship.position);
+                dirs = dirs.OrderBy(d => GameInfo.CellAt(a.Ship, d).halite).ToList();
+                if(dirs.Any(d => Safety.IsSafeMove(a.Ship, d))) {
+                    var dir = dirs.First(d => Safety.IsSafeMove(a.Ship, d));
+                    Fleet.AddMove(a.Ship.Move(dir, $"Moving to best target {a.Target.position.ToString()} End Game Collect Logic"));
                 }
             }
         }
 
         private void PurgeUnavailableShips() {
-            HashSet<int> availableIds = Fleet.AvailableIds.ToHashSet();
-            foreach(var id in ShipTargets.Keys.ToList()) {
-                var ship = GameInfo.GetMyShip(id);
-                if(!availableIds.Contains(id) ||
-                        !Navigation.IsAccessible(ship.position, ShipTargets[id].AsPosition)) {
-                    ShipTargets.Remove(id);
+            foreach(var a in Assignments.ToList()) {
+                if(Fleet.IsDead(a.Ship.Id) || !Navigation.IsAccessible(a.Ship.position, a.Target.position)) {
+                    Assignments.Remove(a);
                 }
             }
+        }
+
+        public class Assignment {
+            public readonly Ship Ship;
+            public readonly MapCell Target;
+            public Assignment(Ship ship, MapCell target) {
+                this.Target = target;
+                this.Ship = ship;
+            }
+            public int Distance => GameInfo.Distance(Ship.position, Target.position);
         }
     }
 }

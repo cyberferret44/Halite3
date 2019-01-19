@@ -42,7 +42,7 @@ namespace Halite3.Logic {
                     return Direction.STILL;
                 }
                 if(IsReturningToBase) {
-                    var directionsToBase = enemy.ClosestOwnerDropoff.GetAllDirectionsTo(enemy.position).Where(d => !GameInfo.CellAt(ship, d).IsOccupiedByMe());
+                    var directionsToBase = enemy.ClosestOwnerDropoff.GetAllDirectionsTo(enemy.position).Where(d => !GameInfo.CellAt(ship, d).IsOccupiedByMe);
                     directionsToBase = directionsToBase.OrderBy(x => GameInfo.CellAt(enemy, x).halite).ToList();
                     if(directionsToBase.Any())
                         return directionsToBase.First();
@@ -84,7 +84,7 @@ namespace Halite3.Logic {
                 Log.LogMessage($"Correct Predictions {CorrectPredictions} out of a total {TotalPredictions} for a percent {((double)CorrectPredictions)/((double)TotalPredictions)}");
             }
             foreach(var ship in Fleet.AvailableShips) {
-                var Xcells = GameInfo.Map.GetXLayers(ship.position, 2).Where(c => c.IsOccupiedByOpponent()); // all crashable opponents
+                var Xcells = GameInfo.Map.GetXLayers(ship.position, 2).Where(c => c.IsOccupiedByOpponent); // all crashable opponents
                 Xcells = Xcells.Where(x => GetCrashValue(ship, x.ship) > MyBot.HParams[Parameters.SHOULD_CRASH_SHIP]);
                 Xcells = Xcells.Where(x => Fleet.CellAvailable(EnemyShipInfo[x.ship.Id].PredictedTargetCell)); // eliminate collision cells
                 Xcells = Xcells.OrderByDescending(x => GetCrashValue(ship, x.ship));
@@ -97,7 +97,7 @@ namespace Halite3.Logic {
                 if(best != null) {
                     var info = EnemyShipInfo[best.ship.Id];
                     var predPos = info.PredictedTargetCell.position;
-                    MakeMove(ship.Move(predPos, $"attempting to crash ship {best.ship.Id} whose predicted target is {predPos.x},{predPos.y}"));
+                    Fleet.AddMove(ship.Move(predPos, $"attempting to crash ship {best.ship.Id} whose predicted target is {predPos.x},{predPos.y}"));
                 }
             }
         }

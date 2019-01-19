@@ -23,7 +23,7 @@ namespace Halite3.Logic {
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
                     if(IsSafeEndMove(ship, d)) {
-                        MakeMove(ship.Move(d, "End of game"));
+                        Fleet.AddMove(ship.Move(d, "End of game"));
                         break;
                     }
                 }

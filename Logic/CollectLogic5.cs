@@ -21,9 +21,8 @@ namespace Halite3.Logic {
             list = list.OrderBy(p => p.numTurns).ToList();
             //Log.LogMessage("time to project " + w.ElapsedMilliseconds);
             while(list.Count > 0) {
+                // switch next to a ship on a dropoff if it's surrounded
                 var next = list[0];
-
-                // switch this to a dropoff ship if it's surrounded
                 foreach(var proj in list.Where(l => l.ship.OnDropoff)) {
                     if(proj.ship.Neighbors.All(n => Fleet.CollisionCells.Contains(n) || n.IsOccupied())) {
                         next = proj;
@@ -36,14 +35,15 @@ namespace Halite3.Logic {
                     list.OrderBy(p => p.numTurns);
                     continue;
                 }
-                var move = next.GetMove();
+                Command move;
                 if(!s.CanMove) {
                     move = s.StayStill("Ship cannot move, forcing it to stay still... Target " + next.valuer.Target.position.ToString() + "... Expected Turns: " + next.numTurns);
                 }
-                // todo can test this if staement for performance to remove
-                else if(!(s.CurrentMapCell.Neighbors.Any(n => n.halite > GameInfo.UpperThirdAverage && n.halite > s.CellHalite * MyBot.HParams[Parameters.STAY_MULTIPLIER]))
-                && s.CellHalite > GameInfo.UpperThirdAverage && !Fleet.CollisionCells.Contains(s.CurrentMapCell)) {
+ /* todo */     else if(!(s.CurrentMapCell.Neighbors.Any(n => n.halite > GameInfo.UpperThirdAverage && n.halite > s.CellHalite * MyBot.HParams[Parameters.STAY_MULTIPLIER]))
+                && s.CellHalite > GameInfo.UpperThirdAverage && Safety.IsSafeMove(s, Direction.STILL)) {
                     move = s.StayStill("Forcing ship to sit still... Target " + next.valuer.Target.position.ToString() + "... Expected Turns: " + next.numTurns);
+                } else {
+                    move = next.GetMove();
                 }
                 DoMove(move, next.valuer.Target, next.ship.Id);
                 list.Remove(next);
@@ -53,7 +53,7 @@ namespace Halite3.Logic {
         private void DoMove(Command c, MapCell target, int shipId) {
             if(c != null) {
                 ValueMapping3.AddNegativeShip(c.Ship, target);
-                MakeMove(c);
+                Fleet.AddMove(c);
             } else {
                 Log.LogMessage($"Ship {shipId} tried to move to {target.position.ToString()} but could not.");
             }
@@ -77,7 +77,7 @@ namespace Halite3.Logic {
                 }
                 foreach(var d in dirs) {
                     var cell = GameInfo.CellAt(ship, d);
-                    if(IsSafeAndAvoids2Cells(ship, d) && Navigation.IsAccessible(cell.position, valuer.Target.position)) {
+                    if(Safety.IsSafeAndAvoids2Cells(ship, d) && Navigation.IsAccessible(cell.position, valuer.Target.position)) {
                         return ship.Move(d, $"moving towards best projection {valuer.Target.position.ToString()}... Expected turns: {numTurns}");
                     }
                 }

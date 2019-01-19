@@ -27,7 +27,7 @@ namespace Halite3.hlt
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
         public List<MapCell> NeighborsAndSelf => new List<MapCell> { this, North, South, East, West };
         public List<MapCell> Corners => new List<MapCell> { North.West, North.East, South.East, South.West };
-        public int SmallestEnemyValue => Neighbors.Min(x => x.IsOccupiedByOpponent() ? x.ship.halite : int.MaxValue);
+        public int SmallestEnemyValue => Neighbors.Min(x => x.IsOccupiedByOpponent ? x.ship.halite : int.MaxValue);
 
         public List<Ship> MyClosestShips() => ClosestShips(Fleet.AllShips);
         public List<Ship> ClosestShips(List<Ship> ships) {
@@ -47,9 +47,9 @@ namespace Halite3.hlt
         }
 
         // Other things
-        public bool IsInspired => GameInfo.Map.GetXLayers(position, 4).Sum(x => x.IsOccupiedByOpponent() ? 1 : 0) >= 2;
-        public bool IsThreatened => Neighbors.Any(n => n.IsOccupiedByOpponent());
-        public List<Ship> ThreatenedBy => Neighbors.Where(n => n.IsOccupiedByOpponent()).Select(n => n.ship).ToList();
+        public bool IsInspired => GameInfo.Map.GetXLayers(position, 4).Sum(x => x.IsOccupiedByOpponent ? 1 : 0) >= 2;
+        public bool IsThreatened => NeighborsAndSelf.Any(n => n.IsOccupiedByOpponent);
+        public List<Ship> ThreatenedBy => NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent).Select(n => n.ship).ToList();
 
         public MapCell(Position position, int halite)
         {
@@ -73,13 +73,8 @@ namespace Halite3.hlt
             return ship != null;
         }
 
-        public bool IsOccupiedByOpponent() {
-            return ship != null && ship.owner.id != GameInfo.MyId;
-        }
-
-        public bool IsOccupiedByMe() {
-            return ship != null && ship.owner.id == GameInfo.MyId;
-        }
+        public bool IsOccupiedByOpponent => ship != null && ship.owner.id != GameInfo.MyId;
+        public bool IsOccupiedByMe => ship != null && ship.owner.id == GameInfo.MyId;
 
         /// <summary>
         /// Returns true if there is a structure on this MapCell.

@@ -41,6 +41,7 @@ namespace Halite3 {
         
         public static void AddMove(Command command) {
             availableShipMoves.Remove(command.Ship);
+            Safety.TwoTurnAvoider.Remove(command.TargetCell);
             //if(command.Ship.OnDropoff)
                 usedShips[command.Ship] = command; // allows override by collect logic
             //else
@@ -65,10 +66,10 @@ namespace Halite3 {
                     dirs.Insert(0, Direction.STILL);
                 else
                     dirs.Add(Direction.STILL);
-                if(dirs.Any(d => Logic.Logic.IsSafeMove(ship, d))) {
-                    AddMove(ship.Move(dirs.First(d => Logic.Logic.IsSafeMove(ship, d)), "Left-over ship, making move from fleet logic."));
-                } else if(dirs.Any(d => Logic.Logic.IsSafeMove(ship, d, true))) {
-                    AddMove(ship.Move(dirs.First(d => Logic.Logic.IsSafeMove(ship, d, true)), "Left-over ship, Moving towards an enemy instead of crashing myself..."));
+                if(dirs.Any(d => Safety.IsSafeMove(ship, d))) {
+                    AddMove(ship.Move(dirs.First(d => Safety.IsSafeMove(ship, d)), "Left-over ship, making move from fleet logic."));
+                } else if(dirs.Any(d => !CollisionCells.Contains(GameInfo.CellAt(ship, d)))) {
+                    AddMove(ship.Move(dirs.First(d => !CollisionCells.Contains(GameInfo.CellAt(ship, d))), "Left-over ship, Moving towards an enemy instead of crashing myself..."));
                 }
             }
             return usedShips.Values.ToList();
