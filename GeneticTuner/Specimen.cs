@@ -8,14 +8,14 @@ using Halite3.hlt;
 namespace GeneticTuner
 {
     public interface Specimen {
-        void SpawnChildren();
+        void SpawnChildren(int num);
         void Kill();
         HyperParameters GetHyperParameters();
         string Name();
     }
 
     public class FakeSpecimen : Specimen {
-        public void SpawnChildren() {}
+        public void SpawnChildren(int num) {}
         public void Kill() {}
         public HyperParameters GetHyperParameters() { return HyperParameters.GetDefaults(); }
         public string Name() { return "fake"; }
@@ -67,11 +67,15 @@ namespace GeneticTuner
             return new GeneticSpecimen(files[randomOne]);
         }
 
-        public void SpawnChildren() {
+        public void SpawnChildren(int num) {
+            int count = 0;
             if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() < 12) {
                 foreach(var child in children) {
                     Halite3.hlt.Log.LogMessage("specimen file path " + child.FilePath);
                     child.hyperParameters.WriteToFile(child.FilePath);
+                    count++;
+                    if(count == num)
+                        break;
                 }
             }
         }

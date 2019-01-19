@@ -1,6 +1,7 @@
 using Halite3.hlt;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 namespace Halite3.Logic {
     public class CombatLogic2 : Logic
     {
@@ -9,8 +10,6 @@ namespace Halite3.Logic {
             FleetCombatScores.RecoveryScores.Clear();
             foreach(var ship in Fleet.AllShips) {
                 FleetCombatScores.RecoveryScores[ship.Id] = new CombatScores(ship);
-            }
-            foreach(var ship in Fleet.AllShips) {
                 foreach(var n in ship.CurrentMapCell.NeighborsAndSelf.Where(x => x.IsThreatened)) {
                     var zone = new Zone(n.position, 5);
                     var lowestEnemy = GameInfo.LowestNeighboringOpponentShip(n);
@@ -18,6 +17,9 @@ namespace Halite3.Logic {
                     FleetCombatScores.RecoveryScores[ship.Id].Scores[d] = zone.CargoRecoveryLikelihood(ship, lowestEnemy);
                 }
             }
+
+            if(FleetCombatScores.RecoveryScores.Count < Fleet.ShipCount)
+                throw new Exception("this absoltuely positively should not happen");
         }
         public override void CommandShips()
         {

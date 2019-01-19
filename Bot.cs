@@ -79,9 +79,12 @@ namespace Halite3
 
                 // Specimen spawn logic for GeneticTuner
                 if(GameInfo.TurnsRemaining == 0) {
-                    if((GameInfo.Opponents.Count == 1 && GameInfo.Me.halite > GameInfo.Opponents[0].halite) ||
-                        (GameInfo.Opponents.Count == 3 && GameInfo.Me.halite > GameInfo.Opponents.OrderBy(x => x.halite).ElementAt(1).halite)) {
-                        specimen.SpawnChildren();
+                    var players = GameInfo.Opponents;
+                    players.Add(GameInfo.Me);
+                    players = players.OrderBy(x => x.halite).ToList();
+                    int numChildren = 1 + players.IndexOf(GameInfo.Me) - players.Count;
+                    if(numChildren > 0) {
+                        specimen.SpawnChildren(numChildren);
                     } else {
                         specimen.Kill();
                     }
@@ -116,12 +119,6 @@ namespace Halite3
                 DropoffLogic.CommandShips();
                 dropoffWatch.Stop();
 
-                /* /// Proxmitiy Logic
-                Log.LogMessage("*** Proximity Logic ***");
-                proximityWatch.Start();
-                ProximityLogic.CommandShips();
-                proximityWatch.Stop();*/
-
                 // collect halite (move or stay) using Logic interface
                 Log.LogMessage($"*** Collect Logic ***");
                 collectWatch.Reset();
@@ -146,8 +143,8 @@ namespace Halite3
 
         // TODO move the .08 to hyperparameters
         public static bool ShouldSpawnShip(int haliteToAdd = 0) {
-            if(GameInfo.Me.id.id == 0) // debugging the collect logic
-                return false;
+            //if(GameInfo.Me.id.id == 0) // debugging the collect logic
+            //    return false;
             int halite = GameInfo.Me.halite + haliteToAdd;
             if(GameInfo.TurnsRemaining < 80 || 
                 halite < (GameInfo.ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
