@@ -123,7 +123,6 @@ namespace Halite3 {
         public static int OpponentShipsCount => Game.Opponents.Sum(x => x.ships.Count);
         public static int TotalShipsCount => OpponentShipsCount + MyShipsCount;
         public static Ship GetMyShip(int shipId) => Me.GetShipById(shipId);
-        // not correct, needs nullablepublic static int LowestNeighboringOpponentHalite(MapCell c) => c.Neighbors.Where(n => n.IsOccupiedByOpponent()).Min(n => n.ship.halite);
         public static int? LowestNeighboringOpponentHaliteWhereNotReturning(MapCell c) {
             var neighbors = c.NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent && !EnemyFleet.IsReturningHome(n.ship));
             if(neighbors.Any())

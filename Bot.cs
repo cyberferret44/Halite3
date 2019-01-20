@@ -43,7 +43,6 @@ namespace Halite3
             Logic.Logic CombatLogic = LogicFactory.GetCombatLogic();
             Logic.Logic CollectLogic = LogicFactory.GetCollectLogic();
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
-            //Logic.Logic ProximityLogic = LogicFactory.GetProximityLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
             Logic.Logic EndCollectLogic = new EndGameCollectLogic();
             SiteSelection.Initialize();
@@ -82,7 +81,7 @@ namespace Halite3
                     var players = GameInfo.Opponents;
                     players.Add(GameInfo.Me);
                     players = players.OrderBy(x => x.halite).ToList();
-                    int numChildren = 1 + players.IndexOf(GameInfo.Me) - players.Count;
+                    int numChildren = players.Count - (1 + players.IndexOf(GameInfo.Me));
                     if(numChildren > 0) {
                         specimen.SpawnChildren(numChildren);
                     } else {

@@ -14,8 +14,7 @@ namespace Halite3
     public enum Parameters {
         CARGO_TO_MOVE,
         TARGET_VALUE_TO_CREATE_SHIP,
-        DROPOFF_DISTANCE, 
-        SHOULD_CRASH_SHIP,
+        DROPOFF_DISTANCE,
         STAY_MULTIPLIER,
         HALITE_TO_SWITCH_COLLECT
     }
@@ -45,10 +44,9 @@ namespace Halite3
         }
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
-            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0, .85) },
+            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0, .9) },
             { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 550.0) },
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
-            { Parameters.SHOULD_CRASH_SHIP, new Bounds(0, 2000, GameInfo.PlayerCount == 2 ? 400 : 900)},
             { Parameters.STAY_MULTIPLIER, new Bounds(0, 10, 3.0)},
             { Parameters.HALITE_TO_SWITCH_COLLECT, new Bounds(0, 1000, 70.0)}
         };
@@ -57,7 +55,6 @@ namespace Halite3
             { Parameters.CARGO_TO_MOVE, 0.02 },
             { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .07 },
             { Parameters.DROPOFF_DISTANCE, .05 },
-            { Parameters.SHOULD_CRASH_SHIP, .04 },
             { Parameters.STAY_MULTIPLIER, .04 },
             { Parameters.HALITE_TO_SWITCH_COLLECT, .05}
         };
@@ -119,33 +116,6 @@ namespace Halite3
                     if(shouldPrint)
                         Log.LogMessage(param.ToString("g") + ": "+ BoundDictionary[param].Seed);
                 }
-            }
-
-            if(initializeDictionary) {
-                //VarianceDictionary.Clear();
-                /* var values = new Dictionary<Parameters, List<double>>();
-                foreach(var param in AllParameters) {
-                    values.Add(param, new List<double>());
-                }
-
-                var files = Directory.EnumerateFiles(GameInfo.HyperParameterFolder).ToArray();
-                foreach(var f in files) {
-                    var hparams = new HyperParameters(f, false);
-                    foreach(var param in AllParameters) {
-                        values[param].Add(hparams[param]);
-                    }
-                }*/
-
-                /* if(shouldPrint)
-                    Log.LogMessage("Variance Dictionary......");
-                foreach(var kvp in values) {
-                    List<double> vals = kvp.Value.OrderBy(x => x).ToList();
-                    double lowerAvg = vals.GetRange(0, vals.Count/2).Average();
-                    double upperAvg = vals.GetRange(vals.Count/2, vals.Count/2).Average();
-                    VarianceDictionary[kvp.Key] = (upperAvg - lowerAvg) + upperAvg * 0.005; // enforce a minimum variance
-                    if(shouldPrint)
-                        Log.LogMessage(kvp.Key.ToString("g") + ": "+ VarianceDictionary[kvp.Key]);
-                }*/
             }
         }
 

@@ -30,7 +30,7 @@ namespace Halite3 {
             Log.LogMessage("Ship count: " + ships.Count);
             Log.LogMessage("Opp  count: " + GameInfo.OpponentShipsCount);
             Log.LogMessage("My halite: " + GameInfo.Me.halite);
-            Log.LogMessage("Op halite: " + GameInfo.Opponents[0].halite);
+            GameInfo.OpponentShips.ForEach(o => Log.LogMessage("Op halite: " + o.halite));
 
             foreach(var ship in ships) {
                 if(ship.CanMove) {
@@ -46,10 +46,7 @@ namespace Halite3 {
         public static void AddMove(Command command) {
             availableShipMoves.Remove(command.Ship);
             Safety.TwoTurnAvoider.Remove(command.TargetCell);
-            //if(command.Ship.OnDropoff)
-                usedShips[command.Ship] = command; // allows override by collect logic
-            //else
-            //    usedShips.Add(command.Ship, command); // basically error detecting
+            usedShips[command.Ship] = command;
             collisionCells.Add(command.TargetCell);
             Log.LogMessage(command.Comment);
 

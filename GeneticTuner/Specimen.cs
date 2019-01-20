@@ -69,7 +69,7 @@ namespace GeneticTuner
 
         public void SpawnChildren(int num) {
             int count = 0;
-            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() < 12) {
+            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() < 15) {
                 foreach(var child in children) {
                     Halite3.hlt.Log.LogMessage("specimen file path " + child.FilePath);
                     child.hyperParameters.WriteToFile(child.FilePath);
@@ -82,7 +82,7 @@ namespace GeneticTuner
 
         public void Kill() {
             // minimum number of specimen
-            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() > 8) {
+            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() > 6) {
                 File.Delete(this.FilePath);
             }
         }

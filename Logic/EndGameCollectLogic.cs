@@ -7,7 +7,8 @@ using System;
 namespace Halite3.Logic {
     public class EndGameCollectLogic : Logic
     {
-        List<Assignment> Assignments = new List<Assignment>();
+        Dictionary<Point, Assignment> PointAssignments = new Dictionary<Point, Assignment>();
+        Dictionary<Ship, Assignment> ShipAssignments = new Dictionary<Ship, Assignment>();
         public override void ProcessTurn() {}
 
         public int GetCellValue(Ship ship, MapCell cell) {
@@ -20,24 +21,26 @@ namespace Halite3.Logic {
         }
 
         public Assignment AssignAndReturnPrevAssignIfAny(Ship ship, MapCell cell) {
-            Assignments.RemoveAll(a => a.Ship.Id == ship.Id);
-            Assignment otherAssign = Assignments.FirstOrDefault(a => a.Target.position.Equals(cell.position));
-            if(otherAssign != null)
-                Assignments.Remove(otherAssign);
-
-            Assignments.Add(new Assignment(ship, cell));
-            return otherAssign;
+            Assignment otherAssignment = null;
+            if(PointAssignments.ContainsKey(cell.position.AsPoint)) {
+                otherAssignment = PointAssignments[cell.position.AsPoint];
+                ShipAssignments.Remove(otherAssignment.Ship);
+                PointAssignments.Remove(otherAssignment.Target.position.AsPoint);
+            }
+            var newAssignment = new Assignment(ship, cell);
+            ShipAssignments[ship] = newAssignment;
+            PointAssignments[cell.position.AsPoint] = newAssignment;
+            return otherAssignment;
         }
 
         public override void CommandShips()
         {
-            Assignments.Clear();
+            ShipAssignments.Clear();
+            PointAssignments.Clear();
 
             // stay still...
-            foreach(var s in Fleet.AvailableShips) {
-                if(!s.CanMove) {
-                    Fleet.AddMove(s.StayStill("Ship cannot move, forcing it to stay still..."));
-                }
+            foreach(var s in Fleet.AvailableShips.Where(s => !s.CanMove)) {
+                Fleet.AddMove(s.StayStill("Ship cannot move, forcing it to stay still..."));
             }
 
             // select targets
@@ -46,13 +49,13 @@ namespace Halite3.Logic {
 
             while(queue.Count > 0) {
                 var s = queue.Dequeue();
-                var xLayers = GameInfo.RateLimitXLayers(20);
+                var xLayers = GameInfo.RateLimitXLayers(15);
                 var cells = GameInfo.Map.GetXLayers(s.position, xLayers);
                 MapCell target = s.CurrentMapCell;
                 int maxVal = GetCellValue(s, target);
                 do {
                     foreach(var c in cells) {
-                        var otherAssign = Assignments.FirstOrDefault(a => a.Target.position.Equals(c.position));
+                        var otherAssign = PointAssignments.ContainsKey(c.position.AsPoint) ? PointAssignments[c.position.AsPoint] : null; //.FirstOrDefault(a => a.Target.position.Equals(c.position));
                         if(otherAssign != null && GameInfo.Distance(s, c.position) >= otherAssign.Distance) {
                             continue;
                         }
@@ -72,19 +75,18 @@ namespace Halite3.Logic {
                 } while(target == null && xLayers <= Math.Min(GameInfo.Map.width, GameInfo.RateLimitXLayers(xLayers)));
 
                 if(target != null) {
-                    Log.LogMessage($"Ship {s.Id} value of sitting still at {s.position.ToString()} is {GetCellValue(s, s.CurrentMapCell)}");
-                    Log.LogMessage($"New target is {target.position.ToString()} with value {GetCellValue(s, target)}");
-                    Assignments.Add(new Assignment(s, target));
+                    //var newAssignment = new Assignment(s, target);
+                    //Assignments.Add(new Assignment(s, target));
                     var otherTarget = AssignAndReturnPrevAssignIfAny(s, target);
                     if(otherTarget != null) {
-                        Assignments.Remove(otherTarget);
-                        Log.LogMessage($"Ship {otherTarget.Ship.Id} was requeued");
+                        //Assignments.Remove(otherTarget);
+                        //Log.LogMessage($"Ship {otherTarget.Ship.Id} was requeued");
                         queue.Enqueue(otherTarget.Ship);
                     }
                 }
             }
-            Assignments = Assignments.OrderBy(a => a.Distance).ToList();
-            foreach(var a in Assignments) {
+            var vals = ShipAssignments.Values.OrderBy(a => a.Distance);
+            foreach(var a in vals) {
                 var dirs = a.Target.position.GetAllDirectionsTo(a.Ship.position);
                 dirs = dirs.OrderBy(d => GameInfo.CellAt(a.Ship, d).halite).ToList();
                 if(dirs.Any(d => Safety.IsSafeMove(a.Ship, d))) {

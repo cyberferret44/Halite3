@@ -75,8 +75,6 @@ namespace Halite3 {
         public bool IsOkay(Position cell) {
             if(!CellToShipMapping.ContainsKey(cell.AsPoint))
                 return true;
-            if(CellToShipMapping[cell.AsPoint].Any(x => ShipOptionsCount[x] == 0))
-                ExceptionHandler.Raise("We have a cell reserved in CellToShipMapping for two-turn avoid with no ship attached. This is unexpected.");
             return CellToShipMapping[cell.AsPoint].All(shipId => ShipOptionsCount[shipId] > 1);
         }
         public bool IsOkay(MapCell cell) => IsOkay(cell.position);
