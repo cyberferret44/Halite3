@@ -15,10 +15,7 @@ namespace Halite3.Logic {
         }
 
         public static Logic GetCombatLogic() {
-            if(GameInfo.Me.id.id == 1)
-                return new CombatLogic2();
-            else 
-                return new TwoPlayerCombatLogic();
+            return new CombatLogic2();
         }
     }
 }

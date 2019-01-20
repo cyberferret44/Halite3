@@ -14,12 +14,6 @@ namespace Halite3.Logic {
         //abstract methods
         public abstract void ProcessTurn();
         public abstract void CommandShips();
-
-        // Make move method, and all it's details...
-        //public static void MakeMove(Command command) {
-        //    Fleet.AddMove(command);
-        //    TwoTurnAvoider.Remove(command.TargetCell);
-       // }
     }
 
     public class EmptyLogic : Logic {
