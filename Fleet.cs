@@ -30,7 +30,7 @@ namespace Halite3 {
             Log.LogMessage("Ship count: " + ships.Count);
             Log.LogMessage("Opp  count: " + GameInfo.OpponentShipsCount);
             Log.LogMessage("My halite: " + GameInfo.Me.halite);
-            GameInfo.OpponentShips.ForEach(o => Log.LogMessage("Op halite: " + o.halite));
+            GameInfo.Opponents.ForEach(o => Log.LogMessage("Op halite: " + o.halite + "... ships " + o.ships.Count));
 
             foreach(var ship in ships) {
                 if(ship.CanMove) {

@@ -7,7 +7,6 @@ using System;
 
 namespace Halite3 {
     public static class GameInfo {
-        // 
         private static Queue<int> HaliteCollected = new Queue<int>();
 
         // Things to change...
