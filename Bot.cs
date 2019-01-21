@@ -24,20 +24,14 @@ namespace Halite3
             if(GameInfo.IsDebug) {
                 Stopwatch s = new Stopwatch();
                 s.Start();
-                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 60000); // max 30 seconds to attach, prevents memory leaks;
+                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 60000); // max 60 seconds to attach, prevents memory leaks;
                 s.Stop();
             }
 
             // Do Genetic Algorithm Specimen implementation
             Specimen specimen;
-            if(GameInfo.IsDebug || (GameInfo.IsLocal && args.Count() > 0 && args[0] == "test")) {
-                specimen = new FakeSpecimen();
-                HParams = specimen.GetHyperParameters();
-                Log.LogMessage("testing...");
-            } else {
-                specimen = GeneticSpecimen.RandomSpecimen();
-                HParams = specimen.GetHyperParameters();
-            }
+            specimen = GeneticSpecimen.RandomSpecimen();
+            HParams = specimen.GetHyperParameters();
 
             // Handle Logic
             Logic.Logic CombatLogic = LogicFactory.GetCombatLogic();
@@ -168,7 +162,7 @@ namespace Halite3
                 haliteRemaining2 -= haliteCollectable;
             }
             if(haliteRemaining2 >= haliteRemaining) {
-                Log.LogMessage("this shouldn't happen...");
+                throw new Exception("this shouldn't happen...");
             }
 
             if(haliteRemaining - haliteRemaining2 > MyBot.HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {
