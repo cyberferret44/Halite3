@@ -81,7 +81,7 @@ namespace Halite3
                     var players = GameInfo.Opponents;
                     players.Add(GameInfo.Me);
                     players = players.OrderBy(x => x.halite).ToList();
-                    int numChildren = players.Count - (2 + players.IndexOf(GameInfo.Me));
+                    int numChildren = players.Count - ((players.Count/2) + players.IndexOf(GameInfo.Me));
                     if(numChildren > 0) {
                         specimen.SpawnChildren(numChildren);
                     } else {
@@ -144,27 +144,31 @@ namespace Halite3
         public static bool ShouldSpawnShip(int haliteToAdd = 0) {
             //if(GameInfo.Me.id.id == 0) // debugging the collect logic
             //    return false;
+            // todo 5500
             int halite = GameInfo.Me.halite + haliteToAdd;
             if(GameInfo.TurnsRemaining < 80 || 
-                halite < (GameInfo.ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
+                halite < (GameInfo.ReserveForDropoff ? (5000 - SiteSelection.NewDropoffDeduction()) : Constants.SHIP_COST) ||
                 !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
                 return false;
             }
 
             // this logic is special because of the specific treatment of enemy ships here
-            int numShips = (int)(GameInfo.OpponentShipsCount * GameInfo.Opponents.Count * .5 + GameInfo.MyShipsCount * (1 + .5 * GameInfo.Opponents.Count));
+            int numShips = (int)(GameInfo.OpponentShipsCount * .5 + GameInfo.MyShipsCount * (1 + .5 * GameInfo.Opponents.Count));
             int numCells = GameInfo.TotalCellCount;
             int haliteRemaining = GameInfo.HaliteRemaining;
             for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining / numCells);
+                int haliteCollectable = (int)(numShips * .1 * haliteRemaining / numCells);
                 haliteRemaining -= haliteCollectable;
             }
 
             numShips += 1; // if I created another, how much could I get?
             int haliteRemaining2 = GameInfo.HaliteRemaining;
             for(int i=0; i<GameInfo.TurnsRemaining; i++) {
-                int haliteCollectable = (int)(numShips * .08 * haliteRemaining2 / numCells);
+                int haliteCollectable = (int)(numShips * .1 * haliteRemaining2 / numCells);
                 haliteRemaining2 -= haliteCollectable;
+            }
+            if(haliteRemaining2 >= haliteRemaining) {
+                Log.LogMessage("this shouldn't happen...");
             }
 
             if(haliteRemaining - haliteRemaining2 > MyBot.HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {

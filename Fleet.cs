@@ -75,5 +75,10 @@ namespace Halite3 {
             }
             return usedShips.Values.ToList();
         }
+
+        public static List<Ship> MyClosestShips(Position p) {
+            var min = AllShips.Min(x => GameInfo.Distance(x, p));
+            return AllShips.Where(x => GameInfo.Distance(x, p) == min).ToList();
+        }
     }
 }

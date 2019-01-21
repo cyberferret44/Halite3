@@ -101,5 +101,17 @@ namespace Halite3 {
             GameInfo.ReserveForDropoff = false;
             GameInfo.NextDropoff = null;
         }
+
+        public static int NewDropoffDeduction() {
+            if(GameInfo.NextDropoff == null)
+                return 0;
+            var newDropHalite = GameInfo.NextDropoff.Cell.halite;
+            var s = Fleet.MyClosestShips(GameInfo.NextDropoff.Position).OrderByDescending(x => x.halite).FirstOrDefault();
+            if(s == null)
+                return newDropHalite;
+            var resistance = Navigation.CalculatePathOfLeastResistance(s.position, GameInfo.NextDropoff.Position).Sum(x => x.halite * .1);
+            resistance += s.CellHalite * .1;
+            return (int)(s.halite + newDropHalite - resistance);
+        }
     }
 }

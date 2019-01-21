@@ -24,7 +24,7 @@ namespace Halite3 {
             if(recoveryChance != 1.0) {
                 Log.LogMessage($"Ship {ship.Id}, rChance: {recoveryChance}, target: {target.position.ToString()}");
             }
-            return recoveryChance > (GameInfo.IsLocal ? .4 : .6);
+            return recoveryChance > MyBot.HParams[Parameters.SAFETY_THRESHOLD];
         }
         public static bool IsCompletelySafeMove(Ship s, Direction d) => IsSafeMove(s, d); // && (!GameInfo.CellAt(s, d).IsThreatened || s.DistanceToMyDropoff <= 3) ;
         public static bool IsSafeAndAvoids2Cells(Ship s, Direction d) => IsSafeMove(s, d) && (d == Direction.STILL || 
@@ -32,8 +32,7 @@ namespace Halite3 {
         public static bool IsSafeAndAvoids2Cells(Ship s, MapCell m) => IsSafeMove(s, m.position.GetDirectionTo(s.position));
     }
 
-
-        // This class merely keeps track of moving ships and verifies that no ship interrups their movement
+    // This class merely keeps track of moving ships and verifies that no ship interrups their movement
     // by moving into a space where they would be stuck the following turn
     public class TwoTurnAvoid {
         Dictionary<int, int> ShipOptionsCount = new Dictionary<int, int>();
