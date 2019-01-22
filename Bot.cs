@@ -96,6 +96,11 @@ namespace Halite3
                     Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
+                if (GameInfo.MyId == 1 && ShouldSpawnShip())
+                {
+                    Fleet.SpawnShip();
+                }
+
                 // Combat Logic!!!
                 Log.LogMessage($"*** Combat  Logic ***");
                 combatWatch.Start();
@@ -123,14 +128,13 @@ namespace Halite3
                 collectWatch.Stop();
                 Log.LogMessage("collect time was " + collectWatch.ElapsedMilliseconds);
 
+                // execute the list of commands...
                 // spawn ships
-                var cmdQueue = Fleet.GenerateCommandQueue();
-                if (ShouldSpawnShip())
+                if (GameInfo.MyId != 1 && ShouldSpawnShip())
                 {
-                    cmdQueue.Add(GameInfo.Me.shipyard.Spawn());
+                    Fleet.SpawnShip();
                 }
-
-                GameInfo.Game.EndTurn(cmdQueue);
+                GameInfo.Game.EndTurn(Fleet.GenerateCommandQueue());
             }
         }
 

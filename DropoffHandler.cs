@@ -15,7 +15,6 @@ namespace Halite3 {
 
         // private values
         private static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
-        private static VirtualDropoff NextDropoff = null;
 
         private static List<Position> GetDropoffs()  {
             HashSet<Point> dropoffs = GameInfo.Me.Dropoffs.Select(d => d.AsPoint).ToHashSet();
@@ -140,6 +139,8 @@ namespace Halite3 {
         public VirtualDropoff(Position p) {
             Position = p;
         }
+        bool IsActivated = false;
+        bool ShouldCreate = false;
         public MapCell Cell => GameInfo.CellAt(Position);
         public double VirtualDropValue => GameInfo.Map.GetXLayers(Cell.position, DropoffXlayers).Sum(x => x.halite / (1 + GameInfo.Distance(Cell, x)));
     }
