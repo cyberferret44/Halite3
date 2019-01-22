@@ -11,7 +11,7 @@ namespace Halite3.Logic {
 
         public override void ProcessTurn() {
             // Handle return to base flags
-            foreach(var ship in Me.ShipsSorted) {
+            foreach(var ship in Fleet.AllShips) {
                 if(ShouldMoveShip(ship))
                     MovingTowardsBase.Add(ship.Id);
                 if(ship.OnDropoff)
@@ -62,9 +62,9 @@ namespace Halite3.Logic {
                 return false;
 
             // need to handle the shipyard with special care
-            if(GameInfo.IsMyShipyard(ship.ClosestDropoff)) {
+            //if(GameInfo.IsMyShipyard(ship.ClosestDropoff)) {
 
-            }
+            //}
 
             // harder...
             //bool highestOrder = buckets.Where(x => x.Value != bucket).All(b => b[0].DistanceToMyDropoff > ship.DistanceToMyDropoff || b[0].halite < ship.halite);
@@ -84,7 +84,7 @@ namespace Halite3.Logic {
         Dictionary<Position, List<Ship>> GetBuckets(List<Ship> ships) {
             var buckets = new Dictionary<Position, List<Ship>>();
             foreach(var ship in ships) {
-                var drop = ship.ClosestDropoff; // includes virtual ones
+                var drop = ship.MyClosestDropoff; // includes virtual ones
                 if(!buckets.ContainsKey(drop)) {
                     buckets.Add(drop, new List<Ship>());
                 }

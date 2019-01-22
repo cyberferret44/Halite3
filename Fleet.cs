@@ -20,6 +20,8 @@ namespace Halite3 {
         public static int ShipCount => shipCount;
         public static HashSet<MapCell> ProbablyOccupiedCells => CollisionCells.Union(AvailableShips.Select(s => s.CurrentMapCell)).ToHashSet();
         public static bool ShipAvailable(Ship ship) => !usedShips.ContainsKey(ship);
+        public static Ship GetMyShip(int shipId) => GameInfo.Me.GetShipById(shipId);
+
         public static void UpdateFleet(List<Ship> ships) {
             allShips = ships.ToList();
             shipCount = ships.Count;

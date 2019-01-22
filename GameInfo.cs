@@ -82,15 +82,6 @@ namespace Halite3 {
             return xLayers.Where(x => !subtract.Contains(x)).ToList();
         }
 
-        // Dropoff / Shipyard related
-        public static Shipyard MyShipyard => Me.shipyard;
-        public static List<Position> MyDropoffs => Me.GetDropoffs().ToList();
-        public static Position MyClosestDrop(Position p) => MyDropoffs.OrderBy(x => Distance(p, x)).First();
-        public static int MyClosestDropDistance(Position p) => GameInfo.Distance(p, MyClosestDrop(p));
-        public static bool IsMyShipyard(Dropoff d) => IsMyShipyard(d.position);
-        public static bool IsMyShipyard(Position p) => p.Equals(MyShipyard.position);
-        public static int DropoffXlayers =>  Map.width / 4;
-
         // Halite related
         public static int HaliteRemaining => Map.HaliteRemaining;
         public static int AverageHalitePerCell => HaliteRemaining / TotalCellCount;
@@ -115,13 +106,10 @@ namespace Halite3 {
         public static bool Is4Player => PlayerCount == 4;
 
         // Ships related
-        public static List<Ship> MyShips => Me.ShipsSorted;
-        public static int MyShipsCount => Me.ships.Count;
         public static List<Player> Opponents => Game.Opponents;
         public static List<Ship> OpponentShips => Game.Opponents.SelectMany(x => x.ships.Values).ToList();
         public static int OpponentShipsCount => Game.Opponents.Sum(x => x.ships.Count);
-        public static int TotalShipsCount => OpponentShipsCount + MyShipsCount;
-        public static Ship GetMyShip(int shipId) => Me.GetShipById(shipId);
+        public static int TotalShipsCount => OpponentShipsCount + Fleet.ShipCount;
         public static int? LowestNeighboringOpponentHaliteWhereNotReturning(MapCell c) {
             var neighbors = c.NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent && !EnemyFleet.IsReturningHome(n.ship));
             if(neighbors.Any())
@@ -168,9 +156,6 @@ namespace Halite3 {
         // Hyper Parameters
         public static string PlayerXSize => PlayerCount + "x" + Map.width;
         public static string HyperParameterFolder => $"{(IsLocal ? "Halite3/" : "")}GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
-        public static int OpportunityCost => (int)(.08 * Map.AverageHalitePerCell);
-        public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
-        public static VirtualDropoff NextDropoff = null;
         public static bool ReserveForDropoff = false;
 
         // Combat related...?
@@ -178,16 +163,5 @@ namespace Halite3 {
             var cells = Map.GetXLayers(p, layers);
             return (double)(cells.Count(x => x.IsOccupiedByMe)+1) / (cells.Count(x => x.IsOccupiedByOpponent)+1);
         }
-    }
-
-    // Virtual Dropoffs
-    public class VirtualDropoff {
-        public Position Position;
-        public VirtualDropoff(Position p) {
-            Position = p;
-        }
-        public MapCell Cell => GameInfo.CellAt(Position);
-        public double VirtualDropValue => GameInfo.Map.GetXLayers(Cell.position, GameInfo.DropoffXlayers).
-                Sum(x => /* (x.IsOccupiedByOpponent() ? x.ship.halite - 1000 : 0) +*/ x.halite / (1 + GameInfo.Distance(Cell, x)));
     }
 }
