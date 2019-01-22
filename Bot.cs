@@ -24,14 +24,20 @@ namespace Halite3
             if(GameInfo.IsDebug) {
                 Stopwatch s = new Stopwatch();
                 s.Start();
-                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 60000); // max 60 seconds to attach, prevents memory leaks;
+                while(!Debugger.IsAttached && s.ElapsedMilliseconds < 60000); // max 30 seconds to attach, prevents memory leaks;
                 s.Stop();
             }
 
             // Do Genetic Algorithm Specimen implementation
             Specimen specimen;
-            specimen = GeneticSpecimen.RandomSpecimen();
-            HParams = specimen.GetHyperParameters();
+            if(GameInfo.IsDebug || (GameInfo.IsLocal && args.Count() > 0 && args[0] == "test")) {
+                specimen = new FakeSpecimen();
+                HParams = specimen.GetHyperParameters();
+                Log.LogMessage("testing...");
+            } else {
+                specimen = GeneticSpecimen.RandomSpecimen();
+                HParams = specimen.GetHyperParameters();
+            }
 
             // Handle Logic
             Logic.Logic CombatLogic = LogicFactory.GetCombatLogic();
@@ -39,7 +45,7 @@ namespace Halite3
             Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
             Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
             Logic.Logic EndCollectLogic = new EndGameCollectLogic();
-            DropoffHandler.Initialize();
+            SiteSelection.Initialize();
 
             string BotName = GameInfo.BOT_NAME + specimen.Name();
             GameInfo.Game.Ready(BotName);
@@ -55,11 +61,11 @@ namespace Halite3
                 // Basic processing for the turn start
                 GameInfo.Game.UpdateFrame();
                 GameInfo.ProcessTurn(GameInfo.Game);
-                Fleet.UpdateFleet(GameInfo.Me.AllShips);
+                Fleet.UpdateFleet(GameInfo.MyShips);
                 EnemyFleet.UpdateFleet();
                 Log.LogMessage("value mapping...");
                 ValueMapping3.ProcessTurn();
-                DropoffHandler.ProcessTurn();
+                SiteSelection.ProcessTurn();
 
                 // logic turn processing
                 CollectLogic.ProcessTurn();
@@ -96,11 +102,6 @@ namespace Halite3
                     Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
-                if (GameInfo.MyId == 1 && ShouldSpawnShip())
-                {
-                    Fleet.SpawnShip();
-                }
-
                 // Combat Logic!!!
                 Log.LogMessage($"*** Combat  Logic ***");
                 combatWatch.Start();
@@ -128,13 +129,14 @@ namespace Halite3
                 collectWatch.Stop();
                 Log.LogMessage("collect time was " + collectWatch.ElapsedMilliseconds);
 
-                // execute the list of commands...
                 // spawn ships
-                if (GameInfo.MyId != 1 && ShouldSpawnShip())
+                var cmdQueue = Fleet.GenerateCommandQueue();
+                if (ShouldSpawnShip())
                 {
-                    Fleet.SpawnShip();
+                    cmdQueue.Add(GameInfo.Me.shipyard.Spawn());
                 }
-                GameInfo.Game.EndTurn(Fleet.GenerateCommandQueue());
+
+                GameInfo.Game.EndTurn(cmdQueue);
             }
         }
 
@@ -145,13 +147,13 @@ namespace Halite3
             // todo 5500
             int halite = GameInfo.Me.halite + haliteToAdd;
             if(GameInfo.TurnsRemaining < 80 || 
-                halite < (GameInfo.ReserveForDropoff ? (5000 - DropoffHandler.NewDropoffDeduction()) : Constants.SHIP_COST) ||
+                halite < (GameInfo.ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
                 !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
                 return false;
             }
 
             // this logic is special because of the specific treatment of enemy ships here
-            int numShips = (int)(GameInfo.OpponentShipsCount * .5 + Fleet.ShipCount * (1 + .5 * GameInfo.Opponents.Count));
+            int numShips = (int)(GameInfo.OpponentShipsCount * .5 + GameInfo.MyShipsCount * (1 + .5 * GameInfo.Opponents.Count));
             int numCells = GameInfo.TotalCellCount;
             int haliteRemaining = GameInfo.HaliteRemaining;
             for(int i=0; i<GameInfo.TurnsRemaining; i++) {
@@ -166,7 +168,7 @@ namespace Halite3
                 haliteRemaining2 -= haliteCollectable;
             }
             if(haliteRemaining2 >= haliteRemaining) {
-                throw new Exception("this shouldn't happen...");
+                Log.LogMessage("this shouldn't happen...");
             }
 
             if(haliteRemaining - haliteRemaining2 > MyBot.HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {

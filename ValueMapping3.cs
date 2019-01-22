@@ -64,7 +64,7 @@ namespace Halite3 {
         public CellValuer(MapCell cell) {
             this.cell = cell;
             this.value = cell.halite;
-            this.closestDropDist = DropoffHandler.MyClosestDropDistance(cell.position); // store to save computing resources...
+            this.closestDropDist = GameInfo.MyClosestDropDistance(cell.position); // store to save computing resources...
         }
         public MapCell Target => cell;
         public void ReduceValue(int val) { value -= val; }

@@ -16,8 +16,31 @@ namespace Halite3.hlt
         public readonly Dictionary<int, Ship> ships = new Dictionary<int, Ship>();
         public List<Ship> AllShips => ships.Values.ToList();
         public readonly Dictionary<int, Dropoff> dropoffDictionary = new Dictionary<int, Dropoff>();
-        public List<Position> Dropoffs => dropoffDictionary.Values.Select(x => x.position).Union(new List<Position>{shipyard.position}).ToList();
+        public List<Ship> ShipsSorted = new List<Ship>();
+
+        public int NetValue => ships.Values.Sum(x => x.halite) + halite;
+
+        public List<Position> GetDropoffs()  {
+            var dropoffs = dropoffDictionary.Values.Select(v => v.position).ToList();
+            dropoffs.Add(shipyard.position);
+            if(GameInfo.NextDropoff != null) {
+                dropoffs.Add(GameInfo.NextDropoff.Position);
+            }
+            return dropoffs;
+        }
+
         public Ship GetShipById(int id) => ships.ContainsKey(id) ? ships[id] : null;
+        
+        public List<Ship> ShipsOnDropoffs() {
+            var myShips = new List<Ship>();
+            foreach(var drop in GetDropoffs()) {
+                var shipOnDrop = GameInfo.CellAt(drop).ship;
+                if(shipOnDrop != null && shipOnDrop.owner.Equals(id)) {
+                    myShips.Add(shipOnDrop);
+                }
+            }
+            return myShips;
+        }
 
         private Player(PlayerId playerId, Shipyard shipyard, int halite = 0)
         {
@@ -47,6 +70,8 @@ namespace Halite3.hlt
                 Dropoff dropoff = Dropoff._generate(id);
                 dropoffDictionary[dropoff.id.id] = dropoff;
             }
+
+            ShipsSorted = ships.Values.OrderBy(s => SpecialDistance(s, s.ClosestDropoff)).ToList();
         }
 
         private double SpecialDistance(Ship ship, Position target) {

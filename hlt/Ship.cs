@@ -13,6 +13,7 @@ namespace Halite3.hlt
     public class Ship : Entity
     {
         public readonly int halite;
+        public static List<Position> MyDropoffs => GameInfo.Me.GetDropoffs().ToList();
         public int Id => this.id.id;
         public bool CanMove => this.halite >= (int)(CellHalite / 10.0);
         public bool OnDropoff => CurrentMapCell.IsStructure && CurrentMapCell.structure.owner.Equals(this.owner);
@@ -27,10 +28,11 @@ namespace Halite3.hlt
         }
 
         public MapCell CurrentMapCell => GameInfo.CellAt(this.position);
-        public int DistanceToMyDropoff => GameInfo.Distance(this, MyClosestDropoff);
+        public int DistanceToMyDropoff => GameInfo.Distance(this, ClosestDropoff);
         public int DistanceToOwnerDropoff => GameInfo.Distance(this, ClosestEnemyDropoff(owner.id));
-        public Position MyClosestDropoff => DropoffHandler.MyClosestDrop(this.position);
-        public Position ClosestEnemyDropoff(int playerId) => GameInfo.GetPlayer(playerId).Dropoffs.OrderBy(d => GameInfo.Distance(this, d)).First();
+        public Position ClosestDropoff => MyDropoffs.OrderBy(d => GameInfo.Distance(this, d)).ToList()[0];
+        public Position ClosestEnemyDropoff(int playerId) => GameInfo.GetPlayer(playerId).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
+        public Position ClosestOwnerDropoff => GameInfo.GetPlayer(owner.id).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
 
 
         // Visibility...

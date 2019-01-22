@@ -16,8 +16,7 @@ namespace Halite3
         TARGET_VALUE_TO_CREATE_SHIP,
         DROPOFF_DISTANCE,
         STAY_MULTIPLIER,
-        HALITE_TO_SWITCH_COLLECT,
-        SAFETY_THRESHOLD
+        HALITE_TO_SWITCH_COLLECT
     }
 
     public class HyperParameters {
@@ -49,8 +48,7 @@ namespace Halite3
             { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 550.0) },
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
             { Parameters.STAY_MULTIPLIER, new Bounds(0, 10, 3.0)},
-            { Parameters.HALITE_TO_SWITCH_COLLECT, new Bounds(0, 1000, 70.0)},
-            { Parameters.SAFETY_THRESHOLD, new Bounds(0, 1.0, .6)}
+            { Parameters.HALITE_TO_SWITCH_COLLECT, new Bounds(0, 1000, 70.0)}
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
@@ -58,8 +56,7 @@ namespace Halite3
             { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .07 },
             { Parameters.DROPOFF_DISTANCE, .05 },
             { Parameters.STAY_MULTIPLIER, .04 },
-            { Parameters.HALITE_TO_SWITCH_COLLECT, .05},
-            { Parameters.SAFETY_THRESHOLD, .03}
+            { Parameters.HALITE_TO_SWITCH_COLLECT, .05}
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
@@ -69,8 +66,24 @@ namespace Halite3
         public double GetValue(Parameters p) => ParametersDictionary[p];
         public double this[Parameters param]
         {
-            get {
-                return ParametersDictionary[param];
+            get { 
+                if(param == Parameters.CARGO_TO_MOVE)
+                    return ParametersDictionary[param] * Constants.MAX_HALITE;
+                if(param == Parameters.DROPOFF_DISTANCE) {
+                    var value = ParametersDictionary[param];
+                    int numCellsCovered = (int) (((value * value / 2) + (value / 2)) * 4.0) + 1;
+                    int haliteCovered = numCellsCovered * 170;
+                    int actualLayers=0;
+                    while(true) {
+                        actualLayers++;
+                        var numCells = (((actualLayers * actualLayers / 2) + (actualLayers / 2)) * 4.0) + 1;
+                        if(numCells * (GameInfo.Map.AverageHalitePerCell + 20) >= haliteCovered) {
+                            return actualLayers;
+                        }
+                    }
+                } else  {
+                    return ParametersDictionary[param];
+                }
             }
             set { 
                 value = Math.Max(BoundDictionary[param].Lower, value);
@@ -82,35 +95,17 @@ namespace Halite3
         private HyperParameters() {}
 
         public HyperParameters(string file, bool initializeDictionary = true) {
+            bool shouldPrint = !HasPrinted;
+            HasPrinted = true;
             var lines = System.IO.File.ReadAllText(file).Split("\n").ToList();
             foreach(var line in lines) {
                 try {
-                    // parse the parameters
                     if(line.Trim().Length == 0)
                         continue;
                     var values = line.Split(",").ToList();
                     Parameters param = (Parameters)Enum.Parse(typeof(Parameters), values[0]);
-                    var value = double.Parse(values[1]);
-
-                    // Special edge cases...
-                    if(param == Parameters.CARGO_TO_MOVE)
-                        value = value * Constants.MAX_HALITE;
-                    if(param == Parameters.DROPOFF_DISTANCE) {
-                        int numCellsCovered = (int) (((value * value / 2) + (value / 2)) * 4.0) + 1;
-                        int haliteCovered = numCellsCovered * 170;
-                        int actualLayers=0;
-                        while(true) {
-                            actualLayers++;
-                            var numCells = (((actualLayers * actualLayers / 2) + (actualLayers / 2)) * 4.0) + 1;
-                            if(numCells * (GameInfo.Map.AverageHalitePerCell + 20) >= haliteCovered) {
-                                value = actualLayers;
-                                break;
-                            }
-                        }
-                    }
-
-                    ParametersDictionary.Add(param, value);
-                    if(!HasPrinted)
+                    ParametersDictionary.Add(param, double.Parse(values[1]));
+                    if(shouldPrint)
                         Log.LogMessage(param.ToString("g") + ": "+ double.Parse(values[1]));
                 } catch(ArgumentException) {}
             }
@@ -118,11 +113,10 @@ namespace Halite3
             foreach(var param in AllParameters) {
                 if(!ParametersDictionary.ContainsKey(param)) {
                     ParametersDictionary.Add(param, BoundDictionary[param].Seed);
-                    if(!HasPrinted)
+                    if(shouldPrint)
                         Log.LogMessage(param.ToString("g") + ": "+ BoundDictionary[param].Seed);
                 }
             }
-            HasPrinted = true;
         }
 
         public void WriteToFile(string file) {

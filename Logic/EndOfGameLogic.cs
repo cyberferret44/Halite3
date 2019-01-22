@@ -9,7 +9,7 @@ namespace Halite3.Logic {
         public EndOfGameLogic() { /* Nothing to be done */ }
 
         public override void ProcessTurn() {
-            foreach(var ship in Fleet.AllShips) {
+            foreach(var ship in Me.ShipsSorted) {
                 if(ship.DistanceToMyDropoff * 1.5 > GameInfo.TurnsRemaining) {
                     FinalReturnToHome.Add(ship.Id);
                 }
@@ -18,7 +18,7 @@ namespace Halite3.Logic {
 
         public override void CommandShips() {
             foreach(var ship in Fleet.AvailableShips.Where(s => FinalReturnToHome.Contains(s.Id))) {
-                var directions = ship.MyClosestDropoff.GetAllDirectionsTo(ship.position);
+                var directions = ship.ClosestDropoff.GetAllDirectionsTo(ship.position);
                 directions = directions.OrderBy(d => Map.At(ship, d).halite).ToList();
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
