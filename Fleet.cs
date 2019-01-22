@@ -15,12 +15,14 @@ namespace Halite3 {
         private static List<Ship> allShips;
         public static List<Ship> AllShips => allShips;
         public static bool CellAvailable(MapCell c) => !collisionCells.Contains(c);
-        public static List<MapCell> CollisionCells => collisionCells.ToList();
+        public static HashSet<MapCell> CollisionCells => collisionCells;
         private static int shipCount;
         public static int ShipCount => shipCount;
         public static HashSet<MapCell> ProbablyOccupiedCells => CollisionCells.Union(AvailableShips.Select(s => s.CurrentMapCell)).ToHashSet();
         public static bool ShipAvailable(Ship ship) => !usedShips.ContainsKey(ship);
+        private static bool shouldSpawnShip = false;
         public static void UpdateFleet(List<Ship> ships) {
+            shouldSpawnShip = false;
             allShips = ships.ToList();
             shipCount = ships.Count;
             availableIds.Clear();
@@ -73,7 +75,16 @@ namespace Halite3 {
                     AddMove(ship.Move(dirs.First(d => !CollisionCells.Contains(GameInfo.CellAt(ship, d))), "Left-over ship, Moving towards an enemy instead of crashing myself..."));
                 }
             }
-            return usedShips.Values.ToList();
+            var commands = usedShips.Values.ToList();;
+            if(shouldSpawnShip) {
+                commands.Add(GameInfo.Me.shipyard.Spawn());
+            }
+            return commands;
+        }
+
+        public static void SpawnShip() {
+            collisionCells.Add(GameInfo.CellAt(GameInfo.Me.shipyard.position));
+            shouldSpawnShip = true;
         }
     }
 }

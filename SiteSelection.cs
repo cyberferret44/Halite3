@@ -44,12 +44,13 @@ namespace Halite3 {
 
             // iterate bestdropoffs to potentially select next dropoff...
             if(GameInfo.ReserveForDropoff && !ShouldCreateDropoff()) {
+                Log.LogMessage("drop-off: save for new dropoff disabled");
                 GameInfo.ReserveForDropoff = false;
                 GameInfo.NextDropoff = null;
             }
 
             if(GameInfo.BestDropoffs.Any()) {
-                GameInfo.BestDropoffs = GameInfo.BestDropoffs.OrderByDescending(d => d.VirtualDropValue * Math.Pow(.95, GameInfo.MyClosestDropDistance(d.Position))).ToList();
+                GameInfo.BestDropoffs = GameInfo.BestDropoffs.OrderByDescending(d => d.VirtualDropValue * Math.Pow(.95, GameInfo.MyClosestDropDistance(d.Position))).ToList(); //todo maybe
                 var bestDrop = GameInfo.BestDropoffs[0];
                 
                 if(!GameInfo.ReserveForDropoff && ShouldCreateDropoff() && bestDrop.Cell.MyClosestShips().Any(s => GameInfo.Distance(s.position, bestDrop.Position) <= s.DistanceToMyDropoff)) {
@@ -94,7 +95,15 @@ namespace Halite3 {
         }
 
         private static bool ShouldCreateDropoff() => Fleet.ShipCount / GameInfo.Me.GetDropoffs().Count >= 15 ; // need a minimum of ships per drop
-        private static bool CanCreateDropoff(Position pos) => GameInfo.Me.halite + GameInfo.Map.At(pos).halite + 500 >= 5000;
+        private static bool CanCreateDropoff(Position pos) {
+            //int target = 4000; // 4000 + 1000 for ship cost
+            int halite = GameInfo.Me.halite;
+            var closestShips = GameInfo.CellAt(pos).MyClosestShips();
+            var ship = closestShips.OrderBy(s => s.halite).First();
+            halite += ship.halite - Navigation.PathCost(ship.position, pos);
+            halite += (int)(.75 * GameInfo.CellAt(pos).halite);
+            return halite > 4000;
+        }
 
         private static void DeleteNextDropoff() {
             Log.LogMessage($"Drop-off {GameInfo.NextDropoff.Position.x},{GameInfo.NextDropoff.Position.y} was deleted.");

@@ -17,9 +17,7 @@ namespace Halite3.Logic {
         {
             var list = new List<Projection>();
             Fleet.AvailableShips.ForEach(s => list.Add(new Projection(s)));
-            //list = list.Where(p => Fleet.ShipAvailable(p.ship)).ToList();
             list = list.OrderBy(p => p.numTurns).ToList();
-            //Log.LogMessage("time to project " + w.ElapsedMilliseconds);
             while(list.Count > 0) {
                 // switch next to a ship on a dropoff if it's surrounded
                 var next = list[0];
@@ -39,7 +37,7 @@ namespace Halite3.Logic {
                 if(!s.CanMove) {
                     move = s.StayStill("Ship cannot move, forcing it to stay still... Target " + next.valuer.Target.position.ToString() + "... Expected Turns: " + next.numTurns);
                 }
- /* todo */     else if(!(s.CurrentMapCell.Neighbors.Any(n => n.halite > GameInfo.UpperThirdAverage && n.halite > s.CellHalite * MyBot.HParams[Parameters.STAY_MULTIPLIER]))
+                else if(!(s.CurrentMapCell.Neighbors.Any(n => n.halite > GameInfo.UpperThirdAverage && n.halite > s.CellHalite * MyBot.HParams[Parameters.STAY_MULTIPLIER]))
                 && s.CellHalite > GameInfo.UpperThirdAverage && Safety.IsSafeMove(s, Direction.STILL)) {
                     move = s.StayStill("Forcing ship to sit still... Target " + next.valuer.Target.position.ToString() + "... Expected Turns: " + next.numTurns);
                 } else {

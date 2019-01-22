@@ -62,18 +62,7 @@ namespace Halite3 {
             if(myPoints + enemyPoints == 0)
                 return 0;
             double destructionRatio = 1.0;
-            //if(GameInfo.Me.id.id == 1) {
-                //var myShipVal = GameInfo.BaseShipValue * GameInfo.MyShipsCount;
-                //var myShipValMinus2 = GameInfo.BaseShipValueReducedBy2 * (GameInfo.MyShipsCount - 1);
-                //var eShipValue = GameInfo.BaseShipValue * GameInfo.OpponentShipsCount;
-                //var eShipValueMinus2 = GameInfo.BaseShipValueReducedBy2 * (GameInfo.OpponentShipsCount -1);
-                destructionRatio = (enemyCrashedShip.halite + 1000.0) / (myCrashedShip.halite + 1000.0);
-                //if(myCrashedShip.halite + (myShipVal - myShipValMinus2) != 0) {
-                //    destructionRatio =  (enemyCrashedShip.halite + (eShipValue - eShipValueMinus2)) / 
-                //                        (myCrashedShip.halite + (myShipVal - myShipValMinus2));
-                    //Log.LogMessage("Destruction ratio" + destructionRatio);
-                //}
-            //}
+            destructionRatio = (enemyCrashedShip.halite + 1000.0) / (myCrashedShip.halite + 1000.0);
             return myPoints / (myPoints + enemyPoints) * destructionRatio;
         }
     }

@@ -55,7 +55,7 @@ namespace Halite3.Logic {
                 int maxVal = GetCellValue(s, target);
                 do {
                     foreach(var c in cells) {
-                        var otherAssign = PointAssignments.ContainsKey(c.position.AsPoint) ? PointAssignments[c.position.AsPoint] : null; //.FirstOrDefault(a => a.Target.position.Equals(c.position));
+                        var otherAssign = PointAssignments.ContainsKey(c.position.AsPoint) ? PointAssignments[c.position.AsPoint] : null;
                         if(otherAssign != null && GameInfo.Distance(s, c.position) >= otherAssign.Distance) {
                             continue;
                         }
@@ -75,12 +75,8 @@ namespace Halite3.Logic {
                 } while(target == null && xLayers <= Math.Min(GameInfo.Map.width, GameInfo.RateLimitXLayers(xLayers)));
 
                 if(target != null) {
-                    //var newAssignment = new Assignment(s, target);
-                    //Assignments.Add(new Assignment(s, target));
                     var otherTarget = AssignAndReturnPrevAssignIfAny(s, target);
                     if(otherTarget != null) {
-                        //Assignments.Remove(otherTarget);
-                        //Log.LogMessage($"Ship {otherTarget.Ship.Id} was requeued");
                         queue.Enqueue(otherTarget.Ship);
                     }
                 }

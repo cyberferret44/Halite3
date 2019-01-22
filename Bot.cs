@@ -102,6 +102,11 @@ namespace Halite3
                     Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
+                if (ShouldSpawnShip())
+                {
+                    Fleet.SpawnShip();
+                }
+
                 // Combat Logic!!!
                 Log.LogMessage($"*** Combat  Logic ***");
                 combatWatch.Start();
@@ -130,13 +135,7 @@ namespace Halite3
                 Log.LogMessage("collect time was " + collectWatch.ElapsedMilliseconds);
 
                 // spawn ships
-                var cmdQueue = Fleet.GenerateCommandQueue();
-                if (ShouldSpawnShip())
-                {
-                    cmdQueue.Add(GameInfo.Me.shipyard.Spawn());
-                }
-
-                GameInfo.Game.EndTurn(cmdQueue);
+                GameInfo.Game.EndTurn(Fleet.GenerateCommandQueue());
             }
         }
 
@@ -146,10 +145,22 @@ namespace Halite3
             //    return false;
             // todo 5500
             int halite = GameInfo.Me.halite + haliteToAdd;
-            if(GameInfo.TurnsRemaining < 80 || 
-                halite < (GameInfo.ReserveForDropoff ? 5500 : Constants.SHIP_COST) ||
-                !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
+            if(GameInfo.TurnsRemaining < 80 || halite < Constants.SHIP_COST || !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
                 return false;
+            }
+            if(GameInfo.ReserveForDropoff) {
+                int target = 5000; // 4000 + 1000 for ship cost
+                if(GameInfo.NextDropoff != null) {
+                    var closestShips = GameInfo.NextDropoff.Cell.MyClosestShips();
+                    closestShips = closestShips.OrderBy(s => s.halite).ToList();  // do min just in case
+                    var closestShip = closestShips.First();
+                    target -= (closestShip.halite - Navigation.PathCost(closestShip.position, GameInfo.NextDropoff.Position));
+                    target -= (int)(.75 * GameInfo.NextDropoff.Cell.halite);
+                } else{
+                    target -= 500;
+                }
+                if(halite < target)
+                    return false;
             }
 
             // this logic is special because of the specific treatment of enemy ships here

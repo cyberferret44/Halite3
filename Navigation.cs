@@ -15,7 +15,7 @@ namespace Halite3 {
 
         public static int PathCost(Position start, Position end, HashSet<MapCell> CellsToAvoid = null) {
             var polr = CalculatePathOfLeastResistance(start, end, CellsToAvoid);
-            return polr.Sum(p => (int)(p.halite/10));
+            return polr.Sum(p => (int)(p.halite/10)) + (int)(GameInfo.CellAt(start).halite / 10);
         }
 
 
