@@ -20,13 +20,60 @@ namespace Halite3.Logic {
         }
 
         private bool ShouldMoveShip(Ship ship) {
-            return ship.IsFull() ||
-                ship.halite > MyBot.HParams[Parameters.CARGO_TO_MOVE] + (.3 * ship.CellHalite * (ship.CurrentMapCell.IsInspired ? 3 : 1));
+            if(ship.IsFull())
+                return true;
+            if(ship.ClosestDropoff.Equals(GameInfo.Me.shipyard.position)) {
+                return ship.halite > MyBot.HParams[Parameters.CARGO_TO_MOVE] * .95;
+            } else {
+                return ship.halite > MyBot.HParams[Parameters.CARGO_TO_MOVE] + (.3 * ship.CellHalite * (ship.CurrentMapCell.IsInspired ? 3 : 1));
+            }
         }
 
         public override void CommandShips() {
             // go through buckets and move the ships...
             var dropoffBuckets = GetBuckets(AvailableShipsMovingToBase);
+            
+            var ShipPositions = new List<List<Ship>>();
+            for(int i=0; i<GameInfo.Map.width * 2; i++) {
+                ShipPositions.Add(new List<Ship>());
+            }
+            
+            if(dropoffBuckets.Any(kvp => kvp.Key.Equals(GameInfo.Me.shipyard.position))) {
+                Log.LogMessage("poopookachoo");
+                var yardDrop = dropoffBuckets.Single(kvp => kvp.Key.Equals(GameInfo.Me.shipyard.position));
+                foreach(var s in yardDrop.Value) {
+                    var dist = GameInfo.Distance(s, yardDrop.Key);
+                    ShipPositions[dist].Add(s);
+                }
+
+                // iterate....
+                bool frontOccupied = false;
+                for(int i=0; i<ShipPositions.Count; i++) {
+                    if(ShipPositions[i].Count >= 1) {
+                        var ships = ShipPositions[i];
+                        ships = ships.OrderByDescending(s => s.halite).ToList();
+                        foreach(var s in ships) {
+                            if(frontOccupied && !s.IsFull() && s.CellHalite >= 10) {
+                                Fleet.AddMove(s.StayStill("aaMining halite because I can"));
+                                Safety.TwoTurnAvoider.Add(s, s.CurrentMapCell, yardDrop.Key.GetAllDirectionsTo(s.CurrentMapCell));
+                            } else {
+                                var cmd = GetBestNavigateCommand(s, yardDrop.Key);
+                                if(cmd != null) {
+                                    cmd.Comment = "aa" + cmd.Comment;
+                                    Fleet.AddMove(cmd);
+                                    Safety.TwoTurnAvoider.Add(s, cmd.TargetCell, yardDrop.Key.GetAllDirectionsTo(cmd.TargetCell));
+                                }
+                            }
+                            frontOccupied = true;
+                        }
+                    }
+                    frontOccupied = ShipPositions[i].Count > 0;
+                }
+
+                // remove the key
+                dropoffBuckets.Remove(yardDrop.Key);
+            }
+
             foreach(var drop in dropoffBuckets.Keys) {
                 var ships = dropoffBuckets[drop].OrderBy(s => Map.CalculateDistance(s.position, drop) * 10000 - s.halite).ToList();
                 int maxDist = 0;
@@ -60,14 +107,6 @@ namespace Halite3.Logic {
                 return false;
             if(!Safety.IsSafeMove(ship, Direction.STILL))
                 return false;
-
-            // need to handle the shipyard with special care
-            if(GameInfo.IsMyShipyard(ship.ClosestDropoff)) {
-
-            }
-
-            // harder...
-            //bool highestOrder = buckets.Where(x => x.Value != bucket).All(b => b[0].DistanceToMyDropoff > ship.DistanceToMyDropoff || b[0].halite < ship.halite);
             if(!MyBot.ShouldSpawnShip(0) && MyBot.ShouldSpawnShip(ship.halite) /* and not 2 ships same dist from drop */)
                 return false;
             if(bucket.Count > 1 && bucket[1].DistanceToMyDropoff -1 <= ship.DistanceToMyDropoff) 
@@ -120,7 +159,5 @@ namespace Halite3.Logic {
             }
             return null;
         }
-
-
     }
 }

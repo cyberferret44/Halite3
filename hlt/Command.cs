@@ -7,7 +7,7 @@
         public Ship Ship;
         private static GameMap gameMap => GameInfo.Map;
         private static Player me => GameInfo.Me;
-        public readonly string Comment;
+        public string Comment;
 
         /// <summary>
         /// Create a new Spawn Ship command

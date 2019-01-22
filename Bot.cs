@@ -102,7 +102,8 @@ namespace Halite3
                     Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
-                if (ShouldSpawnShip())
+                bool doFirst = GameInfo.CellAt(GameInfo.MyShipyard.position).Neighbors.Where(n => n.IsOccupiedByMe).Any(n => n.ship,CellHalite > 10);
+                if (doFirst && ShouldSpawnShip())
                 {
                     Fleet.SpawnShip();
                 }
@@ -134,6 +135,11 @@ namespace Halite3
                 collectWatch.Stop();
                 Log.LogMessage("collect time was " + collectWatch.ElapsedMilliseconds);
 
+                if (!doFirst && ShouldSpawnShip())
+                {
+                    Fleet.SpawnShip();
+                }
+
                 // spawn ships
                 GameInfo.Game.EndTurn(Fleet.GenerateCommandQueue());
             }
@@ -141,9 +147,6 @@ namespace Halite3
 
         // TODO move the .08 to hyperparameters
         public static bool ShouldSpawnShip(int haliteToAdd = 0) {
-            //if(GameInfo.Me.id.id == 0) // debugging the collect logic
-            //    return false;
-            // todo 5500
             int halite = GameInfo.Me.halite + haliteToAdd;
             if(GameInfo.TurnsRemaining < 80 || halite < Constants.SHIP_COST || !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {
                 return false;
@@ -177,9 +180,6 @@ namespace Halite3
             for(int i=0; i<GameInfo.TurnsRemaining; i++) {
                 int haliteCollectable = (int)(numShips * .1 * haliteRemaining2 / numCells);
                 haliteRemaining2 -= haliteCollectable;
-            }
-            if(haliteRemaining2 >= haliteRemaining) {
-                Log.LogMessage("this shouldn't happen...");
             }
 
             if(haliteRemaining - haliteRemaining2 > MyBot.HParams[Parameters.TARGET_VALUE_TO_CREATE_SHIP]) {

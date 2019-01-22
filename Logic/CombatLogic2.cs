@@ -17,15 +17,9 @@ namespace Halite3.Logic {
                     FleetCombatScores.RecoveryScores[ship.Id].Scores[d] = zone.CargoRecoveryLikelihood(ship, lowestEnemy);
                 }
             }
-
-            if(FleetCombatScores.RecoveryScores.Count < Fleet.ShipCount)
-                throw new Exception("this absoltuely positively should not happen");
         }
-        public override void CommandShips()
-        {
-            foreach(var s in Fleet.AvailableShips) {
-
-            }
+        public override void CommandShips() {
+            // TODO if GameInfo.Is2Player && neighbors.any(n => n.IsOccupied && !n.ship.IsReturningHome && n.Safetythreshold > 1)  //move
         }
     }
 
