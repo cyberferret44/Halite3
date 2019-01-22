@@ -23,7 +23,7 @@ namespace GeneticTuner
 
     public class GeneticSpecimen : Specimen {
         private static Random random = new Random();
-        private static int NUM_CHILDREN = 3; // population control level
+        private static int NUM_CHILDREN = 4; // population control level
         private HyperParameters hyperParameters;
         public HyperParameters GetHyperParameters() => hyperParameters;
         public string Name() => FilePath.Split(".")[0].Split("/").Last().Substring(0, 15);

@@ -56,13 +56,13 @@ namespace Halite3
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
-            { Parameters.CARGO_TO_MOVE, 0.05 },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .15 },
-            { Parameters.DROPOFF_DISTANCE, .1 },
-            { Parameters.STAY_MULTIPLIER, .1 },
-            { Parameters.HALITE_TO_SWITCH_COLLECT, .1 },
-            { Parameters.INSPIRED_RATIO, .15 },
-            { Parameters.SHIPS_PER_DROPOFF, .15 }
+            { Parameters.CARGO_TO_MOVE, 0.01 },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .03 },
+            { Parameters.DROPOFF_DISTANCE, .04 },
+            { Parameters.STAY_MULTIPLIER, .03 },
+            { Parameters.HALITE_TO_SWITCH_COLLECT, .03 },
+            { Parameters.INSPIRED_RATIO, .03},
+            { Parameters.SHIPS_PER_DROPOFF, .04 }
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();

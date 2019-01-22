@@ -102,7 +102,7 @@ namespace Halite3
                     Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
-                bool doFirst = GameInfo.CellAt(GameInfo.MyShipyard.position).Neighbors.Where(n => n.IsOccupiedByMe).Any(n => n.ship,CellHalite > 10);
+                bool doFirst = GameInfo.MyShipyardCell.Neighbors.Where(n => n.IsOccupiedByMe).Any(n => n.ship.CellHalite > 10);
                 if (doFirst && ShouldSpawnShip())
                 {
                     Fleet.SpawnShip();
