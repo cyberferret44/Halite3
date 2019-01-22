@@ -10,8 +10,8 @@ namespace Halite3 {
         private static Queue<int> HaliteCollected = new Queue<int>();
 
         // Things to change...
-        public static readonly string SPECIMEN_FOLDER = "Specimen9";
-        public static string BOT_NAME => Me.id.id + "-Derp8";
+        public static readonly string SPECIMEN_FOLDER = "Specimen10";
+        public static string BOT_NAME => Me.id.id + "-Derp10";
 
         // Turn timer, prevent timeouts
         private static Stopwatch clock = new Stopwatch();
