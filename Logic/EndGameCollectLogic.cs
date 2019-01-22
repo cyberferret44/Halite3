@@ -12,7 +12,7 @@ namespace Halite3.Logic {
         public override void ProcessTurn() {}
 
         public int GetCellValue(Ship ship, MapCell cell) {
-            int initialVal = cell.IsInspired ? cell.halite * 3 : cell.halite;
+            int initialVal = cell.IsInspired ? (int)(cell.halite * MyBot.HParams[Parameters.IsInspiredRatio]) : cell.halite;
             if(ship.CurrentMapCell.position.Equals(cell.position))
                 initialVal *= 3;
             var polr = Navigation.CalculatePathOfLeastResistance(ship.position, cell.position);

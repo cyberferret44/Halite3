@@ -10,8 +10,8 @@ namespace Halite3 {
         private static Queue<int> HaliteCollected = new Queue<int>();
 
         // Things to change...
-        public static readonly string SPECIMEN_FOLDER = "Specimen10";
-        public static string BOT_NAME => Me.id.id + "-Derp10";
+        public static readonly string SPECIMEN_FOLDER = "Specimen11";
+        public static string BOT_NAME => Me.id.id + "FINAL_BOT";
 
         // Turn timer, prevent timeouts
         private static Stopwatch clock = new Stopwatch();
@@ -163,12 +163,10 @@ namespace Halite3 {
         public static MapCell CellAt(MapCell m, Direction d) => CellAt(m.position, d);
         public static MapCell CellAt(Point p) => CellAt(new Position(p.x, p.y));
         public static MapCell MyShipyardCell => Map.At(Me.shipyard.position);
-        
 
         // Hyper Parameters
         public static string PlayerXSize => PlayerCount + "x" + Map.width;
         public static string HyperParameterFolder => $"{(IsLocal ? "Halite3/" : "")}GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
-        public static int OpportunityCost => (int)(.08 * Map.AverageHalitePerCell);
         public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
         public static VirtualDropoff NextDropoff = null;
         public static bool ReserveForDropoff = false;

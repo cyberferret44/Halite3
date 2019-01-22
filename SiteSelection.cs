@@ -94,7 +94,7 @@ namespace Halite3 {
             return GameInfo.BestDropoffs.First(d => GameInfo.Map.CalculateDistance(position, d.Position) == closest);
         }
 
-        private static bool ShouldCreateDropoff() => Fleet.ShipCount / GameInfo.Me.GetDropoffs().Count >= 15 ; // need a minimum of ships per drop
+        private static bool ShouldCreateDropoff() => Fleet.ShipCount / GameInfo.Me.GetDropoffs().Count >= MyBot.HParams[Parameters.SHIPS_PER_DROPOFF]; // need a minimum of ships per drop
         private static bool CanCreateDropoff(Position pos) {
             //int target = 4000; // 4000 + 1000 for ship cost
             int halite = GameInfo.Me.halite;
