@@ -24,7 +24,7 @@ namespace Halite3 {
             if(recoveryChance != 1.0) {
                 Log.LogMessage($"Ship {ship.Id}, rChance: {recoveryChance}, target: {target.position.ToString()}");
             }
-            return recoveryChance > (GameInfo.IsLocal ? .4 : .6);
+            return recoveryChance > MyBot.HParams[Parameters.SAFETY_RATIO];
         }
         public static bool IsCompletelySafeMove(Ship s, Direction d) => IsSafeMove(s, d); // && (!GameInfo.CellAt(s, d).IsThreatened || s.DistanceToMyDropoff <= 3) ;
         public static bool IsSafeAndAvoids2Cells(Ship s, Direction d) => IsSafeMove(s, d) && (d == Direction.STILL || 

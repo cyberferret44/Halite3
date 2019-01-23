@@ -39,7 +39,6 @@ namespace Halite3.Logic {
             }
             
             if(dropoffBuckets.Any(kvp => kvp.Key.Equals(GameInfo.Me.shipyard.position))) {
-                Log.LogMessage("poopookachoo");
                 var yardDrop = dropoffBuckets.Single(kvp => kvp.Key.Equals(GameInfo.Me.shipyard.position));
                 foreach(var s in yardDrop.Value) {
                     var dist = GameInfo.Distance(s, yardDrop.Key);
@@ -54,12 +53,11 @@ namespace Halite3.Logic {
                         ships = ships.OrderByDescending(s => s.halite).ToList();
                         foreach(var s in ships) {
                             if(frontOccupied && !s.IsFull() && s.CellHalite >= 10) {
-                                Fleet.AddMove(s.StayStill("aaMining halite because I can"));
+                                Fleet.AddMove(s.StayStill("Mining halite because I can"));
                                 Safety.TwoTurnAvoider.Add(s, s.CurrentMapCell, yardDrop.Key.GetAllDirectionsTo(s.CurrentMapCell));
                             } else {
                                 var cmd = GetBestNavigateCommand(s, yardDrop.Key);
                                 if(cmd != null) {
-                                    cmd.Comment = "aa" + cmd.Comment;
                                     Fleet.AddMove(cmd);
                                     Safety.TwoTurnAvoider.Add(s, cmd.TargetCell, yardDrop.Key.GetAllDirectionsTo(cmd.TargetCell));
                                 }

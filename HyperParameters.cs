@@ -18,7 +18,8 @@ namespace Halite3
         STAY_MULTIPLIER,
         HALITE_TO_SWITCH_COLLECT,
         INSPIRED_RATIO,
-        SHIPS_PER_DROPOFF
+        SHIPS_PER_DROPOFF,
+        SAFETY_RATIO
     }
 
     public class HyperParameters {
@@ -52,17 +53,19 @@ namespace Halite3
             { Parameters.STAY_MULTIPLIER, new Bounds(0, 10, 3.0)},
             { Parameters.HALITE_TO_SWITCH_COLLECT, new Bounds(0, 1000, 70.0)},
             { Parameters.INSPIRED_RATIO, new Bounds(0, 4, 1.8) },
-            { Parameters.SHIPS_PER_DROPOFF, new Bounds(0, 30, 15) }
+            { Parameters.SHIPS_PER_DROPOFF, new Bounds(5, 30, 15) },
+            { Parameters.SAFETY_RATIO, new Bounds(.4, 2.0, .6) }
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
             { Parameters.CARGO_TO_MOVE, 0.01 },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .03 },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .015 },
             { Parameters.DROPOFF_DISTANCE, .04 },
-            { Parameters.STAY_MULTIPLIER, .03 },
-            { Parameters.HALITE_TO_SWITCH_COLLECT, .03 },
-            { Parameters.INSPIRED_RATIO, .03},
-            { Parameters.SHIPS_PER_DROPOFF, .04 }
+            { Parameters.STAY_MULTIPLIER, .015 },
+            { Parameters.HALITE_TO_SWITCH_COLLECT, .015 },
+            { Parameters.INSPIRED_RATIO, .015 },
+            { Parameters.SHIPS_PER_DROPOFF, .04 },
+            { Parameters.SAFETY_RATIO, .01 }
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
