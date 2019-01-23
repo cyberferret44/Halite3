@@ -64,8 +64,7 @@ namespace Halite3.Logic {
 
                         // value calculation...
                         int val = GetCellValue(s, c);
-                        if(GameInfo.MyId == 1 && prevPointAssignments.ContainsKey(c.position.AsPoint) && prevPointAssignments[c.position.AsPoint].Ship.Id == s.Id) {
-                            Log.LogMessage("val "+c.position.ToString()+" was endbias for ship "+s.Id);
+                        if(prevPointAssignments.ContainsKey(c.position.AsPoint) && prevPointAssignments[c.position.AsPoint].Ship.Id == s.Id) {
                             val = (int)(val * 1.1);
                         }
                         int distDiff = GameInfo.Distance(s, c.position) - GameInfo.Distance(s, target.position);
