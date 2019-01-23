@@ -62,27 +62,12 @@ namespace Halite3.hlt
         public MapCell At(Ship ship, Direction direction)
         {
             return At(ship.position.DirectionalOffset(direction));
-        } 
-        
-        public List<MapCell> NeighborsAt(Position p) {
-            List<MapCell> neighbors = new List<MapCell>();
-            neighbors.Add(At(p.DirectionalOffset(Direction.NORTH)));
-            neighbors.Add(At(p.DirectionalOffset(Direction.SOUTH)));
-            neighbors.Add(At(p.DirectionalOffset(Direction.EAST)));
-            neighbors.Add(At(p.DirectionalOffset(Direction.WEST)));
-            return neighbors;
         }
 
-        public MapCell AnyEmptyNeighbor(Position p) {
-            if(NeighborsAt(p).Any(n => !n.IsOccupied())) {
-                return NeighborsAt(p).Where(n => !n.IsOccupied()).First();
-            }
-            return null;
-        }
-
-        public List<MapCell> GetXLayers(Position position, int numLayers) {
+        // does not include this position
+        public List<MapCell> GetXLayers(Position position, int numLayers, bool exclude0 = false) {
             HashSet<MapCell> cells = new HashSet<MapCell>();
-            for(int i=0; i <= numLayers; i++) {
+            for(int i=(exclude0 ? 1 : 0); i <= numLayers; i++) {
                 for(int x = -i; x<=i; x++) {
                     int yp = position.y + (i - Math.Abs(x));
                     int yn = position.y - (i - Math.Abs(x));
@@ -90,6 +75,19 @@ namespace Halite3.hlt
                     cells.Add(this.At(new Position(xp, yp)));
                     cells.Add(this.At(new Position(xp, yn)));
                 }
+            }
+            return cells.ToList();
+        }
+
+        // does not include this position
+        public List<MapCell> GetXLayersExclusive(Position position, int numLayers) {
+            HashSet<MapCell> cells = new HashSet<MapCell>();
+            for(int x = -numLayers; x<=numLayers; x++) {
+                int yp = position.y + (numLayers - Math.Abs(x));
+                int yn = position.y - (numLayers - Math.Abs(x));
+                int xp = position.x + x;
+                cells.Add(this.At(new Position(xp, yp)));
+                cells.Add(this.At(new Position(xp, yn)));
             }
             return cells.ToList();
         }

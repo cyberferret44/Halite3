@@ -3,11 +3,11 @@ namespace Halite3.Logic {
     /// or to use different logic based on map size, available halite, and number of players
     public static class LogicFactory {
         public static Logic GetCollectLogic() {
-            return new CollectLogic();
+            return new CollectLogic5();
         }
 
         public static Logic GetDropoffLogic() {
-            return new DropoffLogic();
+                return new DropoffLogic2();
         }
 
         public static Logic GetEndOfGameLogic() {
@@ -15,10 +15,7 @@ namespace Halite3.Logic {
         }
 
         public static Logic GetCombatLogic() {
-            //if(!isLocal || playerId == 0)
-                return new CombatLogic();
-            //else
-             //   return new EmptyLogic();
+            return new CombatLogic2();
         }
     }
 }

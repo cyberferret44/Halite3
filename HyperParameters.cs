@@ -5,23 +5,36 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
+/// Adding a parameter?
+/// 1. Add it to parameters
+/// 2. Add a new entry to bounds dictionary
 namespace Halite3
 {
     // Genetically tuned parameters
     public enum Parameters {
         CARGO_TO_MOVE,
         TARGET_VALUE_TO_CREATE_SHIP,
-        CELL_VALUE_DEGRADATION,
-        PERCENT_OF_AVERAGE_TO_IGNORE,
-        DROPOFF_DISTANCE, 
-        COLLECT_STICKINESS
+        DROPOFF_DISTANCE,
+        STAY_MULTIPLIER,
+        HALITE_TO_SWITCH_COLLECT,
+        INSPIRED_RATIO,
+        SHIPS_PER_DROPOFF,
+        SAFETY_RATIO
     }
 
     public class HyperParameters {
         // Non tuned parameters.  Keeping here so I can easily find & tune them later
         public static List<Parameters> AllParameters = Enum.GetValues(typeof(Parameters)).Cast<Parameters>().ToList();
+        private static bool HasPrinted = false;
 
-        private List<string> unusedLines;
+        // returns a default set for testing
+        public static HyperParameters GetDefaults() {
+            var hp = new HyperParameters();
+            foreach(var kvp in BoundDictionary) {
+                hp.ParametersDictionary[kvp.Key] = kvp.Value.Seed;
+            }
+            return hp;
+        }
 
         // Dynamic hyper parameters
         private class Bounds {
@@ -34,21 +47,25 @@ namespace Halite3
         }
 
         private static readonly Dictionary<Parameters, Bounds> BoundDictionary = new Dictionary<Parameters, Bounds> {
-            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0, .85) },
+            { Parameters.CARGO_TO_MOVE, new Bounds(0, 1.0, .9) },
             { Parameters.TARGET_VALUE_TO_CREATE_SHIP, new Bounds(0, 10000.0, 550.0) },
-            { Parameters.CELL_VALUE_DEGRADATION,   new Bounds(0, 1.0, .8)},
-            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, new Bounds(0, 1.0, .25)},
             { Parameters.DROPOFF_DISTANCE, new Bounds(0, 32, 14) },
-            { Parameters.COLLECT_STICKINESS, new Bounds(1, 100, 25) }
+            { Parameters.STAY_MULTIPLIER, new Bounds(0, 10, 3.0)},
+            { Parameters.HALITE_TO_SWITCH_COLLECT, new Bounds(0, 1000, 70.0)},
+            { Parameters.INSPIRED_RATIO, new Bounds(0, 4, 1.8) },
+            { Parameters.SHIPS_PER_DROPOFF, new Bounds(5, 30, 15) },
+            { Parameters.SAFETY_RATIO, new Bounds(.4, 2.0, .6) }
         };
 
         public static readonly Dictionary<Parameters, double> VarianceDictionary = new Dictionary<Parameters, double> {
-            { Parameters.CARGO_TO_MOVE, .01 },
-            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .05 },
-            { Parameters.CELL_VALUE_DEGRADATION, .02 },
-            { Parameters.PERCENT_OF_AVERAGE_TO_IGNORE, .01 },
-            { Parameters.DROPOFF_DISTANCE, .05 },
-            { Parameters.COLLECT_STICKINESS, .05 }
+            { Parameters.CARGO_TO_MOVE, 0.01 },
+            { Parameters.TARGET_VALUE_TO_CREATE_SHIP, .02 },
+            { Parameters.DROPOFF_DISTANCE, .07 },
+            { Parameters.STAY_MULTIPLIER, .02 },
+            { Parameters.HALITE_TO_SWITCH_COLLECT, .02 },
+            { Parameters.INSPIRED_RATIO, .02 },
+            { Parameters.SHIPS_PER_DROPOFF, .05 },
+            { Parameters.SAFETY_RATIO, .01 }
         };
 
         private Dictionary<Parameters, double> ParametersDictionary = new Dictionary<Parameters, double>();
@@ -59,6 +76,8 @@ namespace Halite3
         public double this[Parameters param]
         {
             get { 
+                if(param == Parameters.CARGO_TO_MOVE)
+                    return ParametersDictionary[param] * Constants.MAX_HALITE;
                 if(param == Parameters.DROPOFF_DISTANCE) {
                     var value = ParametersDictionary[param];
                     int numCellsCovered = (int) (((value * value / 2) + (value / 2)) * 4.0) + 1;
@@ -82,35 +101,35 @@ namespace Halite3
             }
         }
 
-        public HyperParameters(string file) {
-            unusedLines = new List<string>();
+        private HyperParameters() {}
+
+        public HyperParameters(string file, bool initializeDictionary = true) {
+            bool shouldPrint = !HasPrinted;
+            HasPrinted = true;
             var lines = System.IO.File.ReadAllText(file).Split("\n").ToList();
             foreach(var line in lines) {
-                if(line.Trim().Length == 0)
-                    continue;
-                var values = line.Split(",").ToList();
                 try {
+                    if(line.Trim().Length == 0)
+                        continue;
+                    var values = line.Split(",").ToList();
                     Parameters param = (Parameters)Enum.Parse(typeof(Parameters), values[0]);
                     ParametersDictionary.Add(param, double.Parse(values[1]));
-                    Log.LogMessage(param.ToString("g") + ": "+ double.Parse(values[1]));
-                } catch (Exception) {
-                    unusedLines.Add(line);
-                }
+                    if(shouldPrint)
+                        Log.LogMessage(param.ToString("g") + ": "+ double.Parse(values[1]));
+                } catch(ArgumentException) {}
             }
 
             foreach(var param in AllParameters) {
                 if(!ParametersDictionary.ContainsKey(param)) {
                     ParametersDictionary.Add(param, BoundDictionary[param].Seed);
-                    Log.LogMessage(param.ToString("g") + ": "+ BoundDictionary[param].Seed);
+                    if(shouldPrint)
+                        Log.LogMessage(param.ToString("g") + ": "+ BoundDictionary[param].Seed);
                 }
             }
         }
 
         public void WriteToFile(string file) {
             string content = "";
-            foreach(var line in unusedLines) {
-                content += line + "\n";
-            }
             foreach(var kvp in ParametersDictionary) {
                 content += ($"{kvp.Key.ToString("g")},{kvp.Value}\n");
             }

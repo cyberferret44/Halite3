@@ -16,13 +16,20 @@ namespace Halite3.hlt
         public Ship ship;
         public Entity structure;
         public bool IsStructure => structure != null;
+        public bool IsMyStructure => structure != null && structure.owner.id == GameInfo.MyId;
+        public bool IsOpponentsStructure => structure != null && structure.owner.id != GameInfo.MyId;
         public MapCell North => GameInfo.CellAt(position, Direction.NORTH);
         public MapCell South => GameInfo.CellAt(position, Direction.SOUTH);
         public MapCell East => GameInfo.CellAt(position, Direction.EAST);
         public MapCell West => GameInfo.CellAt(position, Direction.WEST);
+        public MapCell GetNeighbor(Direction d) => d == Direction.NORTH ? North : d == Direction.SOUTH ? South :
+                                                   d == Direction.EAST ? East : d == Direction.WEST ? West : this;
         public List<MapCell> Neighbors => new List<MapCell> { North, South, East, West };
+        public List<MapCell> NeighborsAndSelf => new List<MapCell> { this, North, South, East, West };
         public List<MapCell> Corners => new List<MapCell> { North.West, North.East, South.East, South.West };
+        public int SmallestEnemyValue => Neighbors.Min(x => x.IsOccupiedByOpponent ? x.ship.halite : int.MaxValue);
 
+        public List<Ship> MyClosestShips() => ClosestShips(Fleet.AllShips);
         public List<Ship> ClosestShips(List<Ship> ships) {
             int minDist = int.MaxValue;
             var results = new List<Ship>();
@@ -40,9 +47,9 @@ namespace Halite3.hlt
         }
 
         // Other things
-        public bool IsInspired => new XLayersInfo(4, position).NumEnemyShips > 1;
-        public bool IsThreatened => Neighbors.Any(n => n.IsOccupiedByOpponent());
-        public List<Ship> ThreatenedBy => new XLayersInfo(1, position).EnemyShips;
+        public bool IsInspired => GameInfo.Map.GetXLayers(position, 4).Sum(x => x.IsOccupiedByOpponent ? 1 : 0) >= 2;
+        public bool IsThreatened => NeighborsAndSelf.Any(n => n.IsOccupiedByOpponent);
+        public List<Ship> ThreatenedBy => NeighborsAndSelf.Where(n => n.IsOccupiedByOpponent).Select(n => n.ship).ToList();
 
         public MapCell(Position position, int halite)
         {
@@ -66,13 +73,8 @@ namespace Halite3.hlt
             return ship != null;
         }
 
-        public bool IsOccupiedByOpponent() {
-            return ship != null && ship.owner.id != GameInfo.MyId;
-        }
-
-        public bool IsOccupiedByMe() {
-            return ship != null && ship.owner.id == GameInfo.MyId;
-        }
+        public bool IsOccupiedByOpponent => ship != null && ship.owner.id != GameInfo.MyId;
+        public bool IsOccupiedByMe => ship != null && ship.owner.id == GameInfo.MyId;
 
         /// <summary>
         /// Returns true if there is a structure on this MapCell.

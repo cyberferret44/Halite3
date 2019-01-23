@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+/* using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.IO;
@@ -13,7 +13,7 @@ namespace GeneticTuner
         public static void GenerateCSVFromSpecimenFolder() {
             List<GeneticSpecimen> specimens = new List<GeneticSpecimen>();
             foreach(var f in Directory.EnumerateFiles("Halite3/GeneticTuner/Specimen")) {
-                specimens.Add(new GeneticSpecimen(f, "Halite3/"));
+                specimens.Add(new GeneticSpecimen(f));
             }
 
             string output = "";
@@ -39,4 +39,4 @@ namespace GeneticTuner
             } catch (System.IO.IOException) {}
         }
     }
-}
+}*/

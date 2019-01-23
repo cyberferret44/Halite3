@@ -6,25 +6,24 @@ namespace Halite3.Logic {
     public class EndOfGameLogic : Logic {
         private HashSet<int> FinalReturnToHome = new HashSet<int>();
 
-        public override void Initialize() { /* Nothing to be done */ }
-        public override void ScoreMoves() { }
+        public EndOfGameLogic() { /* Nothing to be done */ }
 
         public override void ProcessTurn() {
             foreach(var ship in Me.ShipsSorted) {
-                if(ship.DistanceToDropoff * 1.5 > GameInfo.TurnsRemaining) {
+                if(ship.DistanceToMyDropoff * 1.5 > GameInfo.TurnsRemaining) {
                     FinalReturnToHome.Add(ship.Id);
                 }
             }
         }
 
         public override void CommandShips() {
-            foreach(var ship in UnusedShips.Where(s => FinalReturnToHome.Contains(s.Id))) {
-                var directions = ship.ClosestDropoff.position.GetAllDirectionsTo(ship.position);
+            foreach(var ship in Fleet.AvailableShips.Where(s => FinalReturnToHome.Contains(s.Id))) {
+                var directions = ship.ClosestDropoff.GetAllDirectionsTo(ship.position);
                 directions = directions.OrderBy(d => Map.At(ship, d).halite).ToList();
                 directions.Add(Direction.STILL);
                 foreach(var d in directions) {
                     if(IsSafeEndMove(ship, d)) {
-                        MakeMove(ship.Move(d), "end of game");
+                        Fleet.AddMove(ship.Move(d, "End of game"));
                         break;
                     }
                 }
@@ -36,7 +35,7 @@ namespace Halite3.Logic {
             MapCell target = Map.At(ship, direction);
             if(target.structure != null)
                 return true;
-            return !CollisionCells.Contains(target);
+            return Fleet.CellAvailable(target);
         }
     }
 }

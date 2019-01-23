@@ -8,24 +8,22 @@ using Halite3.hlt;
 namespace GeneticTuner
 {
     public interface Specimen {
-        void SpawnChildren();
+        void SpawnChildren(int num);
         void Kill();
         HyperParameters GetHyperParameters();
         string Name();
     }
 
     public class FakeSpecimen : Specimen {
-        public void SpawnChildren() {}
+        public void SpawnChildren(int num) {}
         public void Kill() {}
-        public HyperParameters GetHyperParameters() { return null; }
+        public HyperParameters GetHyperParameters() { return HyperParameters.GetDefaults(); }
         public string Name() { return "fake"; }
     }
 
     public class GeneticSpecimen : Specimen {
-        public static readonly string SPECIMEN_FOLDER = "Specimen3";
-        public readonly string SpecimenFolder;
         private static Random random = new Random();
-        private static int NUM_CHILDREN = 1; // population control level
+        private static int NUM_CHILDREN = 4; // population control level
         private HyperParameters hyperParameters;
         public HyperParameters GetHyperParameters() => hyperParameters;
         public string Name() => FilePath.Split(".")[0].Split("/").Last().Substring(0, 15);
@@ -33,10 +31,9 @@ namespace GeneticTuner
 
         private List<GeneticSpecimen> children = new List<GeneticSpecimen>();
 
-        public GeneticSpecimen(string file, string specimenFolder) {
+        public GeneticSpecimen(string file) {
             FilePath = file;
             hyperParameters = new HyperParameters(FilePath);
-            SpecimenFolder = specimenFolder;
             CreateChildren();
         }
         private GeneticSpecimen() {}
@@ -50,40 +47,42 @@ namespace GeneticTuner
             for(int i=0; i<NUM_CHILDREN; i++) {
                 string name = "Specimen-" + Guid.NewGuid();
                 var child = new GeneticSpecimen() {
-                    hyperParameters = new HyperParameters(FilePath),
-                    FilePath = SpecimenFolder + "/" + name + ".txt"
+                    hyperParameters = new HyperParameters(FilePath), // give it same hyper parameters as parent
+                    FilePath = GameInfo.HyperParameterFolder + name + ".txt"  // generates a new name for the child specimen
                 };
 
                 // tune our hyperparameters
                 foreach(var param in HyperParameters.AllParameters) {
-                    double multiplier = 1.0 + ((random.NextDouble() * 2 - 1) * HyperParameters.VarianceDictionary[param]);
+                    double val = ((random.NextDouble() * 2 - 1) * HyperParameters.VarianceDictionary[param]);
                     double curValue = hyperParameters.GetValue(param);
-                    child.hyperParameters[param] = curValue * multiplier;
+                    child.hyperParameters[param] = curValue * (1.0 + val);
                 }
                 children.Add(child);
             }
         }
 
-        public static Specimen RandomSpecimen(string rootFolder) {
-            string folder = rootFolder + $"GeneticTuner/{SPECIMEN_FOLDER}/";
-            folder += GameInfo.PlayerCount + "x" + GameInfo.Map.width + "/";
-            var files = Directory.EnumerateFiles(folder).ToArray();
+        public static Specimen RandomSpecimen() {
+            var files = Directory.EnumerateFiles(GameInfo.HyperParameterFolder).ToArray();
             int randomOne = random.Next(0, files.Count());
-            return new GeneticSpecimen(files[randomOne], folder);
+            return new GeneticSpecimen(files[randomOne]);
         }
 
-        public void SpawnChildren() {
-            if(Directory.EnumerateFiles(SpecimenFolder).Count() < 20) {
+        public void SpawnChildren(int num) {
+            int count = 0;
+            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() < 20) {
                 foreach(var child in children) {
                     Halite3.hlt.Log.LogMessage("specimen file path " + child.FilePath);
                     child.hyperParameters.WriteToFile(child.FilePath);
+                    count++;
+                    if(count == num)
+                        break;
                 }
             }
         }
 
         public void Kill() {
-            // want a minimum of 10 specimen
-            if(Directory.EnumerateFiles(SpecimenFolder).Count() > 8) {
+            // minimum number of specimen
+            if(Directory.EnumerateFiles(GameInfo.HyperParameterFolder).Count() > 12) {
                 File.Delete(this.FilePath);
             }
         }

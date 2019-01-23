@@ -103,8 +103,13 @@ namespace Halite3.hlt
             
             return possibleDirections;
         }
+        public List<Direction> GetAllDirectionsTo(MapCell cell) => GetAllDirectionsTo(cell.position);
+        public List<Direction> GetAllDirectionsTo(Ship ship) => GetAllDirectionsTo(ship.position);
+
 
         public bool Equals(Position otherPosition) {
+            if(otherPosition == null)
+                return false;
             return this.x == otherPosition.x && this.y == otherPosition.y;
         }
 
@@ -117,6 +122,9 @@ namespace Halite3.hlt
             int diff = Math.Abs(this.y - otherPosition.y);
             return Math.Min(diff, MapWidth-diff);
         }
+        public override String ToString() {
+            return $"({x},{y})";
+        }
     }
 
     public struct Point {
@@ -127,6 +135,10 @@ namespace Halite3.hlt
         public override int GetHashCode() 
         {
             return x.GetHashCode() ^ y.GetHashCode();
+        }
+        public Position AsPosition => new Position(x, y);
+        public override String ToString() {
+            return $"({x},{y})";
         }
     }
 }

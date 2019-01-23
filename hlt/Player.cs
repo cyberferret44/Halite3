@@ -20,10 +20,13 @@ namespace Halite3.hlt
 
         public int NetValue => ships.Values.Sum(x => x.halite) + halite;
 
-        public List<Entity> GetDropoffs()  {
-            var dropoffs = dropoffDictionary.Values.Select(v => (Entity)v).ToList();
-            dropoffs.Add((Entity)shipyard);
-            return dropoffs.Where(d => d.owner.id == id.id).ToList();
+        public List<Position> GetDropoffs()  {
+            var dropoffs = dropoffDictionary.Values.Select(v => v.position).ToList();
+            dropoffs.Add(shipyard.position);
+            if(GameInfo.NextDropoff != null) {
+                dropoffs.Add(GameInfo.NextDropoff.Position);
+            }
+            return dropoffs;
         }
 
         public Ship GetShipById(int id) => ships.ContainsKey(id) ? ships[id] : null;
@@ -31,7 +34,7 @@ namespace Halite3.hlt
         public List<Ship> ShipsOnDropoffs() {
             var myShips = new List<Ship>();
             foreach(var drop in GetDropoffs()) {
-                var shipOnDrop = GameInfo.CellAt(drop.position).ship;
+                var shipOnDrop = GameInfo.CellAt(drop).ship;
                 if(shipOnDrop != null && shipOnDrop.owner.Equals(id)) {
                     myShips.Add(shipOnDrop);
                 }
@@ -53,10 +56,11 @@ namespace Halite3.hlt
         {
             this.halite = halite;
 
+            var previousShips = ships.Values.ToList();
             ships.Clear();
             for (int i = 0; i < numShips; ++i)
             {
-                Ship ship = Ship._generate(id);
+                Ship ship = Ship._generate(id, previousShips);
                 ships[ship.Id] = ship;
             }
             
@@ -67,11 +71,11 @@ namespace Halite3.hlt
                 dropoffDictionary[dropoff.id.id] = dropoff;
             }
 
-            ShipsSorted = ships.Values.OrderBy(s => SpecialDistance(s, s.ClosestDropoff.position)).ToList();
+            ShipsSorted = ships.Values.OrderBy(s => SpecialDistance(s, s.ClosestDropoff)).ToList();
         }
 
         private double SpecialDistance(Ship ship, Position target) {
-            double dist = (double)ship.DistanceToDropoff;
+            double dist = (double)ship.DistanceToMyDropoff;
             double Xcomponent = Math.Pow(ship.position.DeltaX(target)+.01, .5);
             double Ycomponent = Math.Pow(ship.position.DeltaY(target)+.01, .5);
             return dist + (Xcomponent + Ycomponent)/10000.0;
