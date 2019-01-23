@@ -99,7 +99,6 @@ namespace Halite3 {
             totalTurns += closestDropDist;
             double res = totalTurns + (remainingToFill / 1000.0);
             if(IsPrevious) {
-                Log.LogMessage("Ship " + ship.Id + " has been bias to " + cell.position.ToString());
                 res *= .95; // bias to previous move
             }
 

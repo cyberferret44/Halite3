@@ -80,7 +80,7 @@ namespace Halite3
                 if(GameInfo.TurnsRemaining == 0) {
                     var players = GameInfo.Opponents;
                     players.Add(GameInfo.Me);
-                    players = players.OrderBy(x => x.halite).ToList();
+                    players = players.OrderByDescending(x => x.halite).ToList();
                     int numChildren = players.Count - ((players.Count/2) + players.IndexOf(GameInfo.Me));
                     if(numChildren > 0) {
                         specimen.SpawnChildren(numChildren);
