@@ -31,6 +31,14 @@ namespace Halite3.hlt
         public int DistanceToMyDropoff => GameInfo.Distance(this, ClosestDropoff);
         public int DistanceToOwnerDropoff => GameInfo.Distance(this, ClosestEnemyDropoff(owner.id));
         public Position ClosestDropoff => MyDropoffs.OrderBy(d => GameInfo.Distance(this, d)).ToList()[0];
+        public Position ClosestAccessibleDropoff => ClosestAccessibleDrop();
+        private Position ClosestAccessibleDrop() {
+            var accessibleDrops = MyDropoffs.Where(d => new Zone(this.position, 5).SafetyRatio > .1);
+            if(accessibleDrops.Any()) {
+                return accessibleDrops.OrderBy(d => GameInfo.Distance(this, d)).ToList()[0];
+            }
+            return ClosestDropoff;
+        }
         public Position ClosestEnemyDropoff(int playerId) => GameInfo.GetPlayer(playerId).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
         public Position ClosestOwnerDropoff => GameInfo.GetPlayer(owner.id).GetDropoffs().OrderBy(d => GameInfo.Distance(this, d)).First();
 

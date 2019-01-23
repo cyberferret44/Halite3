@@ -18,7 +18,6 @@ namespace Halite3 {
             return polr.Sum(p => (int)(p.halite/10)) + (int)(GameInfo.CellAt(start).halite / 10);
         }
 
-
         // excludes start and end nodes
         public static List<MapCell> CalculatePathOfLeastResistance(Position start, Position end, HashSet<MapCell> CellsToAvoid = null) {
             HashSet<MapCell> visited = new HashSet<MapCell>();
@@ -71,6 +70,22 @@ namespace Halite3 {
                 next = cell.position;
                 path.Add(cell);
             }
+        }
+
+        public static bool IsBlockedByEnemies(Position start, Position end) {
+            HashSet<MapCell> used = new HashSet<MapCell>();
+            Stack<Position> nexts = new Stack<Position>();
+            nexts.Push(start);
+            while(nexts.Any()) {
+                var n = nexts.Pop();
+                if(end.Equals(n))
+                    return false;
+                used.Add(GameInfo.CellAt(n));
+                var cells = end.GetAllDirectionsTo(n).Select(d => GameInfo.CellAt(n , d));
+                cells = cells.Where(c => !used.Contains(c) && !c.IsOccupiedByOpponent);
+                cells.ToList().ForEach(c => nexts.Push(c.position));
+            }
+            return true;
         }
 
         public static bool IsAccessible(Position start, Position end, bool collisionOnly = false) {

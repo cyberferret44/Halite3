@@ -26,7 +26,7 @@ namespace Halite3 {
             
             double myVal = MyShips.Sum(s => 1 / Math.Sqrt(1+GameInfo.Distance(s, RootCell)));
             double enemyVal = EnemyShips.Sum(s => 1 / Math.Sqrt(1+GameInfo.Distance(s, RootCell)));
-            return myVal / (myVal + enemyVal);
+            return (.5+myVal) / (myVal + enemyVal);
         }
 
         // likelihood my ships can recover

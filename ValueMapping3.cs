@@ -6,9 +6,14 @@ using System;
 namespace Halite3 {
     public static class ValueMapping3 {
         public static readonly Dictionary<MapCell, CellValuer> Mapping = new Dictionary<MapCell, CellValuer>();
+        private static Dictionary<int, Position> previousTargets = new Dictionary<int, Position>();
+        private static Dictionary<int, Position> theseTargets = new Dictionary<int, Position>();
+        public static bool IsPreviousTarget(int shipId, Position p) => previousTargets.ContainsKey(shipId) && previousTargets[shipId].Equals(p);
 
         public static void ProcessTurn() {
             // clear and seed the map
+            previousTargets = theseTargets;
+            theseTargets = new Dictionary<int, Position>();
             Mapping.Clear();
             GameInfo.Map.GetAllCells().ForEach(c => Mapping.Add(c, new CellValuer(c)));
         }
@@ -26,13 +31,15 @@ namespace Halite3 {
 
         public static CellValuer FindBestTarget(Ship ship) {
             CellValuer bestCell = Mapping[ship.CurrentMapCell];
-            double turnsToFill = bestCell.TurnsToFill(ship);
+            var sameAsPrevious = previousTargets.ContainsKey(ship.Id) && previousTargets[ship.Id].Equals(ship.position);
+            double turnsToFill = bestCell.TurnsToFill(ship, sameAsPrevious);
             int layers = GameInfo.RateLimitXLayers(Math.Min(GameInfo.Map.width, (int)turnsToFill));
             var cells = GameInfo.Map.GetXLayers(ship.position, Math.Min(GameInfo.Map.width, layers));
             cells = RemoveBadCells(cells);
             foreach(var cell in cells) {
+                sameAsPrevious = previousTargets.ContainsKey(ship.Id) && previousTargets[ship.Id].Equals(cell.position);
                 CellValuer tempValuer = Mapping[cell];
-                double tempTurnsToFill = tempValuer.TurnsToFill(ship);
+                double tempTurnsToFill = tempValuer.TurnsToFill(ship, sameAsPrevious);
                 if((bestCell.Target == ship.CurrentMapCell && ship.CellHalite < 25) || tempTurnsToFill < turnsToFill) {
                     if(Navigation.IsAccessible(ship.position, cell.position, true)) {
                         turnsToFill = tempTurnsToFill;
@@ -40,6 +47,7 @@ namespace Halite3 {
                     }
                 }
             }
+            theseTargets[ship.Id] = bestCell.Target.position;
             return bestCell;
         }
 
@@ -72,7 +80,7 @@ namespace Halite3 {
         private MapCell cell;
         private int value;
         private int closestDropDist;
-        public double TurnsToFill(Ship ship) {
+        public double TurnsToFill(Ship ship, bool IsPrevious) {
             int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping3.Mapping[c].Value);
             int remainingToFill = (int)MyBot.HParams[Parameters.CARGO_TO_MOVE] - ship.halite;
             int totalTurns = (int)(GameInfo.Distance(ship.position, cell.position) / divisor);
@@ -84,9 +92,16 @@ namespace Halite3 {
                 totalTurns++;
             }
             if(remainingToFill > 0) {
-                totalTurns += 2 + (int)(remainingToFill / (areaVal * .125 + 1)); // estimate # of turns to fill from nearby, +1 prevents /0
+                int extraTurns = 1 + (int)(remainingToFill / (areaVal * .125 + 1));
+                totalTurns += 2 + extraTurns; // estimate # of turns to fill from nearby, +1 prevents /0
+                remainingToFill -= (int)(extraTurns * (areaVal * .125 + 1));
             }
             totalTurns += closestDropDist;
+            double res = totalTurns + (remainingToFill / 1000.0);
+            if(IsPrevious) {
+                Log.LogMessage("Ship " + ship.Id + " has been bias to " + cell.position.ToString());
+                res *= .95; // bias to previous move
+            }
 
             return (double)totalTurns + (remainingToFill / 1000.0); // differentiate 2 moves of same turns to prevent ships from swapping
         }

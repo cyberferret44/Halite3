@@ -121,7 +121,7 @@ namespace Halite3.Logic {
         Dictionary<Position, List<Ship>> GetBuckets(List<Ship> ships) {
             var buckets = new Dictionary<Position, List<Ship>>();
             foreach(var ship in ships) {
-                var drop = ship.ClosestDropoff; // includes virtual ones
+                var drop = ship.ClosestAccessibleDropoff; // includes virtual ones
                 if(!buckets.ContainsKey(drop)) {
                     buckets.Add(drop, new List<Ship>());
                 }

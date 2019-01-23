@@ -28,7 +28,7 @@ namespace Halite3.Logic {
                     }
                 }
                 var s = next.ship;
-                if(next.valuer.TurnsToFill(s) != next.numTurns) {
+                if(next.valuer.TurnsToFill(s, ValueMapping3.IsPreviousTarget(s.Id, next.valuer.Target.position)) != next.numTurns) {
                     list[list.IndexOf(next)] = new Projection(s);
                     list.OrderBy(p => p.numTurns);
                     continue;
@@ -60,7 +60,7 @@ namespace Halite3.Logic {
         private class Projection {
             public Projection(Ship s) {
                 this.valuer = ValueMapping3.FindBestTarget(s);
-                this.numTurns = this.valuer.TurnsToFill(s);
+                this.numTurns = this.valuer.TurnsToFill(s, ValueMapping3.IsPreviousTarget(s.Id, this.valuer.Target.position));
                 this.ship = s;
             }
             public CellValuer valuer;

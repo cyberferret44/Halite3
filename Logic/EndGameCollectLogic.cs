@@ -35,8 +35,10 @@ namespace Halite3.Logic {
 
         public override void CommandShips()
         {
-            ShipAssignments.Clear();
-            PointAssignments.Clear();
+            var prevShipAssignments = ShipAssignments;
+            var prevPointAssignments = PointAssignments;
+            ShipAssignments = new Dictionary<Ship, Assignment>();
+            PointAssignments = new Dictionary<Point, Assignment>();
 
             // stay still...
             foreach(var s in Fleet.AvailableShips.Where(s => !s.CanMove)) {
@@ -62,6 +64,10 @@ namespace Halite3.Logic {
 
                         // value calculation...
                         int val = GetCellValue(s, c);
+                        if(GameInfo.MyId == 1 && prevPointAssignments.ContainsKey(c.position.AsPoint) && prevPointAssignments[c.position.AsPoint].Ship.Id == s.Id) {
+                            Log.LogMessage("val "+c.position.ToString()+" was endbias for ship "+s.Id);
+                            val = (int)(val * 1.1);
+                        }
                         int distDiff = GameInfo.Distance(s, c.position) - GameInfo.Distance(s, target.position);
                         int oppCost = distDiff < 0 ? distDiff * (int)(c.halite * .125) : // cell is closet to ship than curTarget
                             distDiff * (int)(target.halite * .125); // distDiff is 0/positive, cell is further than curTarget
