@@ -31,7 +31,7 @@ Ships are then ordered by fastest results and moved to targets.  To prevent all 
 This file is straightforward, simply returns the ships to nearest dropoff, ignoring collisions on drops.
 
 <b>LateCollectLogic.cs</b>
-This file performs better than EarlyCollectLogic.cs when the map has been mostly harvested.
+This file performs better than EarlyCollectLogic.cs when the map has been mostly harvested, it simply greedily looks for it's best target within X cells.
 
 
 <h2>/GeneticTuner Folder</h2>
