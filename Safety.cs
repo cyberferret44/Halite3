@@ -20,10 +20,13 @@ namespace Halite3 {
             if(Fleet.CollisionCells.Contains(target))
                 return false;
             
-            double recoveryChance = FleetCombatScores.RecoveryChance(ship, direction);
-            if(recoveryChance != 1.0) {
-                Log.LogMessage($"Ship {ship.Id}, rChance: {recoveryChance}, target: {target.position.ToString()}");
+            // calculate recovery chance...
+            double recoveryChance = 1.0;
+            if(target.IsThreatened) {
+                var lowestEnemy = GameInfo.LowestNeighboringOpponentShip(target);
+                recoveryChance = new Zone(target.position, 5).CargoRecoveryLikelihood(ship, lowestEnemy);
             }
+
             return recoveryChance > MyBot.HParams[Parameters.SAFETY_RATIO];
         }
         public static bool IsCompletelySafeMove(Ship s, Direction d) => IsSafeMove(s, d); // && (!GameInfo.CellAt(s, d).IsThreatened || s.DistanceToMyDropoff <= 3) ;
