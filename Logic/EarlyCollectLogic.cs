@@ -26,7 +26,7 @@ namespace Halite3.Logic {
                     }
                 }
                 var s = next.ship;
-                if(next.valuer.TurnsToFill(s, ValueMapping3.IsPreviousTarget(s.Id, next.valuer.Target.position)) != next.numTurns) {
+                if(next.valuer.TurnsToFill(s, ValueMapping.IsPreviousTarget(s.Id, next.valuer.Target.position)) != next.numTurns) {
                     list[list.IndexOf(next)] = new Projection(s);
                     list.OrderBy(p => p.numTurns);
                     continue;
@@ -48,7 +48,7 @@ namespace Halite3.Logic {
 
         private void DoMove(Command c, MapCell target, int shipId) {
             if(c != null) {
-                ValueMapping3.AddNegativeShip(c.Ship, target);
+                ValueMapping.AddNegativeShip(c.Ship, target);
                 Fleet.AddMove(c);
             } else {
                 Log.LogMessage($"Ship {shipId} tried to move to {target.position.ToString()} but could not.");
@@ -57,8 +57,8 @@ namespace Halite3.Logic {
 
         private class Projection {
             public Projection(Ship s) {
-                this.valuer = ValueMapping3.FindBestTarget(s);
-                this.numTurns = this.valuer.TurnsToFill(s, ValueMapping3.IsPreviousTarget(s.Id, this.valuer.Target.position));
+                this.valuer = ValueMapping.FindBestTarget(s);
+                this.numTurns = this.valuer.TurnsToFill(s, ValueMapping.IsPreviousTarget(s.Id, this.valuer.Target.position));
                 this.ship = s;
             }
             public CellValuer valuer;

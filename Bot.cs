@@ -64,7 +64,7 @@ namespace Halite3
                 Fleet.UpdateFleet(GameInfo.MyShips);
                 EnemyFleet.UpdateFleet();
                 Log.LogMessage("value mapping...");
-                ValueMapping3.ProcessTurn();
+                ValueMapping.ProcessTurn();
                 SiteSelection.ProcessTurn();
 
                 // logic turn processing

@@ -21,8 +21,8 @@ namespace Halite3 {
         public static List<MapCell> RemoveBadCells(List<MapCell> cells) {
             var result = new List<MapCell>();
             foreach(var cell in cells) {
-                int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping3.Mapping[c].Value);
-                if(ValueMapping3.Mapping[cell].Value > areaVal / 2) {
+                int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping.Mapping[c].Value);
+                if(ValueMapping.Mapping[cell].Value > areaVal / 2) {
                     result.Add(cell);
                 }
             }
@@ -81,7 +81,7 @@ namespace Halite3 {
         private int value;
         private int closestDropDist;
         public double TurnsToFill(Ship ship, bool IsPrevious) {
-            int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping3.Mapping[c].Value);
+            int areaVal = (int)GameInfo.Map.GetXLayers(cell.position, 2, true).Average(c => ValueMapping.Mapping[c].Value);
             int remainingToFill = (int)MyBot.HParams[Parameters.CARGO_TO_MOVE] - ship.halite;
             int totalTurns = (int)(GameInfo.Distance(ship.position, cell.position) / divisor);
             int remainingCellValue = Value; // value can/should be modified by reduce function
