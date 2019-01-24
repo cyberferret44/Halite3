@@ -40,11 +40,11 @@ namespace Halite3
             }
 
             // Handle Logic
-            Logic.Logic CombatLogic = LogicFactory.GetCombatLogic();
-            Logic.Logic CollectLogic = LogicFactory.GetCollectLogic();
-            Logic.Logic DropoffLogic = LogicFactory.GetDropoffLogic();
-            Logic.Logic EndOfGameLogic = LogicFactory.GetEndOfGameLogic();
-            Logic.Logic EndCollectLogic = new EndGameCollectLogic();
+            Logic.Logic CombatLogic = new CombatLogic();
+            Logic.Logic EarlyCollectLogic = new EarlyCollectLogic();
+            Logic.Logic DropoffLogic = new DropoffLogic();
+            Logic.Logic EndOfGameLogic = new EndOfGameLogic();
+            Logic.Logic LateCollectLogic = new LateCollectLogic();
             SiteSelection.Initialize();
 
             string BotName = GameInfo.BOT_NAME + specimen.Name();
@@ -68,7 +68,7 @@ namespace Halite3
                 SiteSelection.ProcessTurn();
 
                 // logic turn processing
-                CollectLogic.ProcessTurn();
+                EarlyCollectLogic.ProcessTurn();
                 DropoffLogic.ProcessTurn();
                 EndOfGameLogic.ProcessTurn();
                 CombatLogic.ProcessTurn();
@@ -99,7 +99,6 @@ namespace Halite3
                     Log.LogMessage("total time in combat  logic = " + (combatWatch.ElapsedMilliseconds));
                     Log.LogMessage("total time in dropoff logic = " + (dropoffWatch.ElapsedMilliseconds));
                     Log.LogMessage("total time in proximity logic = " + (proximityWatch.ElapsedMilliseconds));
-                    Log.LogMessage("total time in collect logic = " + (collectWatch.ElapsedMilliseconds));
                 }
 
                 bool doFirst = GameInfo.MyShipyardCell.Neighbors.Where(n => n.IsOccupiedByMe).Any(n => n.ship.CellHalite > 10);
@@ -129,9 +128,9 @@ namespace Halite3
                 collectWatch.Reset();
                 collectWatch.Start();
                 if(GameInfo.Map.AverageHalitePerCell > HParams[Parameters.HALITE_TO_SWITCH_COLLECT] || GameInfo.Map.PercentHaliteCollected < .5) {
-                    CollectLogic.CommandShips();
+                    EarlyCollectLogic.CommandShips();
                 }
-                EndCollectLogic.CommandShips();
+                LateCollectLogic.CommandShips();
                 collectWatch.Stop();
                 Log.LogMessage("collect time was " + collectWatch.ElapsedMilliseconds);
 
@@ -145,7 +144,6 @@ namespace Halite3
             }
         }
 
-        // TODO move the .08 to hyperparameters
         public static bool ShouldSpawnShip(int haliteToAdd = 0) {
             int halite = GameInfo.Me.halite + haliteToAdd;
             if(GameInfo.TurnsRemaining < 80 || halite < Constants.SHIP_COST || !Fleet.CellAvailable(GameInfo.MyShipyardCell)) {

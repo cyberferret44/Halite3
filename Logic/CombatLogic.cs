@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 namespace Halite3.Logic {
-    public class CombatLogic2 : Logic
+    public class CombatLogic : Logic
     {
         public override void ProcessTurn()
         {

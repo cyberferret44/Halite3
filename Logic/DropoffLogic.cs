@@ -4,7 +4,7 @@ using System.Linq;
 using System;
 
 namespace Halite3.Logic {
-    public class DropoffLogic2 : Logic {
+    public class DropoffLogic : Logic {
         // local parameters
         private HashSet<int> MovingTowardsBase = new HashSet<int>();
         private List<Ship> AvailableShipsMovingToBase => Fleet.AvailableShips.Where(s => MovingTowardsBase.Contains(s.Id)).ToList();
