@@ -4,7 +4,7 @@ using System.Linq;
 using System;
 
 namespace Halite3 {
-    public static class ValueMapping3 {
+    public static class ValueMapping {
         public static readonly Dictionary<MapCell, CellValuer> Mapping = new Dictionary<MapCell, CellValuer>();
         private static Dictionary<int, Position> previousTargets = new Dictionary<int, Position>();
         private static Dictionary<int, Position> theseTargets = new Dictionary<int, Position>();
