@@ -5,7 +5,7 @@ using System.Linq;
 using System.Diagnostics;
 using System;
 namespace Halite3.Logic {
-    public class EndGameCollectLogic : Logic
+    public class LateCollectLogic : Logic
     {
         Dictionary<Point, Assignment> PointAssignments = new Dictionary<Point, Assignment>();
         Dictionary<Ship, Assignment> ShipAssignments = new Dictionary<Ship, Assignment>();

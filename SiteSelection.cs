@@ -50,7 +50,7 @@ namespace Halite3 {
             }
 
             if(GameInfo.BestDropoffs.Any()) {
-                GameInfo.BestDropoffs = GameInfo.BestDropoffs.OrderByDescending(d => d.VirtualDropValue * Math.Pow(.95, GameInfo.MyClosestDropDistance(d.Position))).ToList(); //todo maybe
+                GameInfo.BestDropoffs = GameInfo.BestDropoffs.OrderByDescending(d => d.VirtualDropValue * Math.Pow(.95, GameInfo.MyClosestDropDistance(d.Position))).ToList();
                 var bestDrop = GameInfo.BestDropoffs[0];
                 
                 if(!GameInfo.ReserveForDropoff && ShouldCreateDropoff() && bestDrop.Cell.MyClosestShips().Any(s => GameInfo.Distance(s.position, bestDrop.Position) <= s.DistanceToMyDropoff)) {

@@ -5,11 +5,9 @@ using System.Linq;
 using System.Diagnostics;
 using System;
 namespace Halite3.Logic {
-    public class CollectLogic5 : Logic
+    public class EarlyCollectLogic : Logic
     {
         static Dictionary<int, Point> PreviousTurn = new Dictionary<int, Point>();
-
-        public CollectLogic5() { }
 
         public override void ProcessTurn() { }
 
@@ -71,7 +69,7 @@ namespace Halite3.Logic {
                 dirs = dirs.OrderBy(d => GameInfo.CellAt(ship.position.DirectionalOffset(d)).halite).ToList();
                 if(dirs.Count == 1 && GameInfo.Distance(ship, valuer.Target.position) > 1) {
                     var extraDirs = DirectionExtensions.GetLeftRightDirections(dirs[0]);
-                    dirs.AddRange(extraDirs); // todo maybe could optimize this one...
+                    dirs.AddRange(extraDirs);
                 }
                 foreach(var d in dirs) {
                     var cell = GameInfo.CellAt(ship, d);
