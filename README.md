@@ -34,8 +34,9 @@ This file is straightforward, simply returns the ships to nearest dropoff, ignor
 This file performs better than EarlyCollectLogic.cs when the map has been mostly harvested.
 
 
-<h2>Genetic Tuner</h2>
+<h2>/GeneticTuner Folder</h2>
 The overall genetic algorithm is elegant but extremely simple.  It spawns children at the start of the game in memory.  If the bot finishes in the top half of players, (i.e. 1st in a 2p game and 1st or 2nd in a 4p game) it lives and it writes its children to disk (in txt files).  Otherwise, the file it derived its parameters from is deleted.
+
 
 <b>EnemyFleet.cs</b>
 <b>Fleet.cs</b>
