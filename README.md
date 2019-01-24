@@ -1,4 +1,5 @@
-<b>Summary</b>
+<p1><b>Summary</b></p1>
+
 The Main function and turn loop is in Bot.cs.  The loop makes use of files that implement Abstract Logic/Logic.cs.  The various Logic implementations are then called in order of precedence, finally concluding with a create ship command.
 
 From the 2016 competition, I recalled that the code will invariably undergo multiple revisions.  So I modularized the logic classes and I attempted isolate certain types of ubiquitous Logic into common static classes; Navigation.cs, GameInfo.cs, Safety.cs, and Fleet.cs.
