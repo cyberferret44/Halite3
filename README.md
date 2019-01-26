@@ -45,6 +45,7 @@ This class just looks for opportunities to disrupt a neighboring opponent (if th
 <b>DropoffLogic.cs</b>
 Simply Returns ship to nearesy *safe* dropoff via the lowest cost path.
 
+
 <b>EarlyCollectLogic.cs</b>
 Most complicated class, but still pretty simple, foreach ships, asks the question
 <i>For each cell in X radius, how quickly could you collect and return to base if you went there?</i>
