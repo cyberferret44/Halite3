@@ -166,7 +166,7 @@ namespace Halite3 {
 
         // Hyper Parameters
         public static string PlayerXSize => PlayerCount + "x" + Map.width;
-        public static string HyperParameterFolder => $"{(IsLocal ? "Halite3/" : "")}GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
+        public static string HyperParameterFolder => $"GeneticTuner/{SPECIMEN_FOLDER}/{PlayerXSize}/";
         public static List<VirtualDropoff> BestDropoffs = new List<VirtualDropoff>();
         public static VirtualDropoff NextDropoff = null;
         public static bool ReserveForDropoff = false;
