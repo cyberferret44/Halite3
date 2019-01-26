@@ -40,6 +40,8 @@ As mentioned, high order Logic.CommandShips() calls take precedence. More detail
 <b>CombatLogic.cs</b>
 This class just looks for opportunities to disrupt a neighboring opponent (if they're worth hitting, and a good chance another of my ships will recover the cargo).
 
+
+<h2>Static Files and Functions</h2>
 <b>DropoffLogic.cs</b>
 Simply Returns ship to nearesy *safe* dropoff via the lowest cost path.
 
