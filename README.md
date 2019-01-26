@@ -8,6 +8,7 @@ Also from the 2016 competition, I recalled wasting a lot of time manually tuning
 
 <h2>Lessons Learned</h2>
 - Splitting out common functions earlier on (such as Navigation.cs) and writing unit tests around these functions would have saved a lot of time in the end.
+
 - Using better tooling (such as a VS Code Code Runner) for quick code tests would have been extremely useful.
 
 
