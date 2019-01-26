@@ -1,3 +1,10 @@
+<h2>Running the game</h2>
+just open a command line and run
+
+- <b>./run_game.sh</b>
+
+that's it.  Replay will be dropped into the replays folder, which can be viewed at https://halite.io/watch-games.
+
 <h2>Summary</h2>
 Code starts in Bot.cs.  The game loop uses files in Logic/Logic.cs.  Each Logic.CommandShips call can optionally move any given ship, with the higher order Logic functions taking precedence over lower order ones.
 
