@@ -86,5 +86,7 @@ Mainly used to calculate the Safety Ratio.  It just grabs a list of MapCells of 
 
 
 <h2>Things I should have done different</h2>
+
 - Not sure if it's feasible, but having a local MongoDB would have likely been far superior to text files.
+
 - While Machine Learning models were highly optional, a simpler statistical model would have likely been extremely useful (for instance, the logic I use to determine how long a ship will take to harvest a square is deterministic.  I could have simply stored the information and in the end recorded how long it actually took, then switch to use the real statistical average rather than a napkin math approximation)
