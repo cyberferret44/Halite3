@@ -1,5 +1,5 @@
 <h2>Running the game</h2>
-just open a command line and run
+just open a command line, cd into the Halite3 folder and run
 
 - <b>./run_game.sh</b>
 
