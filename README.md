@@ -15,12 +15,18 @@ Also from the 2016 competition, I recalled wasting a lot of time manually tuning
 
 <h2>Turn Steps</h2>
 As mentioned, high order Logic.CommandShips() calls take precedence. More detailed explanations below. Their order is...
-1. Initiailze new turn Information
-2. Logic/EndOfGameLogic.cs: go to nearest dropoff, ignoring collisions on dropoffs
-3. Logic/DropoffLogic.cs: go to nearest dropoff (using Dijkstra's algorithm)
-3. Logic/EarlyCollectLogic.cs: Predict the number of turns required to harvest, move to lowest order
-4. Logic/LateCollectLogic.cs: Greedier collect that estimates best nearby target (great for picking up collision cargo)
-5. Spawn Ship
+
+- 1. Initiailze new turn Information
+
+- 2. Logic/EndOfGameLogic.cs: go to nearest dropoff, ignoring collisions on dropoffs
+
+- 3. Logic/DropoffLogic.cs: go to nearest dropoff (using Dijkstra's algorithm)
+
+- 4. Logic/EarlyCollectLogic.cs: Predict the number of turns required to harvest, move to lowest order
+
+- 5. Logic/LateCollectLogic.cs: Greedier collect that estimates best nearby target (great for picking up collision cargo)
+
+- 6. Spawn Ship
 
 
 <h2>/Logic Folder</h2>
