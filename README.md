@@ -58,7 +58,9 @@ This file performs better than EarlyCollectLogic.cs when the map has been mostly
 
 <h2>/GeneticTuner Folder</h2>
 The overall genetic algorithm is elegant but extremely simple.  It spawns children at the start of the game in memory.  If the bot finishes in the top half of players, (i.e. 1st in a 2p game and 1st or 2nd in a 4p game) it lives and it writes its children to disk (in txt files).  Otherwise, the file it derived its parameters from is deleted.
-
+ 
+ 
+ <h2>Static files and functions</h2>
 <b>EnemyFleet.cs</b>
 An orphan class, only used to estimate if enemies are returning to dropoffs.
 
